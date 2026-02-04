@@ -4,16 +4,23 @@ import { useEffect, useState } from "react";
 import { getBlindboxData } from "./actions";
 import { Broadcaster } from "@/lib/types";
 import { BlindboxStats, BlindboxRecord, GiftDistribution, BLINDBOX_COST } from "@/lib/types";
-import { Loader2, RefreshCcw, TrendingUp, TrendingDown, Box, Coins, Gift } from "lucide-react";
+import { Loader2, RefreshCcw, TrendingUp, TrendingDown, Box, Coins, Gift, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
-import { startOfDay, endOfDay } from "date-fns";
+import { startOfDay, endOfDay, format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { motion, AnimatePresence } from "framer-motion";
-
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
 export default function BlindboxPage() {
     const [loading, setLoading] = useState(true);
@@ -30,6 +37,9 @@ export default function BlindboxPage() {
         to: new Date()
     });
 
+    const [searchUsername, setSearchUsername] = useState('');
+    const [searchInput, setSearchInput] = useState('');
+
     const fetchData = async () => {
         try {
             if (!dateRange?.from) return;
@@ -37,7 +47,7 @@ export default function BlindboxPage() {
             const start = startOfDay(dateRange.from).getTime();
             const end = endOfDay(dateRange.to || dateRange.from).getTime();
 
-            const result = await getBlindboxData(start, end);
+            const result = await getBlindboxData(start, end, searchUsername || undefined);
             setData(result);
         } catch (error) {
             console.error("Fetch Error:", error);
@@ -51,15 +61,23 @@ export default function BlindboxPage() {
         setLoading(true);
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dateRange]);
+    }, [dateRange, searchUsername]);
 
-    // 自动轮询
     useEffect(() => {
         const interval = setInterval(() => {
             fetchData();
         }, 5000);
         return () => clearInterval(interval);
-    }, [dateRange]);
+    }, [dateRange, searchUsername]);
+
+    const handleSearch = () => {
+        setSearchUsername(searchInput);
+    };
+
+    const handleClearSearch = () => {
+        setSearchInput('');
+        setSearchUsername('');
+    };
 
     if (loading && !data.broadcaster) {
         return (
@@ -71,6 +89,12 @@ export default function BlindboxPage() {
 
     const stats = data.stats;
     const isProfit = (stats?.netProfit ?? 0) >= 0;
+
+    // 格式化时间戳
+    const formatDateTime = (ts: number | null) => {
+        if (!ts) return '-';
+        return format(new Date(ts), 'MM-dd HH:mm');
+    };
 
     return (
         <div className="space-y-6">
@@ -127,8 +151,8 @@ export default function BlindboxPage() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Gift Distribution */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Left: Gift Distribution */}
                 <div className="lg:col-span-1 space-y-4">
                     <h3 className="text-lg font-semibold text-zinc-300 flex items-center gap-2">
                         <span className="w-1 h-5 bg-amber-500 rounded-full" />
@@ -144,24 +168,106 @@ export default function BlindboxPage() {
                     </div>
                 </div>
 
-                {/* Records Table */}
-                <div className="lg:col-span-2 space-y-4">
-                    <h3 className="text-lg font-semibold text-zinc-300 flex items-center gap-2">
-                        <span className="w-1 h-5 bg-orange-500 rounded-full" />
-                        开盒记录
-                    </h3>
-                    <ScrollArea className="h-[500px] rounded-xl border border-zinc-800 bg-zinc-900/50">
-                        <div className="p-4 space-y-2">
-                            <AnimatePresence initial={false}>
-                                {stats?.records.map((record) => (
-                                    <RecordItem key={record.id} record={record} />
-                                ))}
-                            </AnimatePresence>
-                            {(!stats || stats.records.length === 0) && (
-                                <div className="text-center text-zinc-500 py-10">暂无开盒记录</div>
+                {/* Right: Records Table */}
+                <div className="lg:col-span-3 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-zinc-300 flex items-center gap-2">
+                            <span className="w-1 h-5 bg-orange-500 rounded-full" />
+                            开盒记录
+                        </h3>
+                        {/* Search Bar */}
+                        <div className="flex items-center gap-2">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                <Input
+                                    placeholder="搜索用户名..."
+                                    value={searchInput}
+                                    onChange={(e) => setSearchInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                    className="pl-9 w-48 bg-zinc-800/50 border-zinc-700 focus:border-amber-500"
+                                />
+                            </div>
+                            <Button variant="outline" size="sm" onClick={handleSearch} className="border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800">
+                                搜索
+                            </Button>
+                            {searchUsername && (
+                                <Button variant="ghost" size="sm" onClick={handleClearSearch} className="text-zinc-400 hover:text-zinc-100">
+                                    清除
+                                </Button>
                             )}
                         </div>
-                    </ScrollArea>
+                    </div>
+
+                    {searchUsername && (
+                        <div className="text-sm text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+                            正在筛选用户：<span className="font-medium">{searchUsername}</span>
+                        </div>
+                    )}
+
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                        <ScrollArea className="h-[600px]">
+                            <Table>
+                                <TableHeader className="sticky top-0 bg-zinc-900">
+                                    <TableRow className="border-zinc-800 hover:bg-transparent">
+                                        <TableHead className="text-zinc-400">时间</TableHead>
+                                        <TableHead className="text-zinc-400">用户</TableHead>
+                                        <TableHead className="text-zinc-400">礼物</TableHead>
+                                        <TableHead className="text-zinc-400 text-center">数量</TableHead>
+                                        <TableHead className="text-zinc-400 text-right">总价值</TableHead>
+                                        <TableHead className="text-zinc-400 text-right">盈亏</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {stats?.records.map((record) => {
+                                        const isRecordProfit = record.profit >= 0;
+                                        return (
+                                            <TableRow key={record.id} className="border-zinc-800/60 hover:bg-zinc-800/30">
+                                                <TableCell className="text-zinc-500 text-sm">
+                                                    {formatDateTime(record.ts)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar className="h-7 w-7 border border-amber-500/30">
+                                                            <AvatarImage src={record.uface ?? undefined} referrerPolicy="no-referrer" />
+                                                            <AvatarFallback className="text-xs">{record.uname?.[0] ?? '?'}</AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="text-amber-400 font-medium">{record.uname}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-zinc-100">{record.gift_name}</TableCell>
+                                                <TableCell className="text-center text-amber-500">x{record.gift_num}</TableCell>
+                                                <TableCell className="text-right text-zinc-300">{record.gift_value} 电池</TableCell>
+                                                <TableCell className={`text-right font-bold ${isRecordProfit ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {isRecordProfit ? '+' : ''}{record.profit} 电池
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                    {(!stats || stats.records.length === 0) && (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center text-zinc-500 py-10">
+                                                暂无开盒记录
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                    {/* Summary Row */}
+                                    {stats && stats.records.length > 0 && (
+                                        <TableRow className="border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800/50">
+                                            <TableCell colSpan={4} className="text-right text-zinc-400 font-medium">
+                                                总计盈亏：
+                                            </TableCell>
+                                            <TableCell colSpan={2} className={`text-right font-bold text-lg ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
+                                                {isProfit ? '+' : ''}{stats.netProfit} 电池
+                                                <span className="text-sm text-zinc-500 ml-2">
+                                                    ({isProfit ? '+' : ''}{(stats.netProfit / 10).toFixed(1)} ¥)
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
+                    </div>
                 </div>
             </div>
         </div>
@@ -221,42 +327,5 @@ function GiftDistributionItem({ item, totalBoxes }: { item: GiftDistribution; to
                 />
             </div>
         </div>
-    );
-}
-
-// 记录项
-function RecordItem({ record }: { record: BlindboxRecord }) {
-    const isProfit = record.profit >= 0;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/40 border border-zinc-800/60"
-        >
-            <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9 border border-amber-500/30">
-                    <AvatarImage src={record.uface ?? undefined} referrerPolicy="no-referrer" />
-                    <AvatarFallback>{record.uname?.[0] ?? '?'}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <div className="flex items-baseline gap-2">
-                        <span className="font-medium text-amber-400">{record.uname}</span>
-                        <span className="text-xs text-zinc-500">开出</span>
-                    </div>
-                    <div className="font-bold text-zinc-100 flex items-center gap-1">
-                        {record.gift_name} {record.gift_num > 1 && <span className="text-amber-500">x{record.gift_num}</span>}
-                    </div>
-                </div>
-            </div>
-            <div className="text-right">
-                <div className={`text-sm font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
-                    {isProfit ? '+' : ''}{(record.profit / 10).toFixed(1)} ¥
-                </div>
-                <div className="text-[10px] text-zinc-600">
-                    {record.ts ? new Date(record.ts).toLocaleTimeString() : '-'}
-                </div>
-            </div>
-        </motion.div>
     );
 }

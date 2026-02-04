@@ -10,7 +10,8 @@ import {
     Settings,
     LogOut,
     Menu,
-    Box
+    Box,
+    Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -28,6 +29,7 @@ export default function DashboardLayout({
     const navItems = [
         { name: "监控看板", href: "/dashboard", icon: LayoutDashboard },
         { name: "盲盒分析", href: "/dashboard/blindbox", icon: Box },
+        { name: "开播记录", href: "/dashboard/live", icon: Radio },
         { name: "数据分析", href: "/dashboard/analytics", icon: BarChart2 },
         { name: "切片制作", href: "/dashboard/board", icon: Settings },
     ];

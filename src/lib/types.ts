@@ -131,3 +131,12 @@ export interface BlindboxStats {
     distribution: GiftDistribution[];
     records: BlindboxRecord[];
 }
+
+// 开播记录
+export interface LiveStatusRecord {
+    id: number;
+    title: string | null;
+    areaName: string | null;
+    isStart: boolean;
+    ts: number | null;
+}
