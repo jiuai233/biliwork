@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 主播配置表 ====================
+model Broadcaster {
+  id           Int      @id @default(autoincrement())
+  authCode     String   @unique @map("auth_code")
+  roomId       Int?     @map("room_id")
+  uid          BigInt?
+  uname        String?
+  uface        String?
+  openId       String?  @map("open_id")
+  roomName     String?  @map("room_name")
+  active       Int      @default(1)
+  passwordHash String?  @map("password_hash")
+  createdAt    BigInt   @map("created_at")
+  updatedAt    BigInt   @map("updated_at")
+
+  @@index([active])
+  @@map("broadcasters")
+}
+
+// ==================== 管理员表 ====================
+model AdminUser {
+  id           Int    @id @default(autoincrement())
+  username     String @unique
+  passwordHash String @map("password_hash")
+  createdAt    BigInt @map("created_at")
+
+  @@map("admin_users")
+}
+
+// ==================== 弹幕表 ====================
+model Danmaku {
+  id             Int      @id @default(autoincrement())
+  roomId         Int      @map("room_id")
+  openId         String?  @map("open_id")
+  uname          String?
+  uface          String?
+  msg            String?
+  msgId          String?  @unique @map("msg_id")
+  dmType         Int      @default(0) @map("dm_type")
+  emojiImgUrl    String?  @map("emoji_img_url")
+  fansMedalLevel Int      @default(0) @map("fans_medal_level")
+  fansMedalName  String?  @map("fans_medal_name")
+  guardLevel     Int      @default(0) @map("guard_level")
+  ts             BigInt?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([roomId])
+  @@index([ts])
+  @@map("danmaku")
+}
+
+// ==================== 礼物表 ====================
+model Gift {
+  id             Int      @id @default(autoincrement())
+  roomId         Int      @map("room_id")
+  openId         String?  @map("open_id")
+  uname          String?
+  uface          String?
+  giftId         Int?     @map("gift_id")
+  giftName       String?  @map("gift_name")
+  giftNum        Int      @default(1) @map("gift_num")
+  giftIcon       String?  @map("gift_icon")
+  price          Int      @default(0)
+  rPrice         Int      @default(0) @map("r_price")
+  paid           Int      @default(0)
+  fansMedalLevel Int      @default(0) @map("fans_medal_level")
+  fansMedalName  String?  @map("fans_medal_name")
+  guardLevel     Int      @default(0) @map("guard_level")
+  msgId          String?  @unique @map("msg_id")
+  ts             BigInt?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([roomId])
+  @@index([ts])
+  @@map("gift")
+}
+
+// ==================== 舰长表 ====================
+model Guard {
+  id             Int      @id @default(autoincrement())
+  roomId         Int      @map("room_id")
+  openId         String?  @map("open_id")
+  uname          String?
+  uface          String?
+  guardLevel     Int?     @map("guard_level")
+  guardNum       Int      @default(1) @map("guard_num")
+  guardUnit      String?  @map("guard_unit")
+  price          Int      @default(0)
+  fansMedalLevel Int      @default(0) @map("fans_medal_level")
+  fansMedalName  String?  @map("fans_medal_name")
+  msgId          String?  @unique @map("msg_id")
+  ts             BigInt?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("guard")
+}
+
+// ==================== SuperChat表 ====================
+model SuperChat {
+  id             Int      @id @default(autoincrement())
+  roomId         Int      @map("room_id")
+  openId         String?  @map("open_id")
+  uname          String?
+  uface          String?
+  messageId      BigInt?  @map("message_id")
+  message        String?
+  rmb            Int      @default(0)
+  startTime      BigInt?  @map("start_time")
+  endTime        BigInt?  @map("end_time")
+  guardLevel     Int      @default(0) @map("guard_level")
+  fansMedalLevel Int      @default(0) @map("fans_medal_level")
+  fansMedalName  String?  @map("fans_medal_name")
+  msgId          String?  @unique @map("msg_id")
+  ts             BigInt?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("super_chat")
+}
+
+// ==================== 开播/下播事件表 ====================
+model LiveStatus {
+  id        Int      @id @default(autoincrement())
+  roomId    Int      @map("room_id")
+  openId    String?  @map("open_id")
+  title     String?
+  areaName  String?  @map("area_name")
+  isStart   Int      @default(1) @map("is_start")
+  msgId     String?  @map("msg_id")
+  ts        BigInt?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("live_status")
+}
