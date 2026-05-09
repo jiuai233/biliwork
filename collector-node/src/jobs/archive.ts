@@ -1,8 +1,10 @@
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import { ParquetSchema, ParquetWriter } from 'parquetjs-lite';
+import parquet from 'parquetjs-lite';
 import { pool } from '../db.js';
 import { logger } from '../logger.js';
+
+const { ParquetSchema, ParquetWriter } = parquet;
 
 const schema = new ParquetSchema({
     id: { type: 'INT64' },
