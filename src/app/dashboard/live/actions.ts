@@ -23,8 +23,8 @@ export async function getLiveRecordsData(startTime?: number, endTime?: number) {
 
     const roomId = broadcaster.room_id;
 
-    const start = startTime || new Date().setHours(0, 0, 0, 0);
-    const end = endTime || Date.now();
+    const start = startTime ?? 0;
+    const end = endTime ?? Date.now();
 
     const sessions = await getLiveSessionsWithIncome(roomId, start, end, 50);
 
