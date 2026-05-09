@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getLiveRecordsData } from "./actions";
 import { Broadcaster } from "@/lib/types";
 import { Loader2, RefreshCcw, Radio, Clock, Coins, Gift, Shield, MessageSquare } from "lucide-react";
@@ -33,6 +34,7 @@ interface LiveSession {
 }
 
 export default function LiveRecordsPage() {
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<{
         broadcaster: Broadcaster | null;
@@ -180,6 +182,7 @@ export default function LiveRecordsPage() {
                                 <TableHead className="text-zinc-400 text-right">舰长</TableHead>
                                 <TableHead className="text-zinc-400 text-right">SC</TableHead>
                                 <TableHead className="text-zinc-400 text-right">总收入</TableHead>
+                                <TableHead className="text-zinc-400 text-center w-[80px]">操作</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -212,11 +215,27 @@ export default function LiveRecordsPage() {
                                     <TableCell className="text-right font-bold text-amber-400">
                                         {session.totalIncome.toFixed(1)} ¥
                                     </TableCell>
+                                    <TableCell className="text-center">
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                const params = new URLSearchParams({
+                                                    start: session.startTs.toString(),
+                                                    end: (session.endTs || Date.now()).toString(),
+                                                    title: session.title || `${formatDateTime(session.startTs)} 直播`,
+                                                });
+                                                router.push(`/dashboard/live/detail?${params}`);
+                                            }}
+                                            className="bg-blue-600/80 hover:bg-blue-500 text-white text-xs px-3"
+                                        >
+                                            详情
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                             {data.sessions.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="text-center text-zinc-500 py-10">
+                                    <TableCell colSpan={10} className="text-center text-zinc-500 py-10">
                                         暂无开播记录
                                     </TableCell>
                                 </TableRow>

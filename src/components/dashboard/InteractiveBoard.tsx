@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DraggableTransactionCard } from "./DraggableTransactionCard";
-import { Download, Search, X } from "lucide-react";
+import { Download, Search, X, Copy, Monitor } from "lucide-react";
 import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -188,10 +188,16 @@ function SortableBoardItem({
                             border: "2px solid rgba(255,255,255,0.8)", overflow: "hidden",
                             flexShrink: 0,
                         }}>
-                            <img src={transaction.uface} alt={transaction.uname}
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                referrerPolicy="no-referrer"
-                            />
+                            {transaction.uface ? (
+                                <img src={transaction.uface} alt={transaction.uname}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    referrerPolicy="no-referrer"
+                                />
+                            ) : (
+                                <div style={{ width: "100%", height: "100%", background: "#3f3f46", display: "flex", alignItems: "center", justifyContent: "center", color: "#a1a1aa", fontSize: "16px", fontWeight: "bold" }}>
+                                    {transaction.uname?.[0] || '?'}
+                                </div>
+                            )}
                         </div>
                         {/* Username */}
                         <div style={{
@@ -293,10 +299,16 @@ function SortableBoardItem({
                         overflow: "hidden", backgroundColor: "#fff",
                         boxShadow: "0 4px 8px rgba(0,0,0,0.2)", position: "relative",
                     }}>
-                        <img src={transaction.uface} alt={transaction.uname}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            referrerPolicy="no-referrer"
-                        />
+                        {transaction.uface ? (
+                            <img src={transaction.uface} alt={transaction.uname}
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                referrerPolicy="no-referrer"
+                            />
+                        ) : (
+                            <div style={{ width: "100%", height: "100%", background: "#3f3f46", display: "flex", alignItems: "center", justifyContent: "center", color: "#a1a1aa", fontSize: "20px", fontWeight: "bold" }}>
+                                {transaction.uname?.[0] || '?'}
+                            </div>
+                        )}
                     </div>
                     {isGuard && guardAssets && <div style={avatarBorderStyle} />}
                 </div>
@@ -404,9 +416,10 @@ function BoardArea({ items, onRemove }: { items: Transaction[], onRemove: (id: s
 // --- Main Component ---
 interface InteractiveBoardProps {
     initialTransactions: Transaction[];
+    overlayCode?: string;
 }
 
-export function InteractiveBoard({ initialTransactions }: InteractiveBoardProps) {
+export function InteractiveBoard({ initialTransactions, overlayCode }: InteractiveBoardProps) {
     const [sourceItems] = useState<Transaction[]>(initialTransactions);
     const [boardItems, setBoardItems] = useState<Transaction[]>([]);
     const [activeDragItem, setActiveDragItem] = useState<Transaction | null>(null);
@@ -420,6 +433,21 @@ export function InteractiveBoard({ initialTransactions }: InteractiveBoardProps)
     React.useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // 自动同步 board 状态到 OBS 叠加层
+    React.useEffect(() => {
+        if (!overlayCode || !isMounted) return;
+
+        const timer = setTimeout(() => {
+            fetch(`/api/overlay/${overlayCode}/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(boardItems),
+            }).catch(() => { });
+        }, 500); // 500ms 防抖
+
+        return () => clearTimeout(timer);
+    }, [boardItems, overlayCode, isMounted]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -610,7 +638,23 @@ export function InteractiveBoard({ initialTransactions }: InteractiveBoardProps)
                     <div className="flex justify-between items-center bg-zinc-900/50 p-4 rounded-lg border border-zinc-800">
                         <div>
                             <h2 className="text-xl font-bold text-white">组合看板</h2>
+                        <div className="flex gap-2 items-center">
+                            {overlayCode && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        const url = `${window.location.origin}/o/${overlayCode}`;
+                                        navigator.clipboard.writeText(url);
+                                        toast.success('OBS 链接已复制', { description: url });
+                                    }}
+                                    className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 hover:text-purple-200"
+                                >
+                                    <Monitor className="w-4 h-4 mr-2" />
+                                    OBS 源链接
+                                </Button>
+                            )}
                             <p className="text-sm text-zinc-400">已选择 {boardItems.length} 个项目</p>
+                        </div>
                         </div>
                         <div className="flex gap-2">
                             <Button variant="outline" onClick={() => setBoardItems([])} disabled={boardItems.length === 0}>

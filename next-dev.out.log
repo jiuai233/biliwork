@@ -1,0 +1,16 @@
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env
+- Experiments (use with caution):
+  · serverActions
+
+✓ Starting...
+✓ Ready in 1248ms
+○ Compiling /admin/login ...
+ GET /admin/login 200 in 3.9s (compile: 3.4s, proxy.ts: 64ms, render: 436ms)
+✓ Compiled in 61ms
+✓ Compiled in 99ms
+ GET / 307 in 171ms (compile: 95ms, render: 76ms)
+ GET /login 200 in 235ms (compile: 145ms, render: 90ms)
+[?25h

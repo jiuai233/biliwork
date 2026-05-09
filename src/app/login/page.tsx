@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 export default function LoginPage() {
     const [uid, setUid] = useState('');
-    const [authCode, setAuthCode] = useState('');
+    const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
@@ -23,14 +23,14 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const result = await loginAction(Number(uid), authCode);
+            const result = await loginAction(Number(uid), password);
             if (result.success) {
                 toast.success('登录成功');
                 router.push('/dashboard');
             } else {
-                toast.error('登录失败', { description: 'UID 或 身份码错误' });
+                toast.error('登录失败', { description: 'UID 或 密码错误' });
             }
-        } catch (error) {
+        } catch {
             toast.error('发生错误', { description: '请稍后重试' });
         } finally {
             setIsLoading(false);
@@ -57,7 +57,7 @@ export default function LoginPage() {
                             Bilibili Live Monitor
                         </CardTitle>
                         <CardDescription className="text-center text-zinc-400">
-                            请输入您的 UID 和 身份码进行登录
+                            请输入您的 UID 和 登录密码
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -75,13 +75,13 @@ export default function LoginPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="authCode" className="text-zinc-300">身份码</Label>
+                                <Label htmlFor="password" className="text-zinc-300">密码</Label>
                                 <Input
-                                    id="authCode"
-                                    placeholder="请输入您的直播身份码"
+                                    id="password"
+                                    placeholder="请输入您的登录密码"
                                     type="password"
-                                    value={authCode}
-                                    onChange={(e) => setAuthCode(e.target.value)}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     className="bg-zinc-800/50 border-zinc-700 text-zinc-100 focus:border-purple-500 transition-colors"
                                     required
                                 />

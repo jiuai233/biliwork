@@ -2,15 +2,20 @@
 
 import { useActionState } from 'react';
 import { adminLogin } from '../actions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import Alert from 'antd/es/alert';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Input from 'antd/es/input';
+import Typography from 'antd/es/typography';
+import LockOutlined from '@ant-design/icons/es/icons/LockOutlined';
+import UserOutlined from '@ant-design/icons/es/icons/UserOutlined';
 import { motion } from 'framer-motion';
 
 const initialState = {
     message: '',
 };
+
+const { Text, Title } = Typography;
 
 export default function AdminLoginPage() {
     const [state, formAction, isPending] = useActionState(adminLogin, initialState);
@@ -22,52 +27,57 @@ export default function AdminLoginPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
             >
-                <Card className="w-[350px] border-zinc-800 bg-zinc-900/50 backdrop-blur-xl">
-                    <CardHeader className="text-center">
-                        <CardTitle className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                <Card className="w-[360px] border border-zinc-800 shadow-2xl shadow-black/30">
+                    <div className="mb-6 text-center">
+                        <Title level={4} className="!mb-1 !text-zinc-100">
                             Admin Console
-                        </CardTitle>
-                        <CardDescription className="text-zinc-500">
-                            管理后台登录
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form action={formAction} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="username">用户名</Label>
-                                <Input
-                                    id="username"
-                                    name="username"
-                                    placeholder="admin"
-                                    className="bg-zinc-800/50 border-zinc-700"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="password">密码</Label>
-                                <Input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    placeholder="••••••"
-                                    className="bg-zinc-800/50 border-zinc-700"
-                                />
-                            </div>
+                        </Title>
+                        <Text type="secondary">管理后台登录</Text>
+                    </div>
 
-                            {state?.message && (
-                                <p className="text-sm text-red-400 text-center">
-                                    {state.message}
-                                </p>
-                            )}
+                    <form action={formAction} className="space-y-4">
+                        <div className="space-y-2">
+                            <label htmlFor="username" className="text-sm text-zinc-300">
+                                用户名
+                            </label>
+                            <Input
+                                id="username"
+                                name="username"
+                                size="large"
+                                prefix={<UserOutlined />}
+                                placeholder="admin"
+                                autoComplete="username"
+                            />
+                        </div>
 
-                            <Button
-                                type="submit"
-                                className="w-full bg-blue-600 hover:bg-blue-500"
-                                disabled={isPending}
-                            >
-                                {isPending ? '登录中...' : '进入后台'}
-                            </Button>
-                        </form>
-                    </CardContent>
+                        <div className="space-y-2">
+                            <label htmlFor="password" className="text-sm text-zinc-300">
+                                密码
+                            </label>
+                            <Input.Password
+                                id="password"
+                                name="password"
+                                size="large"
+                                prefix={<LockOutlined />}
+                                placeholder="请输入密码"
+                                autoComplete="current-password"
+                            />
+                        </div>
+
+                        {state?.message && (
+                            <Alert type="error" showIcon message={state.message} />
+                        )}
+
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            size="large"
+                            block
+                            loading={isPending}
+                        >
+                            进入后台
+                        </Button>
+                    </form>
                 </Card>
             </motion.div>
         </div>

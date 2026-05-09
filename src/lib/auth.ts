@@ -1,38 +1,67 @@
 'use server';
 
-// 这是一个简单的服务器端 Auth 工具
-// 使用 Next.js Server Actions 或 API Route 调用
+// 服务器端认证工具 - 使用 iron-session 加密会话
+// 替代旧版裸 UID Cookie 存储
 
-import { getBroadcasterByUidAndCode } from './data';
+import { getBroadcasterByUidAndCode, getBroadcasterByUidForLogin } from './data';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { getIronSession } from 'iron-session';
+import bcrypt from 'bcryptjs';
 
-const COOKIE_NAME = 'auth_session';
+// ==================== Session 配置 ====================
 
-export async function login(uid: number, authCode: string) {
-    const user = await getBroadcasterByUidAndCode(uid, authCode);
+interface SessionData {
+    uid: number;
+    isLoggedIn: boolean;
+}
+
+const sessionOptions = {
+    password: process.env.SESSION_SECRET || 'default_dev_secret_at_least_32_chars_long!!',
+    cookieName: 'auth_session',
+    cookieOptions: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        maxAge: 7 * 24 * 60 * 60, // 7天
+    },
+};
+
+// ==================== 主播认证 ====================
+
+export async function login(uid: number, password: string) {
+    const user = await getBroadcasterByUidForLogin(uid);
+    let isValid = false;
+
+    if (user?.password_hash) {
+        isValid = await bcrypt.compare(password, user.password_hash);
+    } else {
+        // Legacy fallback for records created before password_hash existed.
+        isValid = !!(await getBroadcasterByUidAndCode(uid, password));
+    }
+
     if (user && user.uid) {
-        // 简单的 session，实际生产环境应该用加密的 token (JWT / Iron Session)
-        // 这里为了演示方便，直接存 uid
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7天
-        const cookieStore = await cookies();
-        cookieStore.set(COOKIE_NAME, user.uid.toString(), { httpOnly: true, expires });
+        if (!isValid) return false;
+
+        const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+        session.uid = Number(user.uid);
+        session.isLoggedIn = true;
+        await session.save();
         return true;
     }
     return false;
 }
 
 export async function logout() {
-    const cookieStore = await cookies();
-    cookieStore.delete(COOKIE_NAME);
+    const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+    session.destroy();
     redirect('/login');
 }
 
 export async function getSession() {
-    const cookieStore = await cookies();
-    const uid = cookieStore.get(COOKIE_NAME)?.value;
-    if (!uid) return null;
-    return Number(uid);
+    const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+    if (!session.isLoggedIn) return null;
+    return session.uid;
 }
 
 export async function requireAuth() {

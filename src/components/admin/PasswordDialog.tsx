@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import AntApp from 'antd/es/app';
+import Alert from 'antd/es/alert';
+import Input from 'antd/es/input';
+import Modal from 'antd/es/modal';
 
 interface PasswordDialogProps {
     open: boolean;
@@ -15,45 +15,75 @@ interface PasswordDialogProps {
     successMessage?: string;
 }
 
-export function PasswordDialog({ open, onOpenChange, title, description, action, successMessage = '操作成功' }: PasswordDialogProps) {
+export function PasswordDialog({
+    open,
+    onOpenChange,
+    title,
+    description,
+    action,
+    successMessage = '操作成功',
+}: PasswordDialogProps) {
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const [isPending, startTransition] = useTransition();
+    const { message } = AntApp.useApp();
 
     const handleSubmit = () => {
-        if (!password) return;
+        if (!password) {
+            setError('请输入新密码');
+            return;
+        }
+
+        setError('');
+
         startTransition(async () => {
             const result = await action(password);
             if (result.success) {
-                toast.success(successMessage);
+                message.success(successMessage);
                 setPassword('');
+                setError('');
                 onOpenChange(false);
             } else {
-                toast.error(result.message || '操作失败');
+                const failureMessage = result.message || '操作失败';
+                setError(failureMessage);
+                message.error(failureMessage);
             }
         });
     };
 
+    const handleCancel = () => {
+        if (isPending) return;
+        setPassword('');
+        setError('');
+        onOpenChange(false);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                    <Input
-                        type="text"
-                        placeholder="输入新密码..."
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="bg-zinc-800 border-zinc-700"
-                    />
-                </div>
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>取消</Button>
-                    <Button onClick={handleSubmit} disabled={isPending || !password}>确认修改</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <Modal
+            title={title}
+            open={open}
+            onCancel={handleCancel}
+            onOk={handleSubmit}
+            okText="确认修改"
+            cancelText="取消"
+            confirmLoading={isPending}
+            okButtonProps={{ disabled: !password }}
+            destroyOnHidden
+        >
+            <p className="mb-4 text-sm text-zinc-400">{description}</p>
+            {error && (
+                <Alert className="mb-4" type="error" showIcon message={error} />
+            )}
+            <Input.Password
+                value={password}
+                onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (error) setError('');
+                }}
+                onPressEnter={handleSubmit}
+                placeholder="输入新密码..."
+                autoComplete="new-password"
+            />
+        </Modal>
     );
 }

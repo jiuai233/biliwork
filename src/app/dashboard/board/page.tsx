@@ -13,6 +13,9 @@ export default async function BoardPage() {
         return <div className="p-8">未找到主播信息</div>;
     }
 
+    // 短链编码: roomId → base36
+    const overlayCode = broadcaster.room_id.toString(36);
+
     // 获取最近500条记录供选择
     const transactions = await getUnifiedTransactions(broadcaster.room_id, 500);
 
@@ -25,7 +28,7 @@ export default async function BoardPage() {
                 </p>
             </div>
 
-            <InteractiveBoard initialTransactions={transactions} />
+            <InteractiveBoard initialTransactions={transactions} overlayCode={overlayCode} />
         </div>
     );
 }

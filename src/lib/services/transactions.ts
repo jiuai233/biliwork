@@ -1,4 +1,5 @@
 import 'server-only';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { Danmaku, Gift, Guard, SuperChat } from '@/lib/types';
 
@@ -16,7 +17,7 @@ export interface Transaction {
 
 // 获取范围内的弹幕
 export async function getRecentDanmaku(roomId: number, limit = 50, startTime?: number, endTime?: number): Promise<Danmaku[]> {
-    const where: any = { roomId };
+    const where: Prisma.DanmakuWhereInput = { roomId };
 
     if (startTime || endTime) {
         where.ts = {};
@@ -31,7 +32,7 @@ export async function getRecentDanmaku(roomId: number, limit = 50, startTime?: n
     });
 
     return rows.map(r => ({
-        id: r.id,
+        id: Number(r.id),
         room_id: r.roomId,
         open_id: r.openId,
         uname: r.uname,
@@ -50,7 +51,7 @@ export async function getRecentDanmaku(roomId: number, limit = 50, startTime?: n
 
 // 获取范围内的礼物
 export async function getRecentGifts(roomId: number, limit = 50, startTime?: number, endTime?: number): Promise<Gift[]> {
-    const where: any = { roomId };
+    const where: Prisma.GiftWhereInput = { roomId };
 
     if (startTime || endTime) {
         where.ts = {};
@@ -65,7 +66,7 @@ export async function getRecentGifts(roomId: number, limit = 50, startTime?: num
     });
 
     return rows.map(r => ({
-        id: r.id,
+        id: Number(r.id),
         room_id: r.roomId,
         open_id: r.openId,
         uname: r.uname,
@@ -88,7 +89,7 @@ export async function getRecentGifts(roomId: number, limit = 50, startTime?: num
 
 // 获取范围内的舰长
 export async function getRecentGuards(roomId: number, limit = 20, startTime?: number, endTime?: number): Promise<Guard[]> {
-    const where: any = { roomId };
+    const where: Prisma.GuardWhereInput = { roomId };
 
     if (startTime || endTime) {
         where.ts = {};
@@ -103,7 +104,7 @@ export async function getRecentGuards(roomId: number, limit = 20, startTime?: nu
     });
 
     return rows.map(r => ({
-        id: r.id,
+        id: Number(r.id),
         room_id: r.roomId,
         open_id: r.openId,
         uname: r.uname,
@@ -122,7 +123,7 @@ export async function getRecentGuards(roomId: number, limit = 20, startTime?: nu
 
 // 获取范围内的SC
 export async function getRecentSuperChats(roomId: number, limit = 20, startTime?: number, endTime?: number): Promise<SuperChat[]> {
-    const where: any = { roomId };
+    const where: Prisma.SuperChatWhereInput = { roomId };
 
     if (startTime || endTime) {
         where.ts = {};
@@ -137,7 +138,7 @@ export async function getRecentSuperChats(roomId: number, limit = 20, startTime?
     });
 
     return rows.map(r => ({
-        id: r.id,
+        id: Number(r.id),
         room_id: r.roomId,
         open_id: r.openId,
         uname: r.uname,

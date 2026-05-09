@@ -1,5 +1,7 @@
 import 'server-only';
+import type { LiveStatus as PrismaLiveStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import type { BlindboxRecord, GiftDistribution, BlindboxStats, LiveStatusRecord } from '@/lib/types';
 
 // 盲盒成本（电池）
 export const BLINDBOX_COST = 150;
@@ -18,38 +20,6 @@ export const BLINDBOX_GIFTS: Record<string, number> = {
 // 所有盲盒礼物名称列表
 export const BLINDBOX_GIFT_NAMES = Object.keys(BLINDBOX_GIFTS);
 
-// 单条盲盒记录
-export interface BlindboxRecord {
-    id: number;
-    uname: string | null;
-    uface: string | null;
-    gift_name: string | null;
-    gift_num: number;
-    gift_value: number;      // 礼物价值（电池）
-    cost: number;            // 成本（电池）
-    profit: number;          // 盈亏（电池）
-    ts: number | null;
-}
-
-// 礼物分布统计
-export interface GiftDistribution {
-    name: string;
-    count: number;
-    value: number;
-    totalValue: number;
-    isProfitable: boolean;
-}
-
-// 盲盒统计结果
-export interface BlindboxStats {
-    totalBoxes: number;           // 总开盒次数
-    totalCost: number;            // 总投入（电池）
-    totalOutput: number;          // 总产出（电池）
-    netProfit: number;            // 净盈亏（电池）
-    profitRate: number;           // 盈亏率 %
-    distribution: GiftDistribution[];  // 礼物分布
-    records: BlindboxRecord[];    // 详细记录
-}
 
 /**
  * 获取盲盒统计数据
@@ -61,7 +31,7 @@ export async function getBlindboxStats(
     limit = 200,
     username?: string
 ): Promise<BlindboxStats> {
-    const where: any = {
+    const where: Prisma.GiftWhereInput = {
         roomId,
         giftName: { in: BLINDBOX_GIFT_NAMES }
     };
@@ -88,7 +58,7 @@ export async function getBlindboxStats(
         const giftValue = BLINDBOX_GIFTS[r.giftName || ''] || 0;
         const cost = BLINDBOX_COST * r.giftNum;
         return {
-            id: r.id,
+            id: Number(r.id),
             uname: r.uname,
             uface: r.uface,
             gift_name: r.giftName,
@@ -111,7 +81,7 @@ export async function getBlindboxStats(
     const distributionMap = new Map<string, { count: number; totalValue: number }>();
 
     // 初始化所有礼物类型
-    for (const [name, value] of Object.entries(BLINDBOX_GIFTS)) {
+    for (const name of Object.keys(BLINDBOX_GIFTS)) {
         distributionMap.set(name, { count: 0, totalValue: 0 });
     }
 
@@ -152,14 +122,7 @@ export async function getBlindboxStats(
     };
 }
 
-// 开播记录类型
-export interface LiveStatusRecord {
-    id: number;
-    title: string | null;
-    areaName: string | null;
-    isStart: boolean;
-    ts: number | null;
-}
+
 
 /**
  * 获取开播记录
@@ -170,7 +133,7 @@ export async function getLiveStatusRecords(
     endTime?: number,
     limit = 50
 ): Promise<LiveStatusRecord[]> {
-    const where: any = { roomId };
+    const where: Prisma.LiveStatusWhereInput = { roomId };
 
     if (startTime || endTime) {
         where.ts = {};
@@ -185,7 +148,7 @@ export async function getLiveStatusRecords(
     });
 
     return rows.map(r => ({
-        id: r.id,
+        id: Number(r.id),
         title: r.title,
         areaName: r.areaName,
         isStart: r.isStart === 1,
@@ -207,8 +170,17 @@ export interface LiveSession {
     totalIncome: number;       // 总收入（元）
 }
 
+type PairedLiveSession = {
+    start: PrismaLiveStatus;
+    end: PrismaLiveStatus | null;
+    inferredEndTs?: number;
+};
+
+const LIVE_SESSION_LOOKBACK_MS = 24 * 60 * 60 * 1000;
+
 /**
  * 获取带收入的直播场次列表
+ * 优化：使用单条聚合SQL替代N+1查询
  */
 export async function getLiveSessionsWithIncome(
     roomId: number,
@@ -216,87 +188,102 @@ export async function getLiveSessionsWithIncome(
     endTime?: number,
     limit = 50
 ): Promise<LiveSession[]> {
-    const where: any = { roomId };
+    const start = startTime ?? 0;
+    const end = endTime ?? Date.now();
+    const queryStart = Math.max(0, start - LIVE_SESSION_LOOKBACK_MS);
 
-    if (startTime || endTime) {
-        where.ts = {};
-        if (startTime) where.ts.gte = BigInt(startTime);
-        if (endTime) where.ts.lte = BigInt(endTime);
-    }
-
-    // 获取开播记录
     const records = await prisma.liveStatus.findMany({
-        where,
-        orderBy: { ts: 'desc' },
-        take: limit * 2
+        where: {
+            roomId,
+            ts: {
+                gte: BigInt(queryStart),
+                lte: BigInt(end),
+            },
+        },
+        orderBy: { ts: 'asc' },
     });
 
-    // 按时间正序排列便于配对
-    const sortedRecords = [...records].sort((a, b) =>
-        Number(a.ts || 0) - Number(b.ts || 0)
-    );
+    const sessions: PairedLiveSession[] = [];
+    let openStart: PrismaLiveStatus | null = null;
 
-    // 配对开播和下播
-    const sessions: { start: typeof records[0]; end: typeof records[0] | null }[] = [];
-
-    for (let i = 0; i < sortedRecords.length; i++) {
-        const record = sortedRecords[i];
+    for (const record of records) {
         if (record.isStart === 1) {
-            // 找下一个下播记录
-            let endRecord = null;
-            for (let j = i + 1; j < sortedRecords.length; j++) {
-                if (sortedRecords[j].isStart === 0) {
-                    endRecord = sortedRecords[j];
-                    break;
-                }
+            if (openStart) {
+                const nextStartTs = record.ts ? Number(record.ts) : Date.now();
+                sessions.push({ start: openStart, end: null, inferredEndTs: Math.max(0, nextStartTs - 1000) });
             }
-            sessions.push({ start: record, end: endRecord });
+            openStart = record;
+            continue;
+        }
+
+        if (openStart) {
+            sessions.push({ start: openStart, end: record });
+            openStart = null;
         }
     }
 
-    // 倒序（最新的在前）
-    sessions.reverse();
+    if (openStart) {
+        sessions.push({ start: openStart, end: null });
+    }
 
-    // 为每个场次计算收入
-    const result: LiveSession[] = [];
+    const visibleSessions = sessions
+        .filter((session) => {
+            const sTs = session.start.ts ? Number(session.start.ts) : 0;
+            const eTs = session.end?.ts ? Number(session.end.ts) : session.inferredEndTs ?? Date.now();
+            return eTs >= start && sTs <= end;
+        })
+        .sort((a, b) => Number(b.start.ts || 0) - Number(a.start.ts || 0))
+        .slice(0, limit);
 
-    for (const session of sessions.slice(0, limit)) {
-        const startTs = session.start.ts ? Number(session.start.ts) : 0;
-        const endTs = session.end?.ts ? Number(session.end.ts) : null;
+    if (visibleSessions.length === 0) return [];
 
-        // 如果没有下播记录，使用当前时间作为结束
-        const queryEndTs = endTs || Date.now();
+    // 计算整体时间范围，一次性查询所有收入数据
+    const overallStart = Math.min(...visibleSessions.map(s => s.start.ts ? Number(s.start.ts) : 0));
+    const overallEnd = Math.max(...visibleSessions.map(s => s.end?.ts ? Number(s.end.ts) : s.inferredEndTs ?? Date.now()));
 
-        // 查询该时间段的收入
-        const incomeWhere: any = {
-            roomId,
-            ts: {
-                gte: BigInt(startTs),
-                lte: BigInt(queryEndTs)
+    // 单条SQL查询所有收入（替代N+1）
+    const incomeRows = await prisma.$queryRaw<{
+        source: string; ts: bigint; value: bigint;
+    }[]>`
+        SELECT 'gift' as source, ts, (r_price * gift_num) as value
+        FROM gift
+        WHERE room_id = ${roomId} AND ts >= ${BigInt(overallStart)} AND ts <= ${BigInt(overallEnd)}
+        UNION ALL
+        SELECT 'guard' as source, ts, price as value
+        FROM guard
+        WHERE room_id = ${roomId} AND ts >= ${BigInt(overallStart)} AND ts <= ${BigInt(overallEnd)}
+        UNION ALL
+        SELECT 'sc' as source, ts, (rmb * 1000) as value
+        FROM super_chat
+        WHERE room_id = ${roomId} AND ts >= ${BigInt(overallStart)} AND ts <= ${BigInt(overallEnd)}
+    `;
+
+    // 为每个场次分配收入
+    const result: LiveSession[] = visibleSessions.map(session => {
+        const sTs = session.start.ts ? Number(session.start.ts) : 0;
+        const eTs = session.end?.ts ? Number(session.end.ts) : session.inferredEndTs ?? Date.now();
+
+        let giftVal = 0, guardVal = 0, scVal = 0;
+        for (const row of incomeRows) {
+            const rowTs = Number(row.ts);
+            if (rowTs >= sTs && rowTs <= eTs) {
+                const val = Number(row.value);
+                if (row.source === 'gift') giftVal += val;
+                else if (row.source === 'guard') guardVal += val;
+                else if (row.source === 'sc') scVal += val;
             }
-        };
+        }
 
-        const [gifts, guards, scs] = await Promise.all([
-            prisma.gift.findMany({ where: incomeWhere, select: { rPrice: true, giftNum: true } }),
-            prisma.guard.findMany({ where: incomeWhere, select: { price: true } }),
-            prisma.superChat.findMany({ where: incomeWhere, select: { rmb: true } })
-        ]);
-
-        // 礼物收入 = sum(r_price * gift_num) / 1000 元
-        const giftIncome = gifts.reduce((sum, g) => sum + (g.rPrice * g.giftNum), 0) / 1000;
-        // 舰长收入 = sum(price) / 1000 元
-        const guardIncome = guards.reduce((sum, g) => sum + g.price, 0) / 1000;
-        // SC收入 = rmb 元
-        const scIncome = scs.reduce((sum, s) => sum + (s.rmb || 0), 0);
-        // 总收入（元）
+        const giftIncome = giftVal / 1000;
+        const guardIncome = guardVal / 1000;
+        const scIncome = scVal / 1000; // SC value 已乘以1000, 除回来
         const totalIncome = giftIncome + guardIncome + scIncome;
+        const duration = session.end?.ts ? Math.round((eTs - sTs) / 60000) : 0;
 
-        const duration = endTs ? Math.round((endTs - startTs) / 60000) : 0;
-
-        result.push({
-            id: session.start.id,
-            startTs,
-            endTs,
+        return {
+            id: Number(session.start.id),
+            startTs: sTs,
+            endTs: session.end?.ts ? Number(session.end.ts) : session.inferredEndTs ?? null,
             duration,
             title: session.start.title,
             areaName: session.start.areaName,
@@ -304,8 +291,8 @@ export async function getLiveSessionsWithIncome(
             guardIncome,
             scIncome,
             totalIncome
-        });
-    }
+        };
+    });
 
     return result;
 }

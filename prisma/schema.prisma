@@ -41,7 +41,7 @@ model AdminUser {
 
 // ==================== 弹幕表 ====================
 model Danmaku {
-  id             Int      @id @default(autoincrement())
+  id             BigInt   @id
   roomId         Int      @map("room_id")
   openId         String?  @map("open_id")
   uname          String?
@@ -58,12 +58,13 @@ model Danmaku {
 
   @@index([roomId])
   @@index([ts])
+  @@index([roomId, ts])
   @@map("danmaku")
 }
 
 // ==================== 礼物表 ====================
 model Gift {
-  id             Int      @id @default(autoincrement())
+  id             BigInt   @id
   roomId         Int      @map("room_id")
   openId         String?  @map("open_id")
   uname          String?
@@ -84,12 +85,13 @@ model Gift {
 
   @@index([roomId])
   @@index([ts])
+  @@index([roomId, ts])
   @@map("gift")
 }
 
 // ==================== 舰长表 ====================
 model Guard {
-  id             Int      @id @default(autoincrement())
+  id             BigInt   @id
   roomId         Int      @map("room_id")
   openId         String?  @map("open_id")
   uname          String?
@@ -104,12 +106,15 @@ model Guard {
   ts             BigInt?
   createdAt      DateTime @default(now()) @map("created_at")
 
+  @@index([roomId])
+  @@index([ts])
+  @@index([roomId, ts])
   @@map("guard")
 }
 
 // ==================== SuperChat表 ====================
 model SuperChat {
-  id             Int      @id @default(autoincrement())
+  id             BigInt   @id
   roomId         Int      @map("room_id")
   openId         String?  @map("open_id")
   uname          String?
@@ -126,20 +131,26 @@ model SuperChat {
   ts             BigInt?
   createdAt      DateTime @default(now()) @map("created_at")
 
+  @@index([roomId])
+  @@index([ts])
+  @@index([roomId, ts])
   @@map("super_chat")
 }
 
 // ==================== 开播/下播事件表 ====================
 model LiveStatus {
-  id        Int      @id @default(autoincrement())
+  id        BigInt   @id
   roomId    Int      @map("room_id")
   openId    String?  @map("open_id")
   title     String?
   areaName  String?  @map("area_name")
   isStart   Int      @default(1) @map("is_start")
-  msgId     String?  @map("msg_id")
+  msgId     String?  @unique @map("msg_id")
   ts        BigInt?
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([roomId])
+  @@index([ts])
+  @@index([roomId, ts])
   @@map("live_status")
 }

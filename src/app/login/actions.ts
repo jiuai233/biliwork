@@ -3,9 +3,9 @@
 
 import { login } from '@/lib/auth';
 
-export async function loginAction(uid: number, authCode: string) {
+export async function loginAction(uid: number, password: string) {
     try {
-        const success = await login(uid, authCode);
+        const success = await login(uid, password);
         return { success };
     } catch (error) {
         console.error('Login error:', error);

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import Button from 'antd/es/button';
+import Result from 'antd/es/result';
+import Space from 'antd/es/space';
 
 export default function Error({
     error,
@@ -15,14 +17,22 @@ export default function Error({
     }, [error]);
 
     return (
-        <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-black text-white">
-            <h2 className="text-xl font-bold text-red-500">出错了</h2>
-            <p className="text-zinc-400">加载管理面板时遇到问题。</p>
-            <div className="flex gap-4">
-                <Button variant="outline" onClick={() => window.location.reload()}>刷新页面</Button>
-                <Button onClick={() => reset()}>重试</Button>
-            </div>
-            <p className="text-xs text-zinc-600 mt-4">Error Digest: {error.digest}</p>
+        <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+            <Result
+                status="error"
+                title={<span className="text-zinc-100">出错了</span>}
+                subTitle={<span className="text-zinc-400">加载管理面板时遇到问题。</span>}
+                extra={(
+                    <Space>
+                        <Button onClick={() => window.location.reload()}>刷新页面</Button>
+                        <Button type="primary" onClick={() => reset()}>重试</Button>
+                    </Space>
+                )}
+            >
+                {error.digest && (
+                    <p className="mt-4 text-xs text-zinc-600">Error Digest: {error.digest}</p>
+                )}
+            </Result>
         </div>
     );
 }
