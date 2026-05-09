@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/collector-node/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -17,6 +18,7 @@
 # next.js
 /.next/
 /out/
+/collector-node/dist/
 
 # production
 /build

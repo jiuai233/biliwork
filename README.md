@@ -44,6 +44,35 @@ npm run dev
 
 ## 部署
 
+### Node 采集器（Docker）
+
+Node 采集器源码在 `collector-node/`，用于替换旧 Go collector。
+
+```bash
+cd /www/wwwroot/bili-next/collector-node
+docker build -t biweb-collector-node .
+
+docker stop biweb-collector
+docker rm biweb-collector
+
+docker run -d \
+  --name biweb-collector \
+  --restart unless-stopped \
+  --network <postgres所在网络> \
+  -e DATABASE_URL='postgres://postgres:<密码>@biweb-postgres:5432/biweb?sslmode=disable' \
+  -e BILI_ACCESS_KEY_ID='<你的key>' \
+  -e BILI_ACCESS_KEY_SECRET='<你的secret>' \
+  -e BILI_APP_ID='<你的app_id>' \
+  -v /www/wwwroot/exports:/app/exports \
+  biweb-collector-node
+```
+
+查看 Postgres 所在 Docker 网络：
+
+```bash
+docker inspect biweb-postgres --format '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}'
+```
+
 ### 宝塔面板部署
 
 1. **上传源码** 到服务器目录 (如 `/www/wwwroot/bili-web`)
