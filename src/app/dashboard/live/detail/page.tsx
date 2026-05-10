@@ -4,12 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getSessionDetail } from "../actions";
 import { Loader2, ArrowLeft, MessageSquare, Gift, Shield, Sparkles, Users, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, Button, Table } from "@heroui/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -84,9 +79,9 @@ function SessionDetailContent() {
                 <div className="flex items-center gap-4">
                     <Button
                         variant="outline"
-                        size="icon"
+                        size="sm"
                         onClick={() => router.back()}
-                        className="border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800"
+                        className="h-9 w-9 border-zinc-700 bg-zinc-800/50 p-0 hover:bg-zinc-800"
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
@@ -123,30 +118,32 @@ function SessionDetailContent() {
                         礼物明细（按用户）
                     </h3>
                     <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-                        <ScrollArea className="h-[500px]">
-                            <Table>
-                                <TableHeader className="sticky top-0 bg-zinc-900">
-                                    <TableRow className="border-zinc-800 hover:bg-transparent">
-                                        <TableHead className="text-zinc-400 w-[60px]">#</TableHead>
-                                        <TableHead className="text-zinc-400">用户</TableHead>
-                                        <TableHead className="text-zinc-400">礼物详情</TableHead>
-                                        <TableHead className="text-zinc-400 text-right">总价值</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                        <div className="h-[500px] overflow-auto">
+                            <Table variant="secondary" className="min-w-[760px]">
+                                <Table.Content
+                                    aria-label="礼物明细"
+                                    className="w-full table-fixed border-collapse [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/60 [&_tbody_tr:hover]:bg-zinc-800/30 [&_td]:px-4 [&_td]:py-3 [&_th]:sticky [&_th]:top-0 [&_th]:bg-zinc-900 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-zinc-400"
+                                >
+                                    <Table.Header>
+                                        <Table.Column id="rank" isRowHeader className="w-[60px]">#</Table.Column>
+                                        <Table.Column id="user">用户</Table.Column>
+                                        <Table.Column id="gifts">礼物详情</Table.Column>
+                                        <Table.Column id="value" className="text-right">总价值</Table.Column>
+                                    </Table.Header>
+                                    <Table.Body>
                                     {data.giftUsers.map((user, i) => (
-                                        <TableRow key={user.uname} className="border-zinc-800/60 hover:bg-zinc-800/30">
-                                            <TableCell className="font-mono text-zinc-500">{i + 1}</TableCell>
-                                            <TableCell>
+                                        <Table.Row key={user.uname} id={user.uname}>
+                                            <Table.Cell className="font-mono text-zinc-500">{i + 1}</Table.Cell>
+                                            <Table.Cell>
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-7 w-7 border border-zinc-700">
-                                                        <AvatarImage src={user.uface} />
-                                                        <AvatarFallback className="bg-zinc-800 text-[10px]">{user.uname[0]}</AvatarFallback>
+                                                        <Avatar.Image src={user.uface} />
+                                                        <Avatar.Fallback className="bg-zinc-800 text-[10px]">{user.uname[0]}</Avatar.Fallback>
                                                     </Avatar>
                                                     <span className="text-zinc-200 text-sm max-w-[120px] truncate">{user.uname}</span>
                                                 </div>
-                                            </TableCell>
-                                            <TableCell>
+                                            </Table.Cell>
+                                            <Table.Cell>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {user.gifts.map((g) => (
                                                         <span key={g.name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800 text-xs text-zinc-300 border border-zinc-700/50">
@@ -155,22 +152,23 @@ function SessionDetailContent() {
                                                         </span>
                                                     ))}
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className="text-right font-bold text-amber-400">
+                                            </Table.Cell>
+                                            <Table.Cell className="text-right font-bold text-amber-400">
                                                 {user.totalValue.toFixed(1)} ¥
-                                            </TableCell>
-                                        </TableRow>
+                                            </Table.Cell>
+                                        </Table.Row>
                                     ))}
                                     {data.giftUsers.length === 0 && (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-zinc-500 py-10">
+                                        <Table.Row id="empty">
+                                            <Table.Cell colSpan={4} className="text-center text-zinc-500 py-10">
                                                 本场无礼物记录
-                                            </TableCell>
-                                        </TableRow>
+                                            </Table.Cell>
+                                        </Table.Row>
                                     )}
-                                </TableBody>
+                                    </Table.Body>
+                                </Table.Content>
                             </Table>
-                        </ScrollArea>
+                        </div>
                     </div>
                 </div>
 
@@ -182,15 +180,15 @@ function SessionDetailContent() {
                             <span className="w-1 h-5 bg-yellow-500 rounded-full" />
                             醒目留言 ({data.superChats.length})
                         </h3>
-                        <ScrollArea className="h-[220px]">
+                        <div className="h-[220px] overflow-y-auto">
                             <div className="space-y-3">
                                 {data.superChats.map((sc, i) => (
                                     <div key={i} className="p-3 rounded-lg border border-yellow-500/20 bg-yellow-500/5">
                                         <div className="flex items-center justify-between mb-1.5">
                                             <div className="flex items-center gap-2">
                                                 <Avatar className="h-5 w-5">
-                                                    <AvatarImage src={sc.uface} />
-                                                    <AvatarFallback className="text-[8px]">{sc.uname[0]}</AvatarFallback>
+                                                    <Avatar.Image src={sc.uface} />
+                                                    <Avatar.Fallback className="text-[8px]">{sc.uname[0]}</Avatar.Fallback>
                                                 </Avatar>
                                                 <span className="text-sm text-zinc-300">{sc.uname}</span>
                                             </div>
@@ -203,7 +201,7 @@ function SessionDetailContent() {
                                     <div className="text-center text-zinc-500 py-6 text-sm">本场无 SC</div>
                                 )}
                             </div>
-                        </ScrollArea>
+                        </div>
                     </div>
 
                     {/* Guards */}
@@ -212,14 +210,14 @@ function SessionDetailContent() {
                             <span className="w-1 h-5 bg-indigo-500 rounded-full" />
                             上舰记录 ({data.guards.length})
                         </h3>
-                        <ScrollArea className="h-[220px]">
+                        <div className="h-[220px] overflow-y-auto">
                             <div className="space-y-2">
                                 {data.guards.map((g, i) => (
                                     <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-zinc-800 bg-zinc-900/50">
                                         <div className="flex items-center gap-2">
                                             <Avatar className="h-6 w-6">
-                                                <AvatarImage src={g.uface} />
-                                                <AvatarFallback className="text-[8px]">{g.uname[0]}</AvatarFallback>
+                                                <Avatar.Image src={g.uface} />
+                                                <Avatar.Fallback className="text-[8px]">{g.uname[0]}</Avatar.Fallback>
                                             </Avatar>
                                             <span className="text-sm text-zinc-300">{g.uname}</span>
                                             <span className={`text-xs font-medium ${guardLevelColor(g.guardLevel)}`}>
@@ -233,7 +231,7 @@ function SessionDetailContent() {
                                     <div className="text-center text-zinc-500 py-6 text-sm">本场无上舰</div>
                                 )}
                             </div>
-                        </ScrollArea>
+                        </div>
                     </div>
 
                     {/* Top Danmaku Users */}
@@ -249,8 +247,8 @@ function SessionDetailContent() {
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-mono text-zinc-500 w-5">{i + 1}</span>
                                         <Avatar className="h-5 w-5">
-                                            <AvatarImage src={u.uface} />
-                                            <AvatarFallback className="text-[8px]">{u.uname[0]}</AvatarFallback>
+                                            <Avatar.Image src={u.uface} />
+                                            <Avatar.Fallback className="text-[8px]">{u.uname[0]}</Avatar.Fallback>
                                         </Avatar>
                                         <span className="text-sm text-zinc-300 max-w-[100px] truncate">{u.uname}</span>
                                     </div>

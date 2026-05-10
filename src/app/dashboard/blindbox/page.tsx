@@ -1,26 +1,27 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { getBlindboxData } from "./actions";
-import { Broadcaster } from "@/lib/types";
-import { BlindboxStats, BlindboxRecord, GiftDistribution, BLINDBOX_COST } from "@/lib/types";
-import { Loader2, RefreshCcw, TrendingUp, TrendingDown, Box, Coins, Gift, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
-import { startOfDay, endOfDay, format } from "date-fns";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { endOfDay, format, startOfDay } from "date-fns";
+import { toast } from "sonner";
+import { Avatar, Button, Input, Table } from "@heroui/react";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+    Box,
+    ChevronRight,
+    ClipboardList,
+    Coins,
+    Filter,
+    Gift,
+    Loader2,
+    RefreshCcw,
+    Search,
+    TrendingDown,
+    TrendingUp,
+} from "lucide-react";
+import { getBlindboxData } from "./actions";
+import { AnalyticsDateRangePicker } from "@/components/dashboard/AnalyticsDateRangePicker";
+import { BLINDBOX_COST, BlindboxStats, Broadcaster, GiftDistribution } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export default function BlindboxPage() {
     const [loading, setLoading] = useState(true);
@@ -34,11 +35,11 @@ export default function BlindboxPage() {
 
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: new Date(),
-        to: new Date()
+        to: new Date(),
     });
 
-    const [searchUsername, setSearchUsername] = useState('');
-    const [searchInput, setSearchInput] = useState('');
+    const [searchUsername, setSearchUsername] = useState("");
+    const [searchInput, setSearchInput] = useState("");
 
     const fetchData = async () => {
         try {
@@ -46,7 +47,6 @@ export default function BlindboxPage() {
 
             const start = startOfDay(dateRange.from).getTime();
             const end = endOfDay(dateRange.to || dateRange.from).getTime();
-
             const result = await getBlindboxData(start, end, searchUsername || undefined);
             setData(result);
         } catch (error) {
@@ -68,262 +68,298 @@ export default function BlindboxPage() {
             fetchData();
         }, 5000);
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dateRange, searchUsername]);
 
     const handleSearch = () => {
-        setSearchUsername(searchInput);
-    };
-
-    const handleClearSearch = () => {
-        setSearchInput('');
-        setSearchUsername('');
+        setSearchUsername(searchInput.trim());
     };
 
     if (loading && !data.broadcaster) {
         return (
-            <div className="flex items-center justify-center h-[50vh]">
-                <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+            <div className="flex h-[50vh] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-orange-400" />
             </div>
         );
     }
 
     const stats = data.stats;
     const isProfit = (stats?.netProfit ?? 0) >= 0;
+    const records = stats?.records ?? [];
 
-    // 格式化时间戳
     const formatDateTime = (ts: number | null) => {
-        if (!ts) return '-';
-        return format(new Date(ts), 'MM-dd HH:mm');
+        if (!ts) return "-";
+        return format(new Date(ts), "MM-dd HH:mm");
     };
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900/40 p-6 rounded-xl border border-zinc-800 backdrop-blur-sm">
-                <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-900/20">
-                        <Box className="h-7 w-7 text-white" />
+            <section className="relative rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.14),transparent_30%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.82))] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.30)]">
+                <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-700 shadow-[0_18px_45px_rgba(249,115,22,0.28)]">
+                            <Box className="h-9 w-9 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-black tracking-normal text-white">心动盲盒分析</h1>
+                            <p className="mt-2 text-sm font-medium text-slate-400">成本 {BLINDBOX_COST} 电池/盒</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-zinc-100">心动盲盒分析</h2>
-                        <p className="text-sm text-zinc-500 mt-1">成本 {BLINDBOX_COST} 电池/盒</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-3">
-                    <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-                    <div className="w-px h-8 bg-zinc-800 mx-1" />
-                    <Button variant="outline" size="icon" onClick={() => fetchData()} disabled={loading} className="border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800">
-                        <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                    </Button>
-                </div>
-            </div>
 
-            {/* Stats Cards */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <AnalyticsDateRangePicker date={dateRange} setDate={setDateRange} />
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => fetchData()}
+                            isDisabled={loading}
+                            aria-label="刷新"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] p-0 text-slate-200 hover:bg-white/[0.09]"
+                        >
+                            <RefreshCcw className={cn("h-4 w-4", loading && "animate-spin")} />
+                        </Button>
+                    </div>
+                </div>
+            </section>
+
             {stats && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <BlindboxStatCard
                         title="开盒次数"
                         value={stats.totalBoxes.toLocaleString()}
+                        subTop="较昨日 --"
+                        subBottom="较昨日 --"
                         icon={<Box className="h-5 w-5" />}
-                        color="amber"
+                        tone="orange"
                     />
-                    <StatCard
+                    <BlindboxStatCard
                         title="总投入"
                         value={`${(stats.totalCost / 10).toFixed(1)} ¥`}
-                        subtitle={`${stats.totalCost.toLocaleString()} 电池`}
+                        subTop={`${stats.totalCost.toLocaleString()} 电池`}
+                        subBottom="较昨日 --"
                         icon={<Coins className="h-5 w-5" />}
-                        color="blue"
+                        tone="blue"
                     />
-                    <StatCard
+                    <BlindboxStatCard
                         title="总产出"
                         value={`${(stats.totalOutput / 10).toFixed(1)} ¥`}
-                        subtitle={`${stats.totalOutput.toLocaleString()} 电池`}
+                        subTop={`${stats.totalOutput.toLocaleString()} 电池`}
+                        subBottom="较昨日 --"
                         icon={<Gift className="h-5 w-5" />}
-                        color="purple"
+                        tone="purple"
                     />
-                    <StatCard
+                    <BlindboxStatCard
                         title="净盈亏"
-                        value={`${isProfit ? '+' : ''}${(stats.netProfit / 10).toFixed(1)} ¥`}
-                        subtitle={`${stats.profitRate >= 0 ? '+' : ''}${stats.profitRate.toFixed(1)}%`}
+                        value={`${isProfit ? "+" : ""}${(stats.netProfit / 10).toFixed(1)} ¥`}
+                        subTop={`${isProfit ? "+" : ""}${stats.profitRate.toFixed(2)}%`}
+                        subBottom="较昨日 --"
                         icon={isProfit ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-                        color={isProfit ? "green" : "red"}
+                        tone="green"
                     />
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Left: Gift Distribution */}
-                <div className="lg:col-span-1 space-y-4">
-                    <h3 className="text-lg font-semibold text-zinc-300 flex items-center gap-2">
-                        <span className="w-1 h-5 bg-amber-500 rounded-full" />
-                        礼物分布
-                    </h3>
-                    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 space-y-3">
-                        {stats?.distribution.map((item) => (
-                            <GiftDistributionItem key={item.name} item={item} totalBoxes={stats.totalBoxes} />
-                        ))}
-                        {(!stats || stats.distribution.length === 0) && (
-                            <div className="text-center text-zinc-500 py-6">暂无数据</div>
-                        )}
-                    </div>
-                </div>
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[330px_minmax(0,1fr)]">
+                <aside className="space-y-5">
+                    <section className="min-h-[690px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/55 shadow-[0_20px_65px_rgba(0,0,0,0.24)]">
+                        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+                            <h2 className="flex items-center gap-2 text-lg font-extrabold text-white">
+                                <Gift className="h-5 w-5 text-orange-300" />
+                                礼物分布
+                            </h2>
+                        </div>
+                        <div className="space-y-4 p-5">
+                            {stats?.distribution.slice(0, 7).map((item) => (
+                                <GiftDistributionItem key={item.name} item={item} totalBoxes={stats.totalBoxes} />
+                            ))}
+                            {(!stats || stats.distribution.length === 0) && (
+                                <div className="py-8 text-center text-sm text-slate-500">暂无数据</div>
+                            )}
+                        </div>
+                    </section>
 
-                {/* Right: Records Table */}
-                <div className="lg:col-span-3 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-zinc-300 flex items-center gap-2">
-                            <span className="w-1 h-5 bg-orange-500 rounded-full" />
+                </aside>
+
+                <section className="min-h-[690px] overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_50%_30%,rgba(59,130,246,0.10),transparent_38%),rgba(2,6,23,0.62)] shadow-[0_20px_65px_rgba(0,0,0,0.24)]">
+                    <div className="flex flex-col gap-4 border-b border-white/10 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                        <h2 className="flex items-center gap-3 text-xl font-extrabold text-white">
+                            <span className="h-6 w-1 rounded-full bg-orange-500" />
                             开盒记录
-                        </h3>
-                        {/* Search Bar */}
-                        <div className="flex items-center gap-2">
+                        </h2>
+
+                        <div className="flex flex-wrap items-center gap-2">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                                 <Input
                                     placeholder="搜索用户名..."
                                     value={searchInput}
-                                    onChange={(e) => setSearchInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    className="pl-9 w-48 bg-zinc-800/50 border-zinc-700 focus:border-amber-500"
+                                    onChange={(event) => setSearchInput(event.target.value)}
+                                    onKeyDown={(event) => event.key === "Enter" && handleSearch()}
+                                    variant="secondary"
+                                    className="h-10 w-[210px] rounded-xl border border-white/10 bg-white/[0.04] pl-9 text-sm text-white"
                                 />
                             </div>
-                            <Button variant="outline" size="sm" onClick={handleSearch} className="border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="primary"
+                                onClick={handleSearch}
+                                className="inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-bold"
+                            >
                                 搜索
                             </Button>
-                            {searchUsername && (
-                                <Button variant="ghost" size="sm" onClick={handleClearSearch} className="text-zinc-400 hover:text-zinc-100">
-                                    清除
-                                </Button>
-                            )}
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-medium text-slate-300"
+                            >
+                                <Filter className="h-4 w-4" />
+                                全部礼物
+                            </Button>
                         </div>
                     </div>
 
-                    {searchUsername && (
-                        <div className="text-sm text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
-                            正在筛选用户：<span className="font-medium">{searchUsername}</span>
-                        </div>
-                    )}
-
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-                        <ScrollArea className="h-[600px]">
-                            <Table>
-                                <TableHeader className="sticky top-0 bg-zinc-900">
-                                    <TableRow className="border-zinc-800 hover:bg-transparent">
-                                        <TableHead className="text-zinc-400">时间</TableHead>
-                                        <TableHead className="text-zinc-400">用户</TableHead>
-                                        <TableHead className="text-zinc-400">礼物</TableHead>
-                                        <TableHead className="text-zinc-400 text-center">数量</TableHead>
-                                        <TableHead className="text-zinc-400 text-right">总价值</TableHead>
-                                        <TableHead className="text-zinc-400 text-right">盈亏</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {stats?.records.map((record) => {
+                    <div className="dark-scrollbar overflow-auto">
+                        <Table variant="secondary" className="min-w-[880px]">
+                            <Table.Content
+                                aria-label="开盒记录"
+                                className="w-full table-fixed border-collapse [&_tbody_tr]:border-b [&_tbody_tr]:border-white/10 [&_tbody_tr:hover]:bg-white/[0.035] [&_td]:px-5 [&_td]:py-4 [&_th]:bg-white/[0.045] [&_th]:px-5 [&_th]:py-4 [&_th]:text-left [&_th]:text-slate-300"
+                            >
+                                <Table.Header>
+                                    <Table.Column id="time" isRowHeader>时间</Table.Column>
+                                    <Table.Column id="user">用户</Table.Column>
+                                    <Table.Column id="gift">礼物</Table.Column>
+                                    <Table.Column id="count" className="text-center">数量</Table.Column>
+                                    <Table.Column id="value" className="text-right">总价值</Table.Column>
+                                    <Table.Column id="profit" className="text-right">盈亏</Table.Column>
+                                    <Table.Column id="note" className="text-right">备注</Table.Column>
+                                </Table.Header>
+                                <Table.Body>
+                                    {records.map((record) => {
                                         const isRecordProfit = record.profit >= 0;
                                         return (
-                                            <TableRow key={record.id} className="border-zinc-800/60 hover:bg-zinc-800/30">
-                                                <TableCell className="text-zinc-500 text-sm">
-                                                    {formatDateTime(record.ts)}
-                                                </TableCell>
-                                                <TableCell>
+                                            <Table.Row key={record.id} id={record.id}>
+                                                <Table.Cell className="text-sm text-slate-400">{formatDateTime(record.ts)}</Table.Cell>
+                                                <Table.Cell>
                                                     <div className="flex items-center gap-2">
-                                                        <Avatar className="h-7 w-7 border border-amber-500/30">
-                                                            <AvatarImage src={record.uface ?? undefined} referrerPolicy="no-referrer" />
-                                                            <AvatarFallback className="text-xs">{record.uname?.[0] ?? '?'}</AvatarFallback>
+                                                        <Avatar className="h-8 w-8 border border-orange-400/30">
+                                                            <Avatar.Image src={record.uface ?? undefined} referrerPolicy="no-referrer" />
+                                                            <Avatar.Fallback className="text-xs">{record.uname?.[0] ?? "?"}</Avatar.Fallback>
                                                         </Avatar>
-                                                        <span className="text-amber-400 font-medium">{record.uname}</span>
+                                                        <span className="font-semibold text-orange-200">{record.uname}</span>
                                                     </div>
-                                                </TableCell>
-                                                <TableCell className="text-zinc-100">{record.gift_name}</TableCell>
-                                                <TableCell className="text-center text-amber-500">x{record.gift_num}</TableCell>
-                                                <TableCell className="text-right text-zinc-300">{record.gift_value} 电池</TableCell>
-                                                <TableCell className={`text-right font-bold ${isRecordProfit ? 'text-green-400' : 'text-red-400'}`}>
-                                                    {isRecordProfit ? '+' : ''}{record.profit} 电池
-                                                </TableCell>
-                                            </TableRow>
+                                                </Table.Cell>
+                                                <Table.Cell className="font-medium text-slate-100">{record.gift_name}</Table.Cell>
+                                                <Table.Cell className="text-center font-bold text-orange-300">x{record.gift_num}</Table.Cell>
+                                                <Table.Cell className="text-right text-slate-300">{record.gift_value} 电池</Table.Cell>
+                                                <Table.Cell className={cn("text-right font-bold", isRecordProfit ? "text-emerald-300" : "text-red-300")}>
+                                                    {isRecordProfit ? "+" : ""}{record.profit} 电池
+                                                </Table.Cell>
+                                                <Table.Cell className="text-right text-slate-500">
+                                                    <ChevronRight className="ml-auto h-4 w-4" />
+                                                </Table.Cell>
+                                            </Table.Row>
                                         );
                                     })}
-                                    {(!stats || stats.records.length === 0) && (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="text-center text-zinc-500 py-10">
-                                                暂无开盒记录
-                                            </TableCell>
-                                        </TableRow>
+
+                                    {records.length === 0 && (
+                                        <Table.Row id="empty">
+                                            <Table.Cell colSpan={7} className="h-[500px] text-center">
+                                                <div className="flex flex-col items-center justify-center text-slate-400">
+                                                    <div className="mb-5 rounded-3xl bg-white/[0.06] p-6 text-slate-500 shadow-[0_16px_40px_rgba(0,0,0,0.25)]">
+                                                        <ClipboardList className="h-16 w-16" />
+                                                    </div>
+                                                    <div className="text-xl font-extrabold text-white">暂无开盒记录</div>
+                                                    <p className="mt-3 text-sm text-slate-400">开盒记录将在这里显示</p>
+                                                </div>
+                                            </Table.Cell>
+                                        </Table.Row>
                                     )}
-                                    {/* Summary Row */}
-                                    {stats && stats.records.length > 0 && (
-                                        <TableRow className="border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800/50">
-                                            <TableCell colSpan={4} className="text-right text-zinc-400 font-medium">
-                                                总计盈亏：
-                                            </TableCell>
-                                            <TableCell colSpan={2} className={`text-right font-bold text-lg ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
-                                                {isProfit ? '+' : ''}{stats.netProfit} 电池
-                                                <span className="text-sm text-zinc-500 ml-2">
-                                                    ({isProfit ? '+' : ''}{(stats.netProfit / 10).toFixed(1)} ¥)
-                                                </span>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </ScrollArea>
+                                </Table.Body>
+                            </Table.Content>
+                        </Table>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     );
 }
 
-// 统计卡片组件
-function StatCard({ title, value, subtitle, icon, color }: {
+function BlindboxStatCard({
+    title,
+    value,
+    subTop,
+    subBottom,
+    icon,
+    tone,
+}: {
     title: string;
     value: string;
-    subtitle?: string;
+    subTop: string;
+    subBottom: string;
     icon: React.ReactNode;
-    color: 'amber' | 'blue' | 'purple' | 'green' | 'red';
+    tone: "orange" | "blue" | "purple" | "green";
 }) {
-    const colorClasses = {
-        amber: 'from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-400',
-        blue: 'from-blue-500/20 to-cyan-500/10 border-blue-500/30 text-blue-400',
-        purple: 'from-purple-500/20 to-pink-500/10 border-purple-500/30 text-purple-400',
-        green: 'from-green-500/20 to-emerald-500/10 border-green-500/30 text-green-400',
-        red: 'from-red-500/20 to-rose-500/10 border-red-500/30 text-red-400'
+    const toneMap = {
+        orange: {
+            card: "border-orange-400/35 from-orange-500/20 via-slate-950/80 to-slate-950",
+            icon: "text-orange-200",
+            glow: "bg-orange-400/25",
+        },
+        blue: {
+            card: "border-sky-400/35 from-sky-500/20 via-slate-950/80 to-slate-950",
+            icon: "text-sky-300",
+            glow: "bg-sky-400/25",
+        },
+        purple: {
+            card: "border-purple-400/35 from-purple-500/20 via-slate-950/80 to-slate-950",
+            icon: "text-purple-200",
+            glow: "bg-purple-400/25",
+        },
+        green: {
+            card: "border-emerald-400/35 from-emerald-500/20 via-slate-950/80 to-slate-950",
+            icon: "text-emerald-300",
+            glow: "bg-emerald-400/25",
+        },
     };
 
+    const styles = toneMap[tone];
+
     return (
-        <div className={`p-4 rounded-xl border bg-gradient-to-br ${colorClasses[color]} backdrop-blur-sm`}>
-            <div className="flex items-center justify-between mb-2">
-                <span className="text-zinc-400 text-sm">{title}</span>
-                <div className={colorClasses[color].split(' ').pop()}>{icon}</div>
+        <section className={cn("relative min-h-[190px] overflow-hidden rounded-2xl border bg-gradient-to-br p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)]", styles.card)}>
+            <div className={cn("absolute bottom-7 right-8 h-16 w-16 rounded-full blur-2xl", styles.glow)} />
+            <div className="relative flex items-start justify-between">
+                <span className="text-base font-semibold text-slate-200">{title}</span>
+                <div className={styles.icon}>{icon}</div>
             </div>
-            <div className="text-2xl font-bold text-zinc-100">{value}</div>
-            {subtitle && <div className="text-xs text-zinc-500 mt-1">{subtitle}</div>}
-        </div>
+            <div className="relative mt-7 text-4xl font-black tracking-normal text-white">{value}</div>
+            <div className="relative mt-3 text-sm font-medium text-slate-300">{subTop}</div>
+            <div className="relative mt-6 text-sm text-slate-500">{subBottom}</div>
+        </section>
     );
 }
 
-// 礼物分布项
 function GiftDistributionItem({ item, totalBoxes }: { item: GiftDistribution; totalBoxes: number }) {
     const percentage = totalBoxes > 0 ? (item.count / totalBoxes) * 100 : 0;
+    const valuable = item.value >= BLINDBOX_COST;
 
     return (
-        <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${item.isProfitable ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <span className="text-zinc-300">{item.name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-zinc-500">{item.count} 次</span>
-                    <span className={item.isProfitable ? 'text-green-400' : 'text-red-400'}>
-                        {item.value} 电池
-                    </span>
-                </div>
+        <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+                <span className={cn("h-2.5 w-2.5 rounded-full", valuable ? "bg-emerald-400" : "bg-red-400")} />
+                <span className="min-w-0 flex-1 truncate font-semibold text-slate-200">{item.name}</span>
+                <span className="text-slate-500">{item.count} 次</span>
+                <span className={cn("w-[86px] text-right font-bold", valuable ? "text-emerald-300" : "text-red-300")}>
+                    {item.value} 电池
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" />
             </div>
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                 <div
-                    className={`h-full rounded-full transition-all duration-500 ${item.isProfitable ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-red-500 to-rose-400'}`}
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
+                    className={cn("h-full rounded-full", valuable ? "bg-gradient-to-r from-emerald-400 to-cyan-300" : "bg-gradient-to-r from-red-400 to-orange-300")}
+                    style={{ width: `${Math.max(8, Math.min(percentage, 100))}%` }}
                 />
             </div>
         </div>

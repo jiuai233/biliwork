@@ -7,6 +7,7 @@ import { saveDanmaku, saveGift, saveGuard, saveLiveStatus, saveSuperChat } from 
 export class CollectorManager {
     private collectors = new Map<string, BilibiliClient>();
     private starting = new Set<string>();
+    private startFailures = new Map<string, number>();
     private timer?: NodeJS.Timeout;
     private stopped = false;
 
@@ -27,6 +28,7 @@ export class CollectorManager {
         }
         this.collectors.clear();
         this.starting.clear();
+        this.startFailures.clear();
     }
 
     async restartAll() {
@@ -135,15 +137,53 @@ export class CollectorManager {
                 return;
             }
             this.collectors.set(authCode, client);
+            this.startFailures.delete(authCode);
         } catch (error) {
             logger.error({ error, auth: authCode.slice(0, 8) }, 'Collector start failed');
+            await this.handleStartFailure(authCode, error);
             client.close();
         } finally {
             this.starting.delete(authCode);
+        }
+    }
+
+    private async handleStartFailure(authCode: string, error: unknown) {
+        if (!isAuthCodeInvalidError(error)) return;
+
+        const failures = (this.startFailures.get(authCode) ?? 0) + 1;
+        this.startFailures.set(authCode, failures);
+
+        logger.warn({
+            auth: authCode.slice(0, 8),
+            failures,
+        }, 'Auth code validation failed');
+
+        if (failures < 5) return;
+
+        try {
+            await pool.query(
+                'UPDATE broadcasters SET active = 0, updated_at = $1 WHERE auth_code = $2',
+                [Date.now().toString(), authCode],
+            );
+            this.startFailures.delete(authCode);
+            this.collectors.delete(authCode);
+            logger.error({
+                auth: authCode.slice(0, 8),
+                failures,
+            }, 'Auth code appears invalid after 5 attempts; broadcaster monitoring disabled');
+        } catch (updateError) {
+            logger.error({ updateError, auth: authCode.slice(0, 8) }, 'Failed to disable invalid broadcaster');
         }
     }
 }
 
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isAuthCodeInvalidError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes('start_game api error')) return false;
+
+    return /身份码|验证码|code|auth|invalid|expired|expire|无效|失效|不存在|错误|过期/i.test(message);
 }

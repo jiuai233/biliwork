@@ -5,7 +5,8 @@ import {
     getAllBroadcasters, addBroadcaster,
     updateBroadcasterStatus, deleteBroadcaster,
     updateBroadcasterPassword,
-    updateAdminPassword
+    updateAdminPassword,
+    getBroadcasterById
 } from '@/lib/data';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -135,6 +136,33 @@ export async function updateBroadcasterPasswordAction(id: number, newPassword: s
         const hash = await bcrypt.hash(newPassword, 10);
         const success = await updateBroadcasterPassword(id, hash);
         return { success, message: success ? '密码已更新' : '更新失败' };
+    } catch {
+        return { success: false, message: '系统错误' };
+    }
+}
+
+export async function revealBroadcasterAuthCodeAction(
+    id: number,
+    adminPassword: string
+): Promise<{ success: boolean; message?: string; authCode?: string }> {
+    const username = await getAdminSession();
+    if (!username) return { success: false, message: '未登录' };
+
+    if (!adminPassword) {
+        return { success: false, message: '请输入管理员密码' };
+    }
+
+    try {
+        const admin = await getAdminUser(username);
+        if (!admin) return { success: false, message: '管理员不存在' };
+
+        const valid = await bcrypt.compare(adminPassword, admin.password_hash);
+        if (!valid) return { success: false, message: '管理员密码错误' };
+
+        const broadcaster = await getBroadcasterById(id);
+        if (!broadcaster) return { success: false, message: '主播不存在' };
+
+        return { success: true, authCode: broadcaster.auth_code };
     } catch {
         return { success: false, message: '系统错误' };
     }

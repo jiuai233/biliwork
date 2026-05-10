@@ -4,10 +4,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button, Card, Input } from '@heroui/react';
 import { loginAction } from './actions';
 import { toast } from 'sonner';
 
@@ -49,49 +46,51 @@ export default function LoginPage() {
                 transition={{ duration: 0.5 }}
                 className="z-10 w-full max-w-md"
             >
-                <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur-xl shadow-2xl">
-                    <CardHeader className="space-y-1">
-                        <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                <Card variant="secondary" className="border border-zinc-800 bg-zinc-900/50 shadow-2xl backdrop-blur-xl">
+                    <Card.Header className="block space-y-1 px-6 pt-6">
+                        <Card.Title className="text-center text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                             Bilibili Live Monitor
-                        </CardTitle>
-                        <CardDescription className="text-center text-zinc-400">
+                        </Card.Title>
+                        <Card.Description className="text-center text-zinc-400">
                             请输入您的 UID 和 登录密码
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                        </Card.Description>
+                    </Card.Header>
+                    <Card.Content className="px-6 pb-6 pt-4">
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="uid" className="text-zinc-300">UID</Label>
+                                <label htmlFor="uid" className="text-sm font-medium text-zinc-300">UID</label>
                                 <Input
                                     id="uid"
                                     placeholder="请输入 B站 UID"
                                     type="text"
                                     value={uid}
                                     onChange={(e) => setUid(e.target.value)}
-                                    className="bg-zinc-800/50 border-zinc-700 text-zinc-100 focus:border-purple-500 transition-colors"
+                                    variant="secondary"
+                                    className="h-10 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-100 transition-colors focus:border-purple-500"
                                     required
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="password" className="text-zinc-300">密码</Label>
+                                <label htmlFor="password" className="text-sm font-medium text-zinc-300">密码</label>
                                 <Input
                                     id="password"
                                     placeholder="请输入您的登录密码"
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="bg-zinc-800/50 border-zinc-700 text-zinc-100 focus:border-purple-500 transition-colors"
+                                    variant="secondary"
+                                    className="h-10 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-100 transition-colors focus:border-purple-500"
                                     required
                                 />
                             </div>
                             <Button
                                 type="submit"
                                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium shadow-lg shadow-purple-900/20"
-                                disabled={isLoading}
+                                isDisabled={isLoading}
                             >
                                 {isLoading ? (
                                     <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        <Loader2 className="h-4 w-4 animate-spin" />
                                         登录中...
                                     </>
                                 ) : (
@@ -99,10 +98,7 @@ export default function LoginPage() {
                                 )}
                             </Button>
                         </form>
-                    </CardContent>
-                    <CardFooter className="flex justify-center">
-
-                    </CardFooter>
+                    </Card.Content>
                 </Card>
             </motion.div>
         </div>

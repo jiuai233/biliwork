@@ -27,6 +27,7 @@
 .DS_Store
 *.pem
 *.zip
+start-collector-node.sh
 
 # debug
 npm-debug.log*

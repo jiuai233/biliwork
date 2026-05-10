@@ -21,10 +21,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Transaction } from "@/lib/data";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button, Input } from "@heroui/react";
 import { DraggableTransactionCard } from "./DraggableTransactionCard";
 import { Download, Search, X, Monitor } from "lucide-react";
 import { domToPng } from "modern-screenshot";
@@ -621,11 +618,14 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
                         {/* Type Filters */}
                         <div className="grid grid-cols-4 gap-1 bg-zinc-950 p-1 rounded-md border border-zinc-800">
                             {(['all', 'super_chat', 'gift', 'guard'] as const).map((t) => (
-                                <button
+                                <Button
+                                    type="button"
                                     key={t}
                                     onClick={() => setFilterType(t)}
+                                    size="sm"
+                                    variant={filterType === t ? "primary" : "ghost"}
                                     className={cn(
-                                        "text-xs py-1 rounded-sm transition-colors",
+                                        "inline-flex h-7 min-w-0 items-center justify-center rounded-md px-2 text-xs transition-colors",
                                         filterType === t
                                             ? "bg-zinc-800 text-white font-medium shadow-sm"
                                             : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
@@ -634,26 +634,28 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
                                     {t === 'all' ? '全部' :
                                         t === 'super_chat' ? 'SC' :
                                             t === 'gift' ? '礼物' : '舰长'}
-                                </button>
+                                </Button>
                             ))}
                         </div>
                         <div className="space-y-2">
-                            <Label>搜索关键词</Label>
+                            <label className="block text-sm font-medium text-zinc-300">搜索关键词</label>
                             <Input
                                 placeholder="用户名 / 内容..."
                                 value={searchName}
                                 onChange={(e) => setSearchName(e.target.value)}
-                                className="bg-zinc-950"
+                                variant="secondary"
+                                className="h-9 w-full rounded-md border border-zinc-800 bg-zinc-950 text-zinc-100"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>最低金额</Label>
+                            <label className="block text-sm font-medium text-zinc-300">最低金额</label>
                             <Input
                                 type="number"
                                 placeholder="0"
                                 value={minPrice}
                                 onChange={(e) => setMinPrice(e.target.value)}
-                                className="bg-zinc-950 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                variant="secondary"
+                                className="h-9 w-full rounded-md border border-zinc-800 bg-zinc-950 text-zinc-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                             />
                         </div>
                     </div>
@@ -662,45 +664,59 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
                         <div className="p-3 border-b border-zinc-800 text-sm text-zinc-400">
                             可用记录 ({filteredSource.length})
                         </div>
-                        <ScrollArea className="flex-1 p-3">
+                        <div className="dark-scrollbar flex-1 overflow-y-auto p-3">
                             <div className="space-y-2">
                                 {filteredSource.map(item => (
                                     <DraggableTransactionCard key={item.id} transaction={item} />
                                 ))}
                             </div>
-                        </ScrollArea>
+                        </div>
                     </div>
                 </div>
 
                 {/* Main: Board Area */}
                 <div className="flex-1 flex flex-col gap-4">
-                    <div className="flex justify-between items-center bg-zinc-900/50 p-4 rounded-lg border border-zinc-800">
-                        <div>
-                            <h2 className="text-xl font-bold text-white">组合看板</h2>
-                        <div className="flex gap-2 items-center">
-                            {overlayCode && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        const url = `${window.location.origin}/o/${overlayCode}`;
-                                        navigator.clipboard.writeText(url);
-                                        toast.success('OBS 链接已复制', { description: url });
-                                    }}
-                                    className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 hover:text-purple-200"
-                                >
-                                    <Monitor className="w-4 h-4 mr-2" />
-                                    OBS 源链接
-                                </Button>
-                            )}
-                            <p className="text-sm text-zinc-400">已选择 {boardItems.length} 个项目</p>
+                    <div className="flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-950/70 px-4 py-3 md:flex-row md:items-center md:justify-between">
+                        <div className="min-w-0">
+                            <h2 className="text-lg font-semibold text-zinc-100">组合看板</h2>
+                            <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
+                                {overlayCode && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const url = `${window.location.origin}/o/${overlayCode}`;
+                                            navigator.clipboard.writeText(url);
+                                            toast.success('OBS 链接已复制', { description: url });
+                                        }}
+                                        className="inline-flex items-center gap-1.5 text-purple-300 hover:text-purple-200"
+                                    >
+                                        <Monitor className="h-4 w-4" />
+                                        OBS 源链接
+                                    </button>
+                                )}
+                                <span className="text-zinc-500">已选择 {boardItems.length} 个项目</span>
+                            </div>
                         </div>
-                        </div>
-                        <div className="flex gap-2">
-                            <Button variant="outline" onClick={() => setBoardItems([])} disabled={boardItems.length === 0}>
+                        <div className="flex shrink-0 gap-2">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setBoardItems([])}
+                                isDisabled={boardItems.length === 0}
+                                className="inline-flex h-9 items-center justify-center rounded-lg px-3 text-zinc-300 hover:bg-zinc-900"
+                            >
                                 清空
                             </Button>
-                            <Button onClick={handleExport} disabled={boardItems.length === 0}>
-                                <Download className="w-4 h-4 mr-2" />
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="primary"
+                                onClick={handleExport}
+                                isDisabled={boardItems.length === 0}
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3"
+                            >
+                                <Download className="h-4 w-4" />
                                 导出图片
                             </Button>
                         </div>
@@ -708,9 +724,9 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
 
                     {/* Scrollable Canvas Container */}
                     <div className="flex-1 min-h-0 rounded-xl border border-zinc-800 overflow-hidden bg-[#09090b]">
-                        <ScrollArea className="h-full w-full">
+                        <div className="dark-scrollbar h-full w-full overflow-auto">
                             <BoardArea items={boardItems} onRemove={handleRemoveFromBoard} />
-                        </ScrollArea>
+                        </div>
                     </div>
                 </div>
             </div>

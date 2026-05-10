@@ -3,10 +3,10 @@
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { DateRange } from "react-day-picker";
+import { Button } from "@heroui/react";
 import { Loader2, RotateCcw, Search } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { AnalyticsDateRangePicker } from "@/components/dashboard/AnalyticsDateRangePicker";
 
 interface AnalyticsDateFilterProps {
     from: string;
@@ -63,23 +63,32 @@ export function AnalyticsDateFilter({ from, to }: AnalyticsDateFilterProps) {
 
     return (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-            <div className="flex gap-2">
+            <AnalyticsDateRangePicker date={dateRange} setDate={setDateRange} />
+            <div className="flex shrink-0 gap-2">
                 <Button
                     type="button"
                     onClick={() => applyDateRange(dateRange)}
-                    disabled={isPending}
-                    className="bg-blue-600 text-white hover:bg-blue-500"
+                    isDisabled={isPending}
+                    size="sm"
+                    variant="primary"
+                    className="inline-flex h-10 min-w-[84px] flex-row items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4"
                 >
                     {isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
                     ) : (
-                        <Search className="mr-2 h-4 w-4" />
+                        <Search className="h-4 w-4 shrink-0" />
                     )}
                     查询
                 </Button>
-                <Button type="button" variant="outline" onClick={resetToday} disabled={isPending}>
-                    <RotateCcw className="mr-2 h-4 w-4" />
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={resetToday}
+                    isDisabled={isPending}
+                    className="inline-flex h-10 min-w-[78px] flex-row items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-white/10 bg-white/[0.04] px-4 text-zinc-200 hover:bg-white/[0.08]"
+                >
+                    <RotateCcw className="h-4 w-4 shrink-0" />
                     今天
                 </Button>
             </div>

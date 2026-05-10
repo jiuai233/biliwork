@@ -1,139 +1,152 @@
 'use client';
 
-import { useState } from "react";
-import { Bar, BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Card } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { Avatar, Button, Card } from "@heroui/react";
+import { Gift, MessageSquareText, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StatsChartsProps {
     danmakuTop: { uname: string; count: number; uface: string }[];
     giftTop: { uname: string; total: number; uface: string }[];
+    className?: string;
 }
 
-export function StatsCharts({ danmakuTop, giftTop }: StatsChartsProps) {
-    const [activeTab, setActiveTab] = useState<'danmaku' | 'gift'>('danmaku');
+type RankingTab = "danmaku" | "gift";
 
-    // Custom Tick for Y-Axis (User Avatar + Name)
-    const renderCustomAxisTick = ({ x, y, payload, data }: any) => {
-        const item = data[payload.index];
-        if (!item) return null;
-        return (
-            <g transform={`translate(${x},${y})`}>
-                <foreignObject x={-140} y={-15} width={130} height={30}>
-                    <div className="flex items-center justify-end gap-2 h-full pr-2">
-                        <span className="text-xs text-zinc-300 truncate max-w-[80px] text-right" title={item.uname}>
-                            {item.uname}
-                        </span>
-                        <img
-                            src={item.uface ?? undefined}
-                            alt={item.uname}
-                            className="w-5 h-5 rounded-full border border-zinc-700 object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                        />
-                    </div>
-                </foreignObject>
-            </g>
-        );
-    };
+function formatCurrency(value: number) {
+    return new Intl.NumberFormat("zh-CN", {
+        style: "currency",
+        currency: "CNY",
+        maximumFractionDigits: 1,
+    }).format(value);
+}
 
-    const CustomTooltip = ({ active, payload, label, unit }: any) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="bg-zinc-900 border border-zinc-800 p-2 rounded shadow-lg text-xs">
-                    <p className="font-semibold text-zinc-200">{payload[0].payload.uname}</p>
-                    <p className="text-zinc-400">
-                        {unit === '条' ? '弹幕数: ' : '贡献值: '}
-                        <span className="text-white font-mono font-bold">{payload[0].value}</span>
-                        {unit}
-                    </p>
-                </div>
-            );
-        }
-        return null;
-    };
+function normalizeAvatarSrc(src: string | null | undefined): string | undefined {
+    if (!src) return undefined;
+    if (src.startsWith("//")) return `https:${src}`;
+    if (src.startsWith("http://")) return src.replace(/^http:\/\//, "https://");
+    return src;
+}
+
+function rankClass(index: number) {
+    if (index === 0) return "border-amber-400/30 bg-amber-400/10 text-amber-200";
+    if (index === 1) return "border-sky-300/25 bg-sky-300/10 text-sky-200";
+    if (index === 2) return "border-fuchsia-300/25 bg-fuchsia-300/10 text-fuchsia-200";
+    return "border-white/10 bg-white/[0.04] text-slate-300";
+}
+
+export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps) {
+    const [activeTab, setActiveTab] = useState<RankingTab>("danmaku");
+    const activeData = activeTab === "danmaku"
+        ? danmakuTop.map((item) => ({ uname: item.uname, uface: item.uface, value: item.count, label: `${item.count} 条` }))
+        : giftTop.map((item) => ({ uname: item.uname, uface: item.uface, value: item.total, label: formatCurrency(item.total) }));
+
+    const maxValue = useMemo(() => Math.max(...activeData.map((item) => item.value), 1), [activeData]);
+    const totalValue = activeData.reduce((sum, item) => sum + item.value, 0);
 
     return (
-        <Card className="h-[250px] bg-zinc-900/40 border-zinc-800 flex flex-col">
-            <div className="flex-1 flex flex-col w-full h-full">
-                <div className="flex items-center justify-between px-4 pt-3 pb-1 border-b border-zinc-800/50">
-                    <div className="h-8 bg-zinc-900/50 p-1 rounded-sm flex gap-1">
-                        <button
-                            onClick={() => setActiveTab('danmaku')}
+        <Card
+            variant="secondary"
+            className={cn(
+                "min-h-0 overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_20%_0%,rgba(124,58,237,0.16),transparent_34%),rgba(2,6,23,0.78)]",
+                className
+            )}
+        >
+            <div className="flex h-full min-h-0 flex-col">
+                <div className="flex flex-col gap-4 border-b border-white/10 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300">
+                            <Trophy className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <div className="text-lg font-extrabold text-white">
+                                {activeTab === "danmaku" ? "弹幕活跃榜" : "礼物贡献榜"}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500">
+                                共 {activeData.length} 位用户，{activeTab === "danmaku" ? `累计 ${totalValue} 条弹幕` : `累计 ${formatCurrency(totalValue)}`}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex h-10 gap-1 rounded-xl border border-white/10 bg-black/20 p-1">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={activeTab === "danmaku" ? "primary" : "ghost"}
+                            onClick={() => setActiveTab("danmaku")}
                             className={cn(
-                                "text-xs px-3 rounded-sm transition-all",
-                                activeTab === 'danmaku' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                                "inline-flex h-8 items-center justify-center gap-2 rounded-lg px-3 text-sm",
+                                activeTab === "danmaku" ? "text-white" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
                             )}
                         >
+                            <MessageSquareText className="h-4 w-4" />
                             弹幕榜
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('gift')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={activeTab === "gift" ? "primary" : "ghost"}
+                            onClick={() => setActiveTab("gift")}
                             className={cn(
-                                "text-xs px-3 rounded-sm transition-all",
-                                activeTab === 'gift' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                                "inline-flex h-8 items-center justify-center gap-2 rounded-lg px-3 text-sm",
+                                activeTab === "gift" ? "text-white" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
                             )}
                         >
+                            <Gift className="h-4 w-4" />
                             礼物榜
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
-                <div className="flex-1 min-h-0 w-full p-2 relative">
-                    {activeTab === 'danmaku' && (
-                        <div className="h-full w-full mt-0 absolute inset-0 p-2">
-                            {danmakuTop.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart layout="vertical" data={danmakuTop} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                        <XAxis type="number" hide />
-                                        <YAxis
-                                            type="category"
-                                            dataKey="uname"
-                                            width={140}
-                                            tick={(props) => renderCustomAxisTick({ ...props, data: danmakuTop })}
-                                            axisLine={false}
-                                            tickLine={false}
-                                        />
-                                        <Tooltip content={<CustomTooltip unit="条" />} cursor={{ fill: '#ffffff0a' }} />
-                                        <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={16}>
-                                            {danmakuTop.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={['#3b82f6', '#60a5fa', '#93c5fd'][index % 3]} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-zinc-600 text-xs">暂无数据</div>
-                            )}
-                        </div>
-                    )}
+                <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                    <div className="space-y-3 pr-1">
+                        {activeData.map((item, index) => {
+                            const percent = Math.max(4, Math.round((item.value / maxValue) * 100));
+                            return (
+                                <div
+                                    key={`${item.uname}-${index}`}
+                                    className={cn(
+                                        "min-h-[78px] rounded-2xl border px-4 py-3 transition hover:bg-white/[0.045]",
+                                        rankClass(index)
+                                    )}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-black/20 text-sm font-black">
+                                            #{index + 1}
+                                        </div>
+                                        <Avatar className="h-11 w-11 shrink-0 border border-white/10">
+                                            <Avatar.Image src={normalizeAvatarSrc(item.uface)} referrerPolicy="no-referrer" />
+                                            <Avatar.Fallback>{item.uname?.[0] ?? "?"}</Avatar.Fallback>
+                                        </Avatar>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="truncate font-bold text-white">{item.uname || "匿名用户"}</div>
+                                                <div className={cn(
+                                                    "shrink-0 font-mono text-sm font-bold",
+                                                    index === 0 ? "text-amber-200" : "text-white"
+                                                )}>{item.label}</div>
+                                            </div>
+                                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                                                <div
+                                                    className={cn(
+                                                        "h-full rounded-full",
+                                                        activeTab === "danmaku" ? "bg-blue-400" : "bg-pink-400"
+                                                    )}
+                                                    style={{ width: `${percent}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
 
-                    {activeTab === 'gift' && (
-                        <div className="h-full w-full mt-0 absolute inset-0 p-2">
-                            {giftTop.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart layout="vertical" data={giftTop} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                        <XAxis type="number" hide />
-                                        <YAxis
-                                            type="category"
-                                            dataKey="uname"
-                                            width={140}
-                                            tick={(props) => renderCustomAxisTick({ ...props, data: giftTop })}
-                                            axisLine={false}
-                                            tickLine={false}
-                                        />
-                                        <Tooltip content={<CustomTooltip unit="元" />} cursor={{ fill: '#ffffff0a' }} />
-                                        <Bar dataKey="total" radius={[0, 4, 4, 0]} barSize={16}>
-                                            {giftTop.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={['#ec4899', '#f472b6', '#fbcfe8'][index % 3]} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-zinc-600 text-xs">暂无数据</div>
-                            )}
-                        </div>
-                    )}
+                        {activeData.length === 0 && (
+                            <div className="flex min-h-[420px] items-center justify-center text-sm text-slate-500">
+                                暂无数据
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </Card>

@@ -3,8 +3,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@heroui/react";
 import { Transaction } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -52,8 +51,8 @@ export function DraggableTransactionCard({
             )}
         >
             <Avatar className="h-8 w-8 border border-white/10 shrink-0">
-                <AvatarImage src={transaction.uface ?? undefined} referrerPolicy="no-referrer" />
-                <AvatarFallback>{transaction.uname?.[0] ?? '?'}</AvatarFallback>
+                <Avatar.Image src={transaction.uface ?? undefined} referrerPolicy="no-referrer" />
+                <Avatar.Fallback>{transaction.uname?.[0] ?? '?'}</Avatar.Fallback>
             </Avatar>
             <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center">

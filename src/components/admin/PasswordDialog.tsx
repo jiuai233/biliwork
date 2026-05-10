@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import AntApp from 'antd/es/app';
-import Alert from 'antd/es/alert';
-import Input from 'antd/es/input';
-import Modal from 'antd/es/modal';
+import { Button, Input } from '@heroui/react';
+import { toast } from 'sonner';
 
 interface PasswordDialogProps {
     open: boolean;
@@ -26,7 +24,6 @@ export function PasswordDialog({
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isPending, startTransition] = useTransition();
-    const { message } = AntApp.useApp();
 
     const handleSubmit = () => {
         if (!password) {
@@ -39,14 +36,14 @@ export function PasswordDialog({
         startTransition(async () => {
             const result = await action(password);
             if (result.success) {
-                message.success(successMessage);
+                toast.success(successMessage);
                 setPassword('');
                 setError('');
                 onOpenChange(false);
             } else {
                 const failureMessage = result.message || '操作失败';
                 setError(failureMessage);
-                message.error(failureMessage);
+                toast.error(failureMessage);
             }
         });
     };
@@ -58,32 +55,60 @@ export function PasswordDialog({
         onOpenChange(false);
     };
 
+    if (!open) return null;
+
     return (
-        <Modal
-            title={title}
-            open={open}
-            onCancel={handleCancel}
-            onOk={handleSubmit}
-            okText="确认修改"
-            cancelText="取消"
-            confirmLoading={isPending}
-            okButtonProps={{ disabled: !password }}
-            destroyOnHidden
-        >
-            <p className="mb-4 text-sm text-zinc-400">{description}</p>
-            {error && (
-                <Alert className="mb-4" type="error" showIcon message={error} />
-            )}
-            <Input.Password
-                value={password}
-                onChange={(event) => {
-                    setPassword(event.target.value);
-                    if (error) setError('');
-                }}
-                onPressEnter={handleSubmit}
-                placeholder="输入新密码..."
-                autoComplete="new-password"
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+            <button
+                type="button"
+                aria-label="关闭弹窗"
+                className="absolute inset-0"
+                onClick={handleCancel}
             />
-        </Modal>
+            <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-5 shadow-2xl shadow-black/50">
+                <h2 className="text-xl font-bold text-zinc-100">{title}</h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">{description}</p>
+                {error && (
+                    <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                        {error}
+                    </div>
+                )}
+                <Input
+                    value={password}
+                    type="password"
+                    onChange={(event) => {
+                        setPassword(event.target.value);
+                        if (error) setError('');
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter') handleSubmit();
+                    }}
+                    placeholder="输入新密码..."
+                    autoComplete="new-password"
+                    variant="secondary"
+                    className="mt-4 h-10 rounded-xl border border-white/10 bg-white/[0.04] text-zinc-100 hover:bg-white/[0.06]"
+                />
+                <div className="mt-5 flex justify-end gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCancel}
+                        isDisabled={isPending}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 px-4 text-zinc-200 hover:bg-white/[0.06]"
+                    >
+                        取消
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleSubmit}
+                        isDisabled={isPending || !password}
+                        className="inline-flex h-10 items-center justify-center rounded-xl px-4"
+                    >
+                        {isPending ? '修改中...' : '确认修改'}
+                    </Button>
+                </div>
+            </div>
+        </div>
     );
 }

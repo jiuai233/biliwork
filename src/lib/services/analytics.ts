@@ -82,9 +82,15 @@ export async function getDanmakuTrend(roomId: number): Promise<{ time: string, c
     }));
 }
 
-// 获取时间段内弹幕最多的用户 Top 3
-export async function getTopDanmakuUsers(roomId: number, startTime: number, endTime?: number): Promise<{ uname: string, count: number, uface: string }[]> {
+// 获取时间段内弹幕最多的用户
+export async function getTopDanmakuUsers(
+    roomId: number,
+    startTime: number,
+    endTime?: number,
+    limit = 10
+): Promise<{ uname: string, count: number, uface: string }[]> {
     const end = endTime || Date.now();
+    const take = Math.min(Math.max(Math.floor(limit), 1), 100);
 
     const rows = await prisma.$queryRaw<{ uname: string, count: bigint, uface: string }[]>`
         SELECT uname, COUNT(*) as count, MAX(uface) as uface
@@ -92,7 +98,7 @@ export async function getTopDanmakuUsers(roomId: number, startTime: number, endT
         WHERE room_id = ${roomId} AND ts >= ${BigInt(startTime)} AND ts <= ${BigInt(end)}
         GROUP BY uname
         ORDER BY count DESC
-        LIMIT 3
+        LIMIT ${take}
     `;
 
     return rows.map(r => ({
@@ -102,9 +108,15 @@ export async function getTopDanmakuUsers(roomId: number, startTime: number, endT
     }));
 }
 
-// 获取时间段内刷礼物最多的用户 Top 3 (按总价值，包含礼物和舰长)
-export async function getTopGiftUsers(roomId: number, startTime: number, endTime?: number): Promise<{ uname: string, total: number, uface: string }[]> {
+// 获取时间段内刷礼物最多的用户 (按总价值，包含礼物、舰长和 SC)
+export async function getTopGiftUsers(
+    roomId: number,
+    startTime: number,
+    endTime?: number,
+    limit = 10
+): Promise<{ uname: string, total: number, uface: string }[]> {
     const end = endTime || Date.now();
+    const take = Math.min(Math.max(Math.floor(limit), 1), 100);
 
     const rows = await prisma.$queryRaw<{ uname: string, total_val: bigint, uface: string }[]>`
         SELECT uname, SUM(val) as total_val, MAX(uface) as uface
@@ -127,7 +139,7 @@ export async function getTopGiftUsers(roomId: number, startTime: number, endTime
         ) combined
         GROUP BY uname
         ORDER BY total_val DESC
-        LIMIT 3
+        LIMIT ${take}
     `;
 
     return rows.map(r => ({

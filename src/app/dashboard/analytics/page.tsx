@@ -3,7 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { getBroadcasterByUid, getUnifiedTransactions } from "@/lib/data";
 import { AnalyticsDateFilter } from "@/components/dashboard/AnalyticsDateFilter";
 import { AnalyticsTable } from "@/components/dashboard/AnalyticsTable";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@heroui/react";
 
 export const dynamic = 'force-dynamic';
 
@@ -77,29 +77,29 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
     });
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight text-white">数据分析</h2>
-                <p className="text-muted-foreground">
+        <div className="space-y-5">
+            <header>
+                <h2 className="text-3xl font-bold tracking-tight text-zinc-50">数据分析</h2>
+                <p className="mt-1 text-sm text-zinc-400">
                     查看详细的礼物、舰长和醒目留言记录。
                 </p>
-            </div>
+            </header>
 
-            <Card className="border-zinc-800 bg-zinc-900/50">
-                <CardHeader>
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <Card variant="secondary" className="border border-zinc-800 bg-zinc-950/55">
+                <Card.Header className="border-b border-zinc-800 px-5 py-4">
+                    <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                         <div>
-                            <CardTitle className="text-zinc-100">营收记录明细</CardTitle>
-                            <CardDescription>
+                            <Card.Title className="text-2xl font-semibold text-zinc-50">营收记录明细</Card.Title>
+                            <Card.Description className="mt-1 text-sm text-zinc-400">
                                 展示 {formatDisplayDate(from)} 至 {formatDisplayDate(to)} 的全部付费互动记录，共 {transactions.length} 条
-                            </CardDescription>
+                            </Card.Description>
                         </div>
                         <AnalyticsDateFilter from={from} to={to} />
                     </div>
-                </CardHeader>
-                <CardContent>
+                </Card.Header>
+                <Card.Content className="px-5 py-4">
                     <AnalyticsTable data={transactions} />
-                </CardContent>
+                </Card.Content>
             </Card>
         </div>
     );

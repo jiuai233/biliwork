@@ -1,6 +1,8 @@
 
 import type { Metadata } from "next";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { requireAuth } from "@/lib/auth";
+import { getBroadcasterByUid } from "@/lib/data";
 
 export const metadata: Metadata = {
     title: "监控看板 - Bili Monitor",
@@ -18,14 +20,17 @@ export const metadata: Metadata = {
  * - 可以导出 SEO metadata
  * - 侧边栏的交互逻辑独立封装
  */
-export default function DashboardLayout({
+export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const uid = await requireAuth();
+    const broadcaster = await getBroadcasterByUid(uid);
+
     return (
         <div className="flex min-h-screen bg-zinc-950">
-            <Sidebar />
+            <Sidebar broadcaster={broadcaster ?? null} />
 
             {/* Main Content */}
             <div className="flex-1 lg:pl-64">

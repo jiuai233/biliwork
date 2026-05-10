@@ -5,20 +5,11 @@ import { useRouter } from "next/navigation";
 import { getLiveRecordsData } from "./actions";
 import { Broadcaster } from "@/lib/types";
 import { Loader2, RefreshCcw, Radio, Clock, Coins, Gift, Shield, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, Table } from "@heroui/react";
 import { toast } from "sonner";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { startOfDay, endOfDay, format } from "date-fns";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { AnalyticsDateRangePicker } from "@/components/dashboard/AnalyticsDateRangePicker";
 
 interface LiveSession {
     id: number;
@@ -113,9 +104,16 @@ export default function LiveRecordsPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-                    <div className="w-px h-8 bg-zinc-800 mx-1" />
-                    <Button variant="outline" size="icon" onClick={() => fetchData()} disabled={loading} className="border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800">
+                    <AnalyticsDateRangePicker date={dateRange} setDate={setDateRange} />
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => fetchData()}
+                        isDisabled={loading}
+                        aria-label="刷新"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] p-0 text-slate-200 hover:bg-white/[0.09]"
+                    >
                         <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     </Button>
                 </div>
@@ -168,54 +166,55 @@ export default function LiveRecordsPage() {
             </div>
 
             {/* Sessions Table */}
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-                <ScrollArea className="h-[500px]">
-                    <Table>
-                        <TableHeader className="sticky top-0 bg-zinc-900">
-                            <TableRow className="border-zinc-800 hover:bg-transparent">
-                                <TableHead className="text-zinc-400">开播时间</TableHead>
-                                <TableHead className="text-zinc-400">下播时间</TableHead>
-                                <TableHead className="text-zinc-400">时长</TableHead>
-                                <TableHead className="text-zinc-400">直播标题</TableHead>
-                                <TableHead className="text-zinc-400">分区</TableHead>
-                                <TableHead className="text-zinc-400 text-right">礼物</TableHead>
-                                <TableHead className="text-zinc-400 text-right">舰长</TableHead>
-                                <TableHead className="text-zinc-400 text-right">SC</TableHead>
-                                <TableHead className="text-zinc-400 text-right">总收入</TableHead>
-                                <TableHead className="text-zinc-400 text-center w-[80px]">操作</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
+            <div className="h-[500px] overflow-auto rounded-xl border border-zinc-800 bg-zinc-900/50">
+                <Table variant="secondary" className="min-w-[1100px]">
+                    <Table.Content
+                        aria-label="开播记录"
+                        className="w-full table-fixed border-collapse [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/60 [&_tbody_tr:hover]:bg-zinc-800/30 [&_td]:px-4 [&_td]:py-3 [&_th]:sticky [&_th]:top-0 [&_th]:bg-zinc-900 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-zinc-400"
+                    >
+                        <Table.Header>
+                            <Table.Column id="start" isRowHeader>开播时间</Table.Column>
+                            <Table.Column id="end">下播时间</Table.Column>
+                            <Table.Column id="duration">时长</Table.Column>
+                            <Table.Column id="title">直播标题</Table.Column>
+                            <Table.Column id="area">分区</Table.Column>
+                            <Table.Column id="gift" className="text-right">礼物</Table.Column>
+                            <Table.Column id="guard" className="text-right">舰长</Table.Column>
+                            <Table.Column id="sc" className="text-right">SC</Table.Column>
+                            <Table.Column id="total" className="text-right">总收入</Table.Column>
+                            <Table.Column id="actions" className="w-[80px] text-center">操作</Table.Column>
+                        </Table.Header>
+                        <Table.Body>
                             {data.sessions.map((session) => (
-                                <TableRow key={session.id} className="border-zinc-800/60 hover:bg-zinc-800/30">
-                                    <TableCell className="text-green-400 font-medium">
+                                <Table.Row key={session.id} id={session.id}>
+                                    <Table.Cell className="text-green-400 font-medium">
                                         {formatDateTime(session.startTs)}
-                                    </TableCell>
-                                    <TableCell className="text-zinc-500">
+                                    </Table.Cell>
+                                    <Table.Cell className="text-zinc-500">
                                         {session.endTs ? formatDateTime(session.endTs) : <span className="text-green-400">直播中</span>}
-                                    </TableCell>
-                                    <TableCell className="text-zinc-300">
+                                    </Table.Cell>
+                                    <Table.Cell className="text-zinc-300">
                                         {formatDuration(session.duration)}
-                                    </TableCell>
-                                    <TableCell className="text-zinc-100 max-w-[200px] truncate">
+                                    </Table.Cell>
+                                    <Table.Cell className="text-zinc-100 max-w-[200px] truncate">
                                         {session.title || '-'}
-                                    </TableCell>
-                                    <TableCell className="text-zinc-500">
+                                    </Table.Cell>
+                                    <Table.Cell className="text-zinc-500">
                                         {session.areaName || '-'}
-                                    </TableCell>
-                                    <TableCell className="text-right text-pink-400">
+                                    </Table.Cell>
+                                    <Table.Cell className="text-right text-pink-400">
                                         {session.giftIncome.toFixed(1)} ¥
-                                    </TableCell>
-                                    <TableCell className="text-right text-blue-400">
+                                    </Table.Cell>
+                                    <Table.Cell className="text-right text-blue-400">
                                         {session.guardIncome.toFixed(1)} ¥
-                                    </TableCell>
-                                    <TableCell className="text-right text-yellow-400">
+                                    </Table.Cell>
+                                    <Table.Cell className="text-right text-yellow-400">
                                         {session.scIncome.toFixed(1)} ¥
-                                    </TableCell>
-                                    <TableCell className="text-right font-bold text-amber-400">
+                                    </Table.Cell>
+                                    <Table.Cell className="text-right font-bold text-amber-400">
                                         {session.totalIncome.toFixed(1)} ¥
-                                    </TableCell>
-                                    <TableCell className="text-center">
+                                    </Table.Cell>
+                                    <Table.Cell className="text-center">
                                         <Button
                                             size="sm"
                                             onClick={() => {
@@ -230,19 +229,19 @@ export default function LiveRecordsPage() {
                                         >
                                             详情
                                         </Button>
-                                    </TableCell>
-                                </TableRow>
+                                    </Table.Cell>
+                                </Table.Row>
                             ))}
                             {data.sessions.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={10} className="text-center text-zinc-500 py-10">
+                                <Table.Row id="empty">
+                                    <Table.Cell colSpan={10} className="text-center text-zinc-500 py-10">
                                         暂无开播记录
-                                    </TableCell>
-                                </TableRow>
+                                    </Table.Cell>
+                                </Table.Row>
                             )}
-                        </TableBody>
-                    </Table>
-                </ScrollArea>
+                        </Table.Body>
+                    </Table.Content>
+                </Table>
             </div>
         </div>
     );
