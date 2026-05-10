@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
     DndContext,
     DragOverlay,
@@ -26,10 +26,63 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DraggableTransactionCard } from "./DraggableTransactionCard";
-import { Download, Search, X, Copy, Monitor } from "lucide-react";
+import { Download, Search, X, Monitor } from "lucide-react";
 import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+type BoardTransaction = Transaction & {
+    mergedIds?: string[];
+};
+
+type ParsedCountContent = {
+    name: string;
+    count: number;
+    suffix: string;
+};
+
+function parseCountContent(content: string): ParsedCountContent {
+    const match = content.match(/^(.*?) x(\d+)(.*)$/);
+    return {
+        name: match ? match[1].trim() : content.trim(),
+        count: match ? Number(match[2]) : 1,
+        suffix: match ? match[3] : "",
+    };
+}
+
+function getBoardMergeKey(transaction: Transaction): string | null {
+    if (transaction.type === "super_chat") return null;
+
+    const parsed = parseCountContent(transaction.content);
+    const userKey = transaction.uname.trim().toLowerCase();
+    const itemKey = parsed.name.trim().toLowerCase();
+
+    return [
+        transaction.type,
+        userKey,
+        itemKey,
+        transaction.guardLevel ?? "",
+    ].join("|");
+}
+
+function mergeBoardTransaction(existing: BoardTransaction, incoming: Transaction): BoardTransaction {
+    const existingContent = parseCountContent(existing.content);
+    const incomingContent = parseCountContent(incoming.content);
+    const nextCount = existingContent.count + incomingContent.count;
+    const suffix = existingContent.suffix || incomingContent.suffix;
+
+    return {
+        ...existing,
+        content: `${existingContent.name} x${nextCount}${suffix}`,
+        price: Number((existing.price + incoming.price).toFixed(2)),
+        ts: Math.max(existing.ts, incoming.ts),
+        mergedIds: Array.from(new Set([...(existing.mergedIds ?? [existing.id]), incoming.id])),
+    };
+}
+
+function isSourceConsumed(boardItems: BoardTransaction[], item: Transaction): boolean {
+    return boardItems.some((boardItem) => boardItem.id === item.id || boardItem.mergedIds?.includes(item.id));
+}
 
 // --- Helper for Price Colors (Gift Only) ---
 const getPriceStyle = (price: number): React.CSSProperties => {
@@ -106,7 +159,7 @@ function SortableBoardItem({
     transaction,
     onRemove,
 }: {
-    transaction: Transaction;
+    transaction: BoardTransaction;
     onRemove: (id: string) => void;
 }) {
     const {
@@ -119,9 +172,11 @@ function SortableBoardItem({
     } = useSortable({ id: transaction.id });
 
     // Parse Content
-    const match = transaction.content.match(/^(.*?) x(\d+)(.*)$/);
-    const giftName = match ? match[1] : transaction.content;
-    const giftNum = match ? match[2] : "";
+    const parsedContent = parseCountContent(transaction.content);
+    const giftName = parsedContent.name;
+    const giftNum = parsedContent.count > 1 || transaction.content.includes(" x")
+        ? String(parsedContent.count)
+        : "";
 
     const isGuard = transaction.type === 'guard';
     const isSC = transaction.type === 'super_chat';
@@ -374,7 +429,7 @@ function SortableBoardItem({
 }
 
 // --- Droppable Board Area ---
-function BoardArea({ items, onRemove }: { items: Transaction[], onRemove: (id: string) => void }) {
+function BoardArea({ items, onRemove }: { items: BoardTransaction[], onRemove: (id: string) => void }) {
     const { setNodeRef } = useDroppable({
         id: "board-droppable",
     });
@@ -421,7 +476,7 @@ interface InteractiveBoardProps {
 
 export function InteractiveBoard({ initialTransactions, overlayCode }: InteractiveBoardProps) {
     const [sourceItems] = useState<Transaction[]>(initialTransactions);
-    const [boardItems, setBoardItems] = useState<Transaction[]>([]);
+    const [boardItems, setBoardItems] = useState<BoardTransaction[]>([]);
     const [activeDragItem, setActiveDragItem] = useState<Transaction | null>(null);
 
     // Filters
@@ -462,8 +517,8 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
         const matchName =
             !searchName || item.uname.toLowerCase().includes(searchName.toLowerCase()) || item.content.toLowerCase().includes(searchName.toLowerCase());
         const matchPrice = !minPrice || item.price >= Number(minPrice);
-        // Filter out items already on board
-        const notOnBoard = !boardItems.find((b) => b.id === item.id);
+        // Filter out raw records that were already added or merged into a board item.
+        const notOnBoard = !isSourceConsumed(boardItems, item);
         return matchType && matchName && matchPrice && notOnBoard;
     });
 
@@ -490,7 +545,18 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
             if (over.id === 'board-droppable' || boardItems.find(i => i.id === over.id)) {
                 const item = sourceItems.find(i => i.id === active.id);
                 if (item) {
-                    setBoardItems([...boardItems, item]);
+                    const mergeKey = getBoardMergeKey(item);
+                    const existingItem = mergeKey
+                        ? boardItems.find((boardItem) => getBoardMergeKey(boardItem) === mergeKey)
+                        : undefined;
+
+                    if (existingItem) {
+                        setBoardItems((items) => items.map((boardItem) =>
+                            boardItem.id === existingItem.id ? mergeBoardTransaction(boardItem, item) : boardItem
+                        ));
+                    } else {
+                        setBoardItems([...boardItems, { ...item, mergedIds: [item.id] }]);
+                    }
                 }
             }
         }
@@ -514,33 +580,6 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
 
         try {
             toast.info("正在生成图片...");
-
-            // Custom fetch function to handle CORS for Bilibili images
-            const customFetch = async (url: string): Promise<Blob> => {
-                try {
-                    const response = await fetch(url, {
-                        referrerPolicy: 'no-referrer',
-                        mode: 'cors',
-                    });
-                    if (!response.ok) throw new Error('Fetch failed');
-                    return await response.blob();
-                } catch (e) {
-                    // Fallback: try with a proxy or return empty blob
-                    console.warn('Image fetch failed for:', url, e);
-                    // Return a transparent 1x1 pixel as fallback
-                    return new Blob([new Uint8Array([
-                        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-                        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-                        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-                        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-                        0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41,
-                        0x54, 0x08, 0xD7, 0x63, 0x60, 0x60, 0x60, 0x60,
-                        0x00, 0x00, 0x00, 0x05, 0x00, 0x01, 0x87, 0xE4,
-                        0x3F, 0x58, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45,
-                        0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
-                    ])], { type: 'image/png' });
-                }
-            };
 
             const dataUrl = await domToPng(element, {
                 scale: 2,
