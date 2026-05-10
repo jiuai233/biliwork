@@ -15,6 +15,21 @@ export interface Transaction {
     guardLevel?: number;
 }
 
+type UnifiedTransactionsOptions = {
+    limit?: number;
+    startTime?: number;
+    endTime?: number;
+};
+
+function buildTsRange(startTime?: number, endTime?: number): Prisma.BigIntNullableFilter | undefined {
+    if (!startTime && !endTime) return undefined;
+
+    const range: Prisma.BigIntNullableFilter = {};
+    if (startTime) range.gte = BigInt(startTime);
+    if (endTime) range.lte = BigInt(endTime);
+    return range;
+}
+
 // 获取范围内的弹幕
 export async function getRecentDanmaku(roomId: number, limit = 50, startTime?: number, endTime?: number): Promise<Danmaku[]> {
     const where: Prisma.DanmakuWhereInput = { roomId };
@@ -157,24 +172,48 @@ export async function getRecentSuperChats(roomId: number, limit = 20, startTime?
     }));
 }
 
-export async function getUnifiedTransactions(roomId: number, limit = 100): Promise<Transaction[]> {
+export async function getUnifiedTransactions(
+    roomId: number,
+    optionsOrLimit: number | UnifiedTransactionsOptions = 100
+): Promise<Transaction[]> {
+    const options: UnifiedTransactionsOptions = typeof optionsOrLimit === 'number'
+        ? { limit: optionsOrLimit }
+        : optionsOrLimit;
+    const tsRange = buildTsRange(options.startTime, options.endTime);
+    const giftWhere: Prisma.GiftWhereInput = { roomId };
+    const guardWhere: Prisma.GuardWhereInput = { roomId };
+    const superChatWhere: Prisma.SuperChatWhereInput = { roomId };
+
+    if (tsRange) {
+        giftWhere.ts = tsRange;
+        guardWhere.ts = tsRange;
+        superChatWhere.ts = tsRange;
+    }
+
+    const giftQuery: Prisma.GiftFindManyArgs = {
+        where: giftWhere,
+        orderBy: { ts: 'desc' },
+    };
+    const guardQuery: Prisma.GuardFindManyArgs = {
+        where: guardWhere,
+        orderBy: { ts: 'desc' },
+    };
+    const superChatQuery: Prisma.SuperChatFindManyArgs = {
+        where: superChatWhere,
+        orderBy: { ts: 'desc' },
+    };
+
+    if (options.limit) {
+        giftQuery.take = options.limit;
+        guardQuery.take = options.limit;
+        superChatQuery.take = options.limit;
+    }
+
     // Fetch all types in parallel
     const [gifts, guards, scs] = await Promise.all([
-        prisma.gift.findMany({
-            where: { roomId },
-            orderBy: { ts: 'desc' },
-            take: limit
-        }),
-        prisma.guard.findMany({
-            where: { roomId },
-            orderBy: { ts: 'desc' },
-            take: limit
-        }),
-        prisma.superChat.findMany({
-            where: { roomId },
-            orderBy: { ts: 'desc' },
-            take: limit
-        })
+        prisma.gift.findMany(giftQuery),
+        prisma.guard.findMany(guardQuery),
+        prisma.superChat.findMany(superChatQuery)
     ]);
 
     const giftTxns: Transaction[] = gifts.map(g => ({
@@ -216,5 +255,5 @@ export async function getUnifiedTransactions(roomId: number, limit = 100): Promi
     const all = [...giftTxns, ...guardTxns, ...scTxns];
     all.sort((a, b) => b.ts - a.ts);
 
-    return all.slice(0, limit);
+    return options.limit ? all.slice(0, options.limit) : all;
 }
