@@ -82,6 +82,11 @@ function getNumber(data: Record<string, unknown>, key: string) {
     return typeof value === 'number' ? value : 0;
 }
 
+function getRecord(data: Record<string, unknown>, key: string): Record<string, unknown> {
+    const value = data[key];
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
 function getBool(data: Record<string, unknown>, key: string) {
     const value = data[key];
     return typeof value === 'boolean' ? value : false;
@@ -126,11 +131,13 @@ export function parseGift(data: Record<string, unknown>): GiftMessage {
 }
 
 export function parseGuard(data: Record<string, unknown>): GuardMessage {
+    const userInfo = getRecord(data, 'user_info');
+
     return {
         roomId: getNumber(data, 'room_id'),
-        openId: getString(data, 'open_id'),
-        uname: getString(data, 'uname'),
-        uface: getString(data, 'uface'),
+        openId: getString(userInfo, 'open_id') || getString(data, 'open_id'),
+        uname: getString(userInfo, 'uname') || getString(data, 'uname'),
+        uface: getString(userInfo, 'uface') || getString(data, 'uface'),
         guardLevel: getNumber(data, 'guard_level'),
         guardNum: getNumber(data, 'guard_num'),
         guardUnit: getString(data, 'guard_unit'),
