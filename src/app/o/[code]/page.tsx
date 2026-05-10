@@ -183,9 +183,12 @@ export default function OverlayPage() {
 
     // 立即加载 + 每 5 秒轮询
     useEffect(() => {
-        fetchData(); // 立即加载！
-        const timer = setInterval(fetchData, 5000);
-        return () => clearInterval(timer);
+        const initialTimer = window.setTimeout(fetchData, 0);
+        const intervalTimer = window.setInterval(fetchData, 5000);
+        return () => {
+            window.clearTimeout(initialTimer);
+            window.clearInterval(intervalTimer);
+        };
     }, [fetchData]);
 
     return (

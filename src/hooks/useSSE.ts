@@ -20,8 +20,16 @@ export function useSSE<T>(
     const [error, setError] = useState<string | null>(null);
     const eventSourceRef = useRef<EventSource | null>(null);
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const connectRef = useRef<() => void>(() => undefined);
+    const optionsRef = useRef(options);
+
+    useEffect(() => {
+        optionsRef.current = options;
+    }, [options]);
 
     const connect = useCallback(() => {
+        if (!url) return;
+
         // 清理旧连接
         if (eventSourceRef.current) {
             eventSourceRef.current.close();
@@ -52,15 +60,19 @@ export function useSSE<T>(
         es.onerror = (event) => {
             setIsConnected(false);
             es.close();
-            options?.onError?.(event);
+            optionsRef.current?.onError?.(event);
 
             // 自动重连
-            const retryMs = options?.retryInterval ?? 5000;
+            const retryMs = optionsRef.current?.retryInterval ?? 5000;
             retryTimeoutRef.current = setTimeout(() => {
-                connect();
+                connectRef.current();
             }, retryMs);
         };
-    }, [url, options]);
+    }, [url]);
+
+    useEffect(() => {
+        connectRef.current = connect;
+    }, [connect]);
 
     useEffect(() => {
         connect();

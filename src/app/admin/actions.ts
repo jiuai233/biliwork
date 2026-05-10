@@ -45,7 +45,7 @@ export async function adminLogin(prevState: { message: string } | undefined, for
         const user = await getAdminUser(username);
 
         // 已删除: admin/admin 自动创建后门逻辑
-        // 初始管理员请通过 reset_admin 脚本创建
+        // 初始管理员需通过当前 PostgreSQL 数据库的 admin_users 表创建
 
         if (!user) {
             return { message: '用户不存在' };
