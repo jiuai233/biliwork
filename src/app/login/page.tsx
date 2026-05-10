@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ export default function LoginPage() {
     const [uid, setUid] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const router = useRouter();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,7 +24,7 @@ export default function LoginPage() {
             const result = await loginAction(Number(uid), password);
             if (result.success) {
                 toast.success('登录成功');
-                router.push('/dashboard');
+                window.location.replace('/dashboard');
             } else {
                 toast.error('登录失败', { description: 'UID 或 密码错误' });
             }
