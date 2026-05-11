@@ -108,9 +108,9 @@ function SessionDetailContent() {
                 <StatCard icon={Sparkles} label="SC" value={data.stats.scCount.toString()} color="yellow" />
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)]">
-                <Panel title="礼物明细（按用户）" accent="bg-pink-500" className="xl:min-h-[620px]">
-                    <div className="h-[540px] overflow-auto">
+            <div className="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)]">
+                <Panel title="礼物明细（按用户）" accent="bg-pink-500" className="min-h-[620px] xl:h-[720px]">
+                    <div className="dark-scrollbar h-full min-h-0 overflow-auto rounded-lg">
                         <Table variant="secondary" className="min-w-[760px]">
                             <Table.Content
                                 aria-label="礼物明细"
@@ -157,9 +157,9 @@ function SessionDetailContent() {
                     </div>
                 </Panel>
 
-                <div className="grid gap-5 xl:min-h-[620px] xl:grid-rows-[190px_220px_minmax(0,1fr)]">
-                    <Panel title={`醒目留言 (${data.superChats.length})`} accent="bg-yellow-500" className="min-h-[190px] overflow-hidden">
-                        <div className="h-full overflow-y-auto pr-1">
+                <div className="grid min-h-[620px] gap-5 xl:h-[720px] xl:grid-rows-[minmax(170px,0.85fr)_minmax(210px,1fr)_minmax(0,1.45fr)]">
+                    <Panel title={`醒目留言 (${data.superChats.length})`} accent="bg-yellow-500" className="min-h-0 overflow-hidden">
+                        <div className="dark-scrollbar h-full overflow-y-auto pr-1">
                             <div className="space-y-3">
                                 {data.superChats.map((sc, i) => (
                                     <div key={`${sc.uname}-${sc.ts}-${i}`} className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3">
@@ -178,8 +178,8 @@ function SessionDetailContent() {
                         </div>
                     </Panel>
 
-                    <Panel title={`上舰记录 (${data.guards.length})`} accent="bg-indigo-500" className="min-h-[220px] overflow-hidden">
-                        <div className="h-full overflow-y-auto pr-1">
+                    <Panel title={`上舰记录 (${data.guards.length})`} accent="bg-indigo-500" className="min-h-0 overflow-hidden">
+                        <div className="dark-scrollbar h-full overflow-y-auto pr-1">
                             <div className="space-y-2">
                                 {data.guards.map((guard, i) => (
                                     <div key={`${guard.uname}-${guard.ts}-${i}`} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
@@ -198,8 +198,8 @@ function SessionDetailContent() {
                         </div>
                     </Panel>
 
-                    <Panel title="弹幕排行" accent="bg-blue-500" icon={<Users className="h-4 w-4" />} className="min-h-[240px] overflow-hidden">
-                        <div className="h-full overflow-y-auto pr-1">
+                    <Panel title="弹幕排行" accent="bg-blue-500" icon={<Users className="h-4 w-4" />} className="min-h-0 overflow-hidden">
+                        <div className="dark-scrollbar h-full overflow-y-auto pr-1">
                             <div className="space-y-2">
                                 {data.topDanmaku.slice(0, 10).map((user, i) => (
                                     <div key={`${user.uname}-${i}`} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-950/40 p-2.5">
