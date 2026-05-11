@@ -3,6 +3,11 @@ import { Prisma, type Broadcaster as PrismaBroadcaster } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { Broadcaster, DashboardStats } from '@/lib/types';
 
+export type BroadcasterAdminRow = Broadcaster & {
+    stats?: DashboardStats;
+    isLive?: boolean;
+};
+
 function toBroadcaster(b: PrismaBroadcaster): Broadcaster {
     return {
         id: b.id,
@@ -124,21 +129,51 @@ async function getTodayStatsByRoomIds(roomIds: number[]): Promise<Map<number, Da
     return statsByRoomId;
 }
 
+async function getLiveStatusByRoomIds(roomIds: number[]): Promise<Map<number, boolean>> {
+    const uniqueRoomIds = Array.from(new Set(roomIds.filter(Boolean)));
+    const liveByRoomId = new Map<number, boolean>();
+
+    for (const roomId of uniqueRoomIds) {
+        liveByRoomId.set(roomId, false);
+    }
+
+    if (uniqueRoomIds.length === 0) {
+        return liveByRoomId;
+    }
+
+    const rows = await prisma.$queryRaw<{ room_id: number; is_start: number }[]>(Prisma.sql`
+        SELECT DISTINCT ON (room_id) room_id, is_start
+        FROM live_status
+        WHERE room_id IN (${Prisma.join(uniqueRoomIds)})
+          AND ts IS NOT NULL
+        ORDER BY room_id, ts DESC
+    `);
+
+    for (const row of rows) {
+        liveByRoomId.set(row.room_id, row.is_start === 1);
+    }
+
+    return liveByRoomId;
+}
+
 // Broadcaster Management
-export async function getAllBroadcasters(): Promise<(Broadcaster & { stats?: DashboardStats })[]> {
+export async function getAllBroadcasters(): Promise<BroadcasterAdminRow[]> {
     const broadcasters = await prisma.broadcaster.findMany({
         orderBy: { createdAt: 'desc' }
     });
     const mappedBroadcasters = broadcasters.map((b) => toBroadcaster(b));
-    const statsByRoomId = await getTodayStatsByRoomIds(
-        mappedBroadcasters
-            .map((b) => b.room_id)
-            .filter((roomId): roomId is number => roomId !== null)
-    );
+    const roomIds = mappedBroadcasters
+        .map((b) => b.room_id)
+        .filter((roomId): roomId is number => roomId !== null);
+    const [statsByRoomId, liveByRoomId] = await Promise.all([
+        getTodayStatsByRoomIds(roomIds),
+        getLiveStatusByRoomIds(roomIds),
+    ]);
 
     return mappedBroadcasters.map((b) => ({
         ...b,
-        stats: b.room_id ? statsByRoomId.get(b.room_id) : undefined
+        stats: b.room_id ? statsByRoomId.get(b.room_id) : undefined,
+        isLive: b.room_id ? liveByRoomId.get(b.room_id) ?? false : false,
     }));
 }
 

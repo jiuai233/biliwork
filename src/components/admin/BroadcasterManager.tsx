@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Avatar, Card, Table } from '@heroui/react';
+import { Card, Table } from '@heroui/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -30,7 +30,7 @@ import {
 import { Broadcaster, DashboardStats } from '@/lib/types';
 import { PasswordDialog } from './PasswordDialog';
 
-type BroadcasterWithStats = Broadcaster & { stats?: DashboardStats };
+type BroadcasterWithStats = Broadcaster & { stats?: DashboardStats; isLive?: boolean };
 
 const emptyStats: DashboardStats = {
     danmakuCount: 0,
@@ -320,12 +320,20 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                                         return (
                                             <Table.Row key={broadcaster.id} id={broadcaster.id}>
                                                 <Table.Cell>
-                                                    <span className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-200">
-                                                        <span className={broadcaster.active ? 'h-2 w-2 rounded-full bg-emerald-400' : 'h-2 w-2 rounded-full bg-red-400'} />
-                                                        <span className={broadcaster.active ? 'text-emerald-300' : 'text-red-300'}>
-                                                            {broadcaster.active ? '监控中' : '已暂停'}
+                                                    <div className="flex flex-col gap-2">
+                                                        <span className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-200">
+                                                            <span className={broadcaster.active ? 'h-2 w-2 rounded-full bg-emerald-400' : 'h-2 w-2 rounded-full bg-red-400'} />
+                                                            <span className={broadcaster.active ? 'text-emerald-300' : 'text-red-300'}>
+                                                                {broadcaster.active ? '监控中' : '已暂停'}
+                                                            </span>
                                                         </span>
-                                                    </span>
+                                                        {broadcaster.isLive && (
+                                                            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-300">
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-sky-300 shadow-[0_0_10px_rgba(125,211,252,0.85)]" />
+                                                                直播中
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </Table.Cell>
                                                 <Table.Cell>
                                                     <div className="flex items-center gap-3">
@@ -339,13 +347,22 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                                                             aria-label={canOpenBroadcasterPage ? `打开 ${broadcaster.uname || '主播'} 页面` : '暂无主播跳转信息'}
                                                             onClick={() => handleOpenBroadcasterPage(broadcaster)}
                                                         >
-                                                            <Avatar className="h-9 w-9 border border-zinc-700">
-                                                                <Avatar.Image src={avatarSrc} referrerPolicy="no-referrer" />
-                                                                <Avatar.Fallback>{broadcaster.uname?.[0] || '?'}</Avatar.Fallback>
-                                                            </Avatar>
+                                                            <span
+                                                                className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-zinc-900 bg-cover bg-center text-sm font-semibold text-zinc-400"
+                                                                style={avatarSrc ? { backgroundImage: `url(${avatarSrc})` } : undefined}
+                                                            >
+                                                                {!avatarSrc && (broadcaster.uname?.[0] || '?')}
+                                                            </span>
                                                         </button>
                                                         <div>
-                                                            <div className="font-medium text-zinc-100">{broadcaster.uname || '获取中...'}</div>
+                                                            <div className="flex min-w-0 items-center gap-2">
+                                                                <span className="truncate font-medium text-zinc-100">{broadcaster.uname || '获取中...'}</span>
+                                                                {broadcaster.isLive && (
+                                                                    <span className="shrink-0 rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
+                                                                        LIVE
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             <div className="text-sm text-zinc-500">UID: {broadcaster.uid || '-'}</div>
                                                         </div>
                                                     </div>
