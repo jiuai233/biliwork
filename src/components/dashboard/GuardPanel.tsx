@@ -5,12 +5,14 @@ import { Avatar, Chip } from "@heroui/react";
 import { motion } from "framer-motion";
 import { Guard } from "@/lib/types";
 import { Anchor } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface GuardPanelProps {
     data: Guard[];
+    className?: string;
 }
 
-export function GuardPanel({ data }: GuardPanelProps) {
+export function GuardPanel({ data, className }: GuardPanelProps) {
     const getGuardName = (level: number) => {
         switch (level) {
             case 1: return '总督';
@@ -30,7 +32,7 @@ export function GuardPanel({ data }: GuardPanelProps) {
     };
 
     return (
-        <div className="dark-scrollbar h-[290px] w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/55 p-4 shadow-[0_18px_55px_rgba(0,0,0,0.22)]">
+        <div className={cn("dark-scrollbar h-[290px] w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/55 p-4 shadow-[0_18px_55px_rgba(0,0,0,0.22)]", className)}>
             <div className="grid grid-cols-1 gap-3">
                 {data.map((item) => (
                     <motion.div

@@ -5,14 +5,16 @@ import { Avatar } from "@heroui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gift } from "@/lib/types";
 import { Gift as GiftIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface GiftPanelProps {
     data: Gift[];
+    className?: string;
 }
 
-export function GiftPanel({ data }: GiftPanelProps) {
+export function GiftPanel({ data, className }: GiftPanelProps) {
     return (
-        <div className="dark-scrollbar h-[420px] w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/55 p-4 shadow-[0_18px_55px_rgba(0,0,0,0.22)]">
+        <div className={cn("dark-scrollbar h-[420px] w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/55 p-4 shadow-[0_18px_55px_rgba(0,0,0,0.22)]", className)}>
             <div className="space-y-2">
                 <AnimatePresence initial={false}>
                     {data.map((item) => (

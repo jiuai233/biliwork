@@ -26,6 +26,7 @@ model Broadcaster {
   updatedAt    BigInt   @map("updated_at")
 
   @@index([active])
+  @@index([uid])
   @@map("broadcasters")
 }
 

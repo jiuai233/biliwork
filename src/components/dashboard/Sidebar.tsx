@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -37,11 +37,37 @@ function normalizeAvatarSrc(src: string | null | undefined): string | undefined 
 
 function SidebarUserMenu({ broadcaster, mobile = false }: { broadcaster: Broadcaster | null; mobile?: boolean }) {
     const [open, setOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
     const avatarSrc = normalizeAvatarSrc(broadcaster?.uface);
     const name = broadcaster?.uname || "主播";
 
+    useEffect(() => {
+        if (!open) return;
+
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target;
+            if (target instanceof Node && !menuRef.current?.contains(target)) {
+                setOpen(false);
+            }
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setOpen(false);
+            }
+        };
+
+        document.addEventListener("pointerdown", handlePointerDown);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("pointerdown", handlePointerDown);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [open]);
+
     return (
-        <div className="relative">
+        <div ref={menuRef} className="relative">
             {open && (
                 <div className="absolute bottom-[calc(100%+8px)] left-0 z-20 w-full rounded-xl border border-white/10 bg-zinc-950 p-2 shadow-2xl shadow-black/40">
                     <form action={logout}>
@@ -60,6 +86,7 @@ function SidebarUserMenu({ broadcaster, mobile = false }: { broadcaster: Broadca
                 type="button"
                 variant="ghost"
                 onClick={() => setOpen((value) => !value)}
+                aria-expanded={open}
                 className={cn(
                     "flex h-auto w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left hover:bg-white/[0.06]",
                     mobile && "bg-zinc-950/60"

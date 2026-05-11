@@ -6,12 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Danmaku } from "@/lib/types";
 import { useEffect, useRef } from "react";
 import { MessageSquareText } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DanmakuPanelProps {
     data: Danmaku[];
+    className?: string;
 }
 
-export function DanmakuPanel({ data }: DanmakuPanelProps) {
+export function DanmakuPanel({ data, className }: DanmakuPanelProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // 自动滚动到底部
@@ -22,7 +24,7 @@ export function DanmakuPanel({ data }: DanmakuPanelProps) {
     }, [data]);
 
     return (
-        <div className="dark-scrollbar h-[420px] w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/55 p-4 shadow-[0_18px_55px_rgba(0,0,0,0.22)]" ref={scrollRef}>
+        <div className={cn("dark-scrollbar h-[420px] w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/55 p-4 shadow-[0_18px_55px_rgba(0,0,0,0.22)]", className)} ref={scrollRef}>
             <div className="space-y-4">
                 <AnimatePresence initial={false}>
                     {data.slice().reverse().map((item) => (

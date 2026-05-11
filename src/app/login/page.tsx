@@ -4,7 +4,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { Button, Card, Input } from '@heroui/react';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { loginAction } from './actions';
 import { toast } from 'sonner';
 
@@ -46,16 +54,16 @@ export default function LoginPage() {
                 transition={{ duration: 0.5 }}
                 className="z-10 w-full max-w-md"
             >
-                <Card variant="secondary" className="border border-zinc-800 bg-zinc-900/50 shadow-2xl backdrop-blur-xl">
-                    <Card.Header className="block space-y-1 px-6 pt-6">
-                        <Card.Title className="text-center text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                <Card className="border-zinc-800 bg-zinc-900/50 shadow-2xl backdrop-blur-xl">
+                    <CardHeader className="space-y-1 px-6 pt-6">
+                        <CardTitle className="text-center text-2xl font-bold leading-tight bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                             Bilibili Live Monitor
-                        </Card.Title>
-                        <Card.Description className="text-center text-zinc-400">
+                        </CardTitle>
+                        <CardDescription className="text-center text-zinc-400">
                             请输入您的 UID 和 登录密码
-                        </Card.Description>
-                    </Card.Header>
-                    <Card.Content className="px-6 pb-6 pt-4">
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="px-6 pb-6 pt-4">
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div className="space-y-2">
                                 <label htmlFor="uid" className="text-sm font-medium text-zinc-300">UID</label>
@@ -65,7 +73,6 @@ export default function LoginPage() {
                                     type="text"
                                     value={uid}
                                     onChange={(e) => setUid(e.target.value)}
-                                    variant="secondary"
                                     className="h-10 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-100 transition-colors focus:border-purple-500"
                                     required
                                 />
@@ -78,15 +85,14 @@ export default function LoginPage() {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    variant="secondary"
                                     className="h-10 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-100 transition-colors focus:border-purple-500"
                                     required
                                 />
                             </div>
                             <Button
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium shadow-lg shadow-purple-900/20"
-                                isDisabled={isLoading}
+                                className="w-full gap-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-900/20 hover:from-purple-500 hover:to-blue-500"
+                                disabled={isLoading}
                             >
                                 {isLoading ? (
                                     <>
@@ -98,7 +104,7 @@ export default function LoginPage() {
                                 )}
                             </Button>
                         </form>
-                    </Card.Content>
+                    </CardContent>
                 </Card>
             </motion.div>
         </div>
