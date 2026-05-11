@@ -1,6 +1,6 @@
 
 import { requireAuth } from "@/lib/auth";
-import { getBroadcasterByUid, getUnifiedTransactions } from "@/lib/data";
+import { getBroadcasterByUid, getLiveSessionsWithIncome, getUnifiedTransactions } from "@/lib/data";
 import { InteractiveBoard } from "@/components/dashboard/InteractiveBoard";
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,10 @@ export default async function BoardPage() {
     const overlayCode = broadcaster.room_id.toString(36);
 
     // 获取最近500条记录供选择
-    const transactions = await getUnifiedTransactions(broadcaster.room_id, 500);
+    const [transactions, sessions] = await Promise.all([
+        getUnifiedTransactions(broadcaster.room_id, 500),
+        getLiveSessionsWithIncome(broadcaster.room_id, 0, undefined, 30),
+    ]);
 
     return (
         <div className="space-y-6">
@@ -28,7 +31,11 @@ export default async function BoardPage() {
                 </p>
             </div>
 
-            <InteractiveBoard initialTransactions={transactions} overlayCode={overlayCode} />
+            <InteractiveBoard
+                initialTransactions={transactions}
+                initialSessions={sessions}
+                overlayCode={overlayCode}
+            />
         </div>
     );
 }

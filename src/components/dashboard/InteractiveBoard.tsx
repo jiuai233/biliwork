@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import {
     DndContext,
     DragOverlay,
@@ -24,13 +24,24 @@ import { Transaction } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DraggableTransactionCard } from "./DraggableTransactionCard";
-import { Download, Search, X, Monitor } from "lucide-react";
+import { Clock, Download, Loader2, Monitor, Radio, Search, X } from "lucide-react";
 import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getBoardTransactionsForSession } from "@/app/dashboard/board/actions";
 
 type BoardTransaction = Transaction & {
     mergedIds?: string[];
+};
+
+type BoardSession = {
+    id: number;
+    startTs: number;
+    endTs: number | null;
+    duration: number;
+    title: string | null;
+    areaName: string | null;
+    totalIncome: number;
 };
 
 type ParsedCountContent = {
@@ -469,19 +480,42 @@ function BoardArea({ items, onRemove }: { items: BoardTransaction[], onRemove: (
 // --- Main Component ---
 interface InteractiveBoardProps {
     initialTransactions: Transaction[];
+    initialSessions?: BoardSession[];
     overlayCode?: string;
 }
 
-export function InteractiveBoard({ initialTransactions, overlayCode }: InteractiveBoardProps) {
-    const [sourceItems] = useState<Transaction[]>(initialTransactions);
+function formatSessionTime(ts: number) {
+    return new Date(ts).toLocaleString("zh-CN", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+}
+
+function formatSessionDuration(minutes: number, isLive: boolean) {
+    if (isLive) return "直播中";
+    if (minutes <= 0) return "未知时长";
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+}
+
+export function InteractiveBoard({ initialTransactions, initialSessions = [], overlayCode }: InteractiveBoardProps) {
+    const [sourceItems, setSourceItems] = useState<Transaction[]>(initialTransactions);
     const [boardItems, setBoardItems] = useState<BoardTransaction[]>([]);
     const [activeDragItem, setActiveDragItem] = useState<Transaction | null>(null);
+    const [selectedSessionId, setSelectedSessionId] = useState<string>("recent");
+    const [isSessionPending, startSessionTransition] = useTransition();
+    const sessionRequestRef = React.useRef(0);
 
     // Filters
     const [searchName, setSearchName] = useState("");
     const [minPrice, setMinPrice] = useState("");
     const [filterType, setFilterType] = useState<'all' | 'super_chat' | 'gift' | 'guard'>('all');
     const [isMounted, setIsMounted] = useState(false);
+    const currentSession = initialSessions.find((session) => !session.endTs);
+    const historySessions = initialSessions.filter((session) => session.endTs);
 
     React.useEffect(() => {
         setIsMounted(true);
@@ -519,6 +553,52 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
         const notOnBoard = !isSourceConsumed(boardItems, item);
         return matchType && matchName && matchPrice && notOnBoard;
     });
+
+    const handleSelectRecent = () => {
+        sessionRequestRef.current += 1;
+        setSelectedSessionId("recent");
+        setSourceItems(initialTransactions);
+    };
+
+    const handleSelectSession = (session: BoardSession) => {
+        const sessionKey = String(session.id);
+        const requestId = sessionRequestRef.current + 1;
+        sessionRequestRef.current = requestId;
+        setSelectedSessionId(sessionKey);
+        startSessionTransition(async () => {
+            try {
+                const nextTransactions = await getBoardTransactionsForSession(session.startTs, session.endTs);
+                if (sessionRequestRef.current !== requestId) return;
+                setSourceItems(nextTransactions);
+            } catch (error) {
+                if (sessionRequestRef.current !== requestId) return;
+                console.error(error);
+                toast.error("加载场次记录失败");
+            }
+        });
+    };
+
+    const handleSelectCurrentSession = () => {
+        if (!currentSession) {
+            toast.error("未检测到当前开播场次");
+            return;
+        }
+
+        const requestId = sessionRequestRef.current + 1;
+        sessionRequestRef.current = requestId;
+        setSelectedSessionId("current");
+        startSessionTransition(async () => {
+            try {
+                const nextTransactions = await getBoardTransactionsForSession(currentSession.startTs, null);
+                if (sessionRequestRef.current !== requestId) return;
+                setSourceItems(nextTransactions);
+            } catch (error) {
+                if (sessionRequestRef.current !== requestId) return;
+                console.error(error);
+                toast.error("加载当前场次失败");
+            }
+        });
+    };
 
     if (!isMounted) {
         return <div className="h-[calc(100vh-200px)] flex items-center justify-center text-zinc-500">Loading Board...</div>;
@@ -616,6 +696,104 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
                         <h3 className="font-semibold text-zinc-100 flex items-center gap-2">
                             <Search className="w-4 h-4" /> 筛选记录
                         </h3>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                                <label className="flex items-center gap-2 text-sm font-medium text-zinc-300">
+                                    <Radio className="h-4 w-4 text-purple-300" />
+                                    直播场次
+                                </label>
+                                {isSessionPending && (
+                                    <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        加载中
+                                    </span>
+                                )}
+                            </div>
+                            <div className="dark-scrollbar max-h-44 space-y-2 overflow-y-auto pr-1">
+                                <button
+                                    type="button"
+                                    onClick={handleSelectRecent}
+                                    className={cn(
+                                        "w-full rounded-lg border px-3 py-2 text-left transition",
+                                        selectedSessionId === "recent"
+                                            ? "border-purple-500/50 bg-purple-500/15 text-white"
+                                            : "border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-900"
+                                    )}
+                                >
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-sm font-semibold">最近记录</span>
+                                        <span className="text-xs text-zinc-500">{initialTransactions.length} 条</span>
+                                    </div>
+                                    <div className="mt-1 text-xs text-zinc-500">不限制场次，显示最近交易</div>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSelectCurrentSession}
+                                    disabled={!currentSession}
+                                    className={cn(
+                                        "w-full rounded-lg border px-3 py-2 text-left transition",
+                                        selectedSessionId === "current"
+                                            ? "border-emerald-500/60 bg-emerald-500/15 text-white"
+                                            : "border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-900",
+                                        !currentSession && "cursor-not-allowed opacity-55 hover:border-zinc-800 hover:bg-zinc-950/60"
+                                    )}
+                                >
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-sm font-semibold text-zinc-100">当前场次</span>
+                                        <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
+                                            {currentSession ? "直播中" : "未检测"}
+                                        </span>
+                                    </div>
+                                    <div className="mt-1 text-xs text-zinc-500">
+                                        {currentSession
+                                            ? `从 ${formatSessionTime(currentSession.startTs)} 到现在`
+                                            : "需要采集到开播事件后可用"}
+                                    </div>
+                                </button>
+                                {historySessions.map((session) => {
+                                    const isLive = false;
+                                    const selected = selectedSessionId === String(session.id);
+
+                                    return (
+                                        <button
+                                            key={session.id}
+                                            type="button"
+                                            onClick={() => handleSelectSession(session)}
+                                            className={cn(
+                                                "w-full rounded-lg border px-3 py-2 text-left transition",
+                                                selected
+                                                    ? "border-blue-500/60 bg-blue-500/15 text-white"
+                                                    : "border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-900"
+                                            )}
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="min-w-0 truncate text-sm font-semibold text-zinc-100">
+                                                    {session.title || "直播场次"}
+                                                </span>
+                                                <span className={cn(
+                                                    "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold",
+                                                    isLive ? "bg-emerald-500/15 text-emerald-300" : "bg-zinc-800 text-zinc-400"
+                                                )}>
+                                                    {formatSessionDuration(session.duration, isLive)}
+                                                </span>
+                                            </div>
+                                            <div className="mt-1 flex items-center justify-between gap-2 text-xs text-zinc-500">
+                                                <span className="inline-flex min-w-0 items-center gap-1">
+                                                    <Clock className="h-3 w-3 shrink-0" />
+                                                    <span className="truncate">{formatSessionTime(session.startTs)}</span>
+                                                </span>
+                                                <span className="shrink-0 text-amber-300">¥{session.totalIncome.toFixed(1)}</span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                                {historySessions.length === 0 && (
+                                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-3 text-xs text-zinc-500">
+                                        暂无历史场次
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                         {/* Type Filters */}
                         <div className="grid grid-cols-4 gap-1 bg-zinc-950 p-1 rounded-md border border-zinc-800">
                             {(['all', 'super_chat', 'gift', 'guard'] as const).map((t) => (
