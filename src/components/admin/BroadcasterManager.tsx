@@ -149,6 +149,21 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
         }
     };
 
+    const handleOpenBroadcasterPage = (broadcaster: BroadcasterWithStats) => {
+        const url = broadcaster.room_id
+            ? `https://live.bilibili.com/${broadcaster.room_id}`
+            : broadcaster.uid
+                ? `https://space.bilibili.com/${broadcaster.uid}`
+                : '';
+
+        if (!url) {
+            toast.error('暂无主播房间号或 UID，无法跳转');
+            return;
+        }
+
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
     const handleRevealAuthCode = () => {
         if (!authCodeDialogId) return;
         if (!adminPassword) {
@@ -300,6 +315,7 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                                         const stats = broadcaster.stats ?? emptyStats;
                                         const avatarSrc = normalizeAvatarSrc(broadcaster.uface);
                                         const revealedAuthCode = revealedAuthCodes[broadcaster.id];
+                                        const canOpenBroadcasterPage = Boolean(broadcaster.room_id || broadcaster.uid);
 
                                         return (
                                             <Table.Row key={broadcaster.id} id={broadcaster.id}>
@@ -313,10 +329,21 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                                                 </Table.Cell>
                                                 <Table.Cell>
                                                     <div className="flex items-center gap-3">
-                                                        <Avatar className="h-9 w-9 border border-zinc-700">
-                                                            <Avatar.Image src={avatarSrc} referrerPolicy="no-referrer" />
-                                                            <Avatar.Fallback>{broadcaster.uname?.[0] || '?'}</Avatar.Fallback>
-                                                        </Avatar>
+                                                        <button
+                                                            type="button"
+                                                            className={canOpenBroadcasterPage
+                                                                ? "rounded-full transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/50"
+                                                                : "cursor-default rounded-full"
+                                                            }
+                                                            title={canOpenBroadcasterPage ? '打开主播页面' : '暂无主播跳转信息'}
+                                                            aria-label={canOpenBroadcasterPage ? `打开 ${broadcaster.uname || '主播'} 页面` : '暂无主播跳转信息'}
+                                                            onClick={() => handleOpenBroadcasterPage(broadcaster)}
+                                                        >
+                                                            <Avatar className="h-9 w-9 border border-zinc-700">
+                                                                <Avatar.Image src={avatarSrc} referrerPolicy="no-referrer" />
+                                                                <Avatar.Fallback>{broadcaster.uname?.[0] || '?'}</Avatar.Fallback>
+                                                            </Avatar>
+                                                        </button>
                                                         <div>
                                                             <div className="font-medium text-zinc-100">{broadcaster.uname || '获取中...'}</div>
                                                             <div className="text-sm text-zinc-500">UID: {broadcaster.uid || '-'}</div>
