@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { DateRange } from "react-day-picker";
 import { endOfDay, format, startOfDay } from "date-fns";
 import { toast } from "sonner";
-import { Avatar, Button, Input, Table } from "@heroui/react";
+import { Avatar, Table } from "@heroui/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
     Box,
     ChevronRight,
@@ -113,7 +115,7 @@ export default function BlindboxPage() {
                             variant="secondary"
                             size="sm"
                             onClick={() => fetchData()}
-                            isDisabled={loading}
+                            disabled={loading}
                             aria-label="刷新"
                             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] p-0 text-slate-200 hover:bg-white/[0.09]"
                         >
@@ -196,16 +198,14 @@ export default function BlindboxPage() {
                                     value={searchInput}
                                     onChange={(event) => setSearchInput(event.target.value)}
                                     onKeyDown={(event) => event.key === "Enter" && handleSearch()}
-                                    variant="secondary"
                                     className="h-10 w-[210px] rounded-xl border border-white/10 bg-white/[0.04] pl-9 text-sm text-white"
                                 />
                             </div>
                             <Button
                                 type="button"
                                 size="sm"
-                                variant="primary"
                                 onClick={handleSearch}
-                                className="inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-bold"
+                                className="inline-flex h-10 items-center justify-center rounded-xl bg-orange-600 px-5 text-sm font-bold text-white hover:bg-orange-500"
                             >
                                 搜索
                             </Button>

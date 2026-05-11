@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Avatar, Button, Chip, Input, Table } from "@heroui/react";
+import { Avatar, Chip, Table } from "@heroui/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ArrowDown, ArrowUp, RotateCcw, Search } from "lucide-react";
 
 import type { Transaction } from "@/lib/data";
@@ -167,7 +169,6 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                 <div className="relative w-[260px] max-w-full">
                     <Search className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
                     <Input
-                        variant="secondary"
                         value={keyword}
                         onChange={(event) => setKeyword(event.target.value)}
                         placeholder="搜索用户 / 内容 / 金额"
@@ -181,7 +182,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                             key={option.value}
                             type="button"
                             size="sm"
-                            variant={typeFilter === option.value ? "primary" : "ghost"}
+                            variant="ghost"
                             onClick={() => setTypeFilter(option.value)}
                             className={[
                                 "inline-flex h-9 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-white/10 px-3 text-xs last:border-r-0",
@@ -198,7 +199,6 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                 <div className="flex h-9 items-center rounded-xl border border-white/10 bg-white/[0.04] px-2 text-sm text-zinc-400 hover:bg-white/[0.06]">
                     <span className="mr-1 text-xs">金额</span>
                     <Input
-                        variant="secondary"
                         inputMode="decimal"
                         value={minPrice}
                         onChange={(event) => setMinPrice(event.target.value)}
@@ -207,7 +207,6 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     />
                     <span className="mx-1 text-zinc-600">-</span>
                     <Input
-                        variant="secondary"
                         inputMode="decimal"
                         value={maxPrice}
                         onChange={(event) => setMaxPrice(event.target.value)}
@@ -325,7 +324,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                                     key={size}
                                     type="button"
                                     size="sm"
-                                    variant={pageSize === size ? "primary" : "ghost"}
+                                    variant="ghost"
                                     onClick={() => setPageSize(size)}
                                     className={[
                                         "inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-zinc-800 px-2 text-xs last:border-r-0",
@@ -351,7 +350,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                         variant="outline"
                         size="sm"
                         onClick={() => setPageIndex((value) => Math.max(value - 1, 0))}
-                        isDisabled={currentPage <= 0}
+                        disabled={currentPage <= 0}
                         className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-zinc-700 px-3 text-zinc-200 hover:bg-zinc-800"
                     >
                         上一页
@@ -361,7 +360,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                         variant="outline"
                         size="sm"
                         onClick={() => setPageIndex((value) => Math.min(value + 1, pageCount - 1))}
-                        isDisabled={currentPage >= pageCount - 1}
+                        disabled={currentPage >= pageCount - 1}
                         className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-zinc-700 px-3 text-zinc-200 hover:bg-zinc-800"
                     >
                         下一页
@@ -369,7 +368,6 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     <div className="flex items-center gap-2 pl-1">
                         <span>前往</span>
                         <Input
-                            variant="secondary"
                             inputMode="numeric"
                             value={String(currentPage + 1)}
                             onChange={(event) => {

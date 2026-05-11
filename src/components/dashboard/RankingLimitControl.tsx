@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Button, Input } from "@heroui/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface RankingLimitControlProps {
     value: number;
@@ -36,7 +37,7 @@ export function RankingLimitControl({ value }: RankingLimitControlProps) {
                         key={option}
                         type="button"
                         size="sm"
-                        variant={value === option ? "primary" : "ghost"}
+                        variant={value === option ? "default" : "ghost"}
                         onClick={() => applyLimit(option)}
                         className="inline-flex h-10 items-center justify-center rounded-none border-r border-white/10 px-3 text-sm last:border-r-0"
                     >
@@ -47,7 +48,6 @@ export function RankingLimitControl({ value }: RankingLimitControlProps) {
             <Input
                 value={input}
                 inputMode="numeric"
-                variant="secondary"
                 onChange={(event) => setInput(event.target.value.replace(/[^\d]/g, ""))}
                 onKeyDown={(event) => {
                     if (event.key === "Enter") applyLimit(Number(input || value));

@@ -7,13 +7,29 @@ import { cn } from "@/lib/utils";
 
 interface StatsPanelProps {
     stats: DashboardStats;
+    previousStats?: DashboardStats | null;
 }
 
-export function StatsPanel({ stats }: StatsPanelProps) {
+type StatKey = "danmakuCount" | "giftCount" | "guardCount" | "totalIncome";
+
+function formatDelta(current: number, previous: number | undefined, isCurrency = false) {
+    if (previous === undefined) return "较昨日 --";
+
+    const delta = Number((current - previous).toFixed(isCurrency ? 2 : 0));
+    if (delta === 0) return "较昨日 持平";
+
+    const sign = delta > 0 ? "+" : "";
+    const value = isCurrency ? `¥${Math.abs(delta).toFixed(1)}` : Math.abs(delta).toLocaleString();
+
+    return `较昨日 ${sign}${delta < 0 ? "-" : ""}${value}`;
+}
+
+export function StatsPanel({ stats, previousStats }: StatsPanelProps) {
     const items = [
         {
             label: "今日弹幕",
             value: stats.danmakuCount,
+            statKey: "danmakuCount" as StatKey,
             icon: MessageSquare,
             labelClass: "text-sky-300",
             iconClass: "text-sky-300 bg-sky-500/15 shadow-sky-500/20",
@@ -22,6 +38,7 @@ export function StatsPanel({ stats }: StatsPanelProps) {
         {
             label: "今日礼物",
             value: stats.giftCount,
+            statKey: "giftCount" as StatKey,
             icon: Gift,
             labelClass: "text-pink-300",
             iconClass: "text-pink-300 bg-pink-500/15 shadow-pink-500/20",
@@ -30,6 +47,7 @@ export function StatsPanel({ stats }: StatsPanelProps) {
         {
             label: "今日上舰",
             value: stats.guardCount,
+            statKey: "guardCount" as StatKey,
             icon: Shield,
             labelClass: "text-indigo-300",
             iconClass: "text-indigo-300 bg-indigo-500/15 shadow-indigo-500/20",
@@ -38,6 +56,8 @@ export function StatsPanel({ stats }: StatsPanelProps) {
         {
             label: "预计营收 (SC)",
             value: `¥${stats.totalIncome}`,
+            statKey: "totalIncome" as StatKey,
+            isCurrency: true,
             icon: CreditCard,
             labelClass: "text-emerald-300",
             iconClass: "text-emerald-300 bg-emerald-500/15 shadow-emerald-500/20",
@@ -47,7 +67,7 @@ export function StatsPanel({ stats }: StatsPanelProps) {
 
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {items.map(({ label, value, icon: Icon, labelClass, iconClass, cardClass }) => (
+            {items.map(({ label, value, statKey, isCurrency, icon: Icon, labelClass, iconClass, cardClass }) => (
                 <section
                     key={label}
                     className={cn(
@@ -64,7 +84,9 @@ export function StatsPanel({ stats }: StatsPanelProps) {
                     </div>
                     <div className="relative mt-5">
                         <div className="text-4xl font-black tracking-normal text-white">{value}</div>
-                        <p className="mt-3 text-sm text-slate-400">较昨日 --</p>
+                        <p className="mt-3 text-sm text-slate-400">
+                            {formatDelta(Number(stats[statKey]), previousStats?.[statKey], isCurrency)}
+                        </p>
                     </div>
                 </section>
             ))}

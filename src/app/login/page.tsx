@@ -73,7 +73,7 @@ export default function LoginPage() {
                                     type="text"
                                     value={uid}
                                     onChange={(e) => setUid(e.target.value)}
-                                    className="h-10 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-100 transition-colors focus:border-purple-500"
+                                    className="h-11 rounded-lg border border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500 hover:border-white/20 hover:bg-white/[0.08] focus:border-violet-400/70 focus:ring-2 focus:ring-violet-500/20"
                                     required
                                 />
                             </div>
@@ -85,13 +85,13 @@ export default function LoginPage() {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="h-10 rounded-md border border-zinc-700 bg-zinc-800/50 text-zinc-100 transition-colors focus:border-purple-500"
+                                    className="h-11 rounded-lg border border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500 hover:border-white/20 hover:bg-white/[0.08] focus:border-violet-400/70 focus:ring-2 focus:ring-violet-500/20"
                                     required
                                 />
                             </div>
                             <Button
                                 type="submit"
-                                className="w-full gap-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-900/20 hover:from-purple-500 hover:to-blue-500"
+                                className="h-11 w-full rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-base font-semibold text-white shadow-lg shadow-purple-900/25 hover:from-purple-500 hover:to-blue-500"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (

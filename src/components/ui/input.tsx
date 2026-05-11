@@ -1,24 +1,29 @@
+import * as React from "react";
+import { Input as HeroInput, type InputProps as HeroInputProps } from "@heroui/react";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
+export interface InputProps extends HeroInputProps {
+    isDisabled?: boolean;
+}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-    ({ className, type, ...props }, ref) => {
+    ({ className, disabled, isDisabled, variant = "secondary", fullWidth = true, ...props }, ref) => {
         return (
-            <input
-                type={type}
+            <HeroInput
+                ref={ref}
+                variant={variant}
+                fullWidth={fullWidth}
+                disabled={disabled ?? isDisabled}
                 className={cn(
-                    "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    "block h-11 w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-zinc-100 shadow-sm outline-none transition-colors placeholder:text-zinc-500 hover:border-white/20 hover:bg-white/[0.07] focus:border-violet-400/70 focus:bg-white/[0.07] focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50",
                     className
                 )}
-                ref={ref}
                 {...props}
             />
-        )
+        );
     }
-)
-Input.displayName = "Input"
+);
+Input.displayName = "Input";
 
-export { Input }
+export { Input };

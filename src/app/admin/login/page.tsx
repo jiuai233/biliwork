@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
                                         name="username"
                                         placeholder="admin"
                                         autoComplete="username"
-                                        className="h-11 rounded-md border border-white/10 bg-white/[0.04] pl-9 text-zinc-100 hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                                        className="h-11 rounded-lg border border-white/10 bg-white/[0.06] pl-9 text-zinc-100 placeholder:text-zinc-500 hover:border-white/20 hover:bg-white/[0.08] focus:border-violet-400/70 focus:bg-white/[0.08] focus:ring-2 focus:ring-violet-500/20"
                                     />
                                 </div>
                             </div>
@@ -58,7 +58,7 @@ export default function AdminLoginPage() {
                                         type="password"
                                         placeholder="请输入密码"
                                         autoComplete="current-password"
-                                        className="h-11 rounded-md border border-white/10 bg-white/[0.04] pl-9 text-zinc-100 hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                                        className="h-11 rounded-lg border border-white/10 bg-white/[0.06] pl-9 text-zinc-100 placeholder:text-zinc-500 hover:border-white/20 hover:bg-white/[0.08] focus:border-violet-400/70 focus:bg-white/[0.08] focus:ring-2 focus:ring-violet-500/20"
                                     />
                                 </div>
                             </div>
@@ -72,7 +72,7 @@ export default function AdminLoginPage() {
                             <Button
                                 type="submit"
                                 disabled={isPending}
-                                className="h-11 w-full rounded-md bg-zinc-100 text-base font-semibold text-zinc-950 hover:bg-white"
+                                className="h-11 w-full rounded-lg bg-zinc-100 text-base font-semibold text-zinc-950 shadow-lg shadow-black/20 hover:bg-white"
                             >
                                 {isPending ? '登录中...' : '进入后台'}
                             </Button>

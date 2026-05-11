@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Button, Input } from '@heroui/react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 interface PasswordDialogProps {
@@ -85,25 +86,23 @@ export function PasswordDialog({
                     }}
                     placeholder="输入新密码..."
                     autoComplete="new-password"
-                    variant="secondary"
-                    className="mt-4 h-10 rounded-xl border border-white/10 bg-white/[0.04] text-zinc-100 hover:bg-white/[0.06]"
+                    className="mt-4 h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] text-zinc-100 hover:bg-white/[0.06]"
                 />
                 <div className="mt-5 flex justify-end gap-2">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={handleCancel}
-                        isDisabled={isPending}
+                        disabled={isPending}
                         className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 px-4 text-zinc-200 hover:bg-white/[0.06]"
                     >
                         取消
                     </Button>
                     <Button
                         type="button"
-                        variant="primary"
                         onClick={handleSubmit}
-                        isDisabled={isPending || !password}
-                        className="inline-flex h-10 items-center justify-center rounded-xl px-4"
+                        disabled={isPending || !password}
+                        className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-100 px-4 text-zinc-950 hover:bg-white"
                     >
                         {isPending ? '修改中...' : '确认修改'}
                     </Button>

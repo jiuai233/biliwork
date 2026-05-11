@@ -62,7 +62,7 @@ export async function getSessionDetail(startTs: number, endTs: number) {
     const giftByUser = new Map<string, {
         uname: string;
         uface: string;
-        gifts: { name: string; count: number; value: number }[];
+        gifts: { name: string; count: number; value: number; icon: string }[];
         totalValue: number;
     }>();
 
@@ -77,28 +77,35 @@ export async function getSessionDetail(startTs: number, endTs: number) {
             });
         }
         const user = giftByUser.get(key)!;
-        const existing = user.gifts.find(x => x.name === g.gift_name);
+        const giftName = g.gift_name || '未知礼物';
+        const existing = user.gifts.find(x => x.name === giftName);
         const giftValue = (g.r_price * g.gift_num) / 1000;
         if (existing) {
             existing.count += g.gift_num;
             existing.value += giftValue;
+            if (!existing.icon && g.gift_icon) existing.icon = g.gift_icon;
         } else {
             user.gifts.push({
-                name: g.gift_name || '未知礼物',
+                name: giftName,
                 count: g.gift_num,
                 value: giftValue,
+                icon: g.gift_icon || '',
             });
         }
         user.totalValue += giftValue;
     }
 
     const giftUsers = Array.from(giftByUser.values())
+        .map(user => ({
+            ...user,
+            gifts: user.gifts.sort((a, b) => b.value - a.value),
+        }))
         .sort((a, b) => b.totalValue - a.totalValue);
 
     return {
         broadcaster,
         stats,
-        danmakuCount: danmaku.length,
+        danmakuCount: stats.danmakuCount,
         danmakuList: danmaku.slice(0, 50), // 只返回最近50条弹幕
         giftUsers,
         guards: guards.map(g => ({

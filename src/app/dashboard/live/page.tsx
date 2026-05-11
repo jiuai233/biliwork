@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { getLiveRecordsData } from "./actions";
 import { Broadcaster } from "@/lib/types";
 import { Loader2, RefreshCcw, Radio, Clock, Coins, Gift, Shield, MessageSquare } from "lucide-react";
-import { Button, Table } from "@heroui/react";
+import { Table } from "@heroui/react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DateRange } from "react-day-picker";
 import { startOfDay, endOfDay, format } from "date-fns";
@@ -35,9 +36,12 @@ export default function LiveRecordsPage() {
         sessions: [],
     });
 
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        to: new Date()
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+        const today = new Date();
+        return {
+            from: today,
+            to: today
+        };
     });
 
     const fetchData = async () => {
@@ -110,7 +114,7 @@ export default function LiveRecordsPage() {
                         variant="secondary"
                         size="sm"
                         onClick={() => fetchData()}
-                        isDisabled={loading}
+                        disabled={loading}
                         aria-label="刷新"
                         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] p-0 text-slate-200 hover:bg-white/[0.09]"
                     >

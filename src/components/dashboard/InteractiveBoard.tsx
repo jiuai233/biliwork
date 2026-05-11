@@ -21,7 +21,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Transaction } from "@/lib/data";
-import { Button, Input } from "@heroui/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DraggableTransactionCard } from "./DraggableTransactionCard";
 import { Download, Search, X, Monitor } from "lucide-react";
 import { domToPng } from "modern-screenshot";
@@ -623,7 +624,7 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
                                     key={t}
                                     onClick={() => setFilterType(t)}
                                     size="sm"
-                                    variant={filterType === t ? "primary" : "ghost"}
+                                    variant="ghost"
                                     className={cn(
                                         "inline-flex h-7 min-w-0 items-center justify-center rounded-md px-2 text-xs transition-colors",
                                         filterType === t
@@ -643,7 +644,6 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
                                 placeholder="用户名 / 内容..."
                                 value={searchName}
                                 onChange={(e) => setSearchName(e.target.value)}
-                                variant="secondary"
                                 className="h-9 w-full rounded-md border border-zinc-800 bg-zinc-950 text-zinc-100"
                             />
                         </div>
@@ -654,7 +654,6 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
                                 placeholder="0"
                                 value={minPrice}
                                 onChange={(e) => setMinPrice(e.target.value)}
-                                variant="secondary"
                                 className="h-9 w-full rounded-md border border-zinc-800 bg-zinc-950 text-zinc-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                             />
                         </div>
@@ -703,7 +702,7 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => setBoardItems([])}
-                                isDisabled={boardItems.length === 0}
+                                disabled={boardItems.length === 0}
                                 className="inline-flex h-9 items-center justify-center rounded-lg px-3 text-zinc-300 hover:bg-zinc-900"
                             >
                                 清空
@@ -711,10 +710,9 @@ export function InteractiveBoard({ initialTransactions, overlayCode }: Interacti
                             <Button
                                 type="button"
                                 size="sm"
-                                variant="primary"
                                 onClick={handleExport}
-                                isDisabled={boardItems.length === 0}
-                                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3"
+                                disabled={boardItems.length === 0}
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-zinc-100 px-3 text-zinc-950 hover:bg-white"
                             >
                                 <Download className="h-4 w-4" />
                                 导出图片

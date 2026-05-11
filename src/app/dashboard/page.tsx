@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DateRange } from "react-day-picker";
 import { endOfDay, startOfDay } from "date-fns";
 import { toast } from "sonner";
-import { Avatar, Button } from "@heroui/react";
+import { Avatar } from "@heroui/react";
+import { Button } from "@/components/ui/button";
 import {
     Loader2,
     RefreshCcw,
@@ -23,6 +24,7 @@ import { Broadcaster, DashboardStats, Danmaku, Gift, Guard, SuperChat } from "@/
 type DashboardData = {
     broadcaster: Broadcaster | null;
     stats: DashboardStats | null;
+    previousStats?: DashboardStats | null;
     danmaku: Danmaku[];
     gifts: Gift[];
     guards: Guard[];
@@ -34,6 +36,7 @@ type DashboardData = {
 const defaultData: DashboardData = {
     broadcaster: null,
     stats: null,
+    previousStats: null,
     danmaku: [],
     gifts: [],
     guards: [],
@@ -137,7 +140,7 @@ export default function DashboardPage() {
                             variant="secondary"
                             size="sm"
                             onClick={() => fetchData()}
-                            isDisabled={loading}
+                            disabled={loading}
                             aria-label="刷新"
                             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] p-0 text-slate-200 hover:bg-white/[0.09]"
                         >
@@ -164,7 +167,7 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {data.stats && <StatsPanel stats={data.stats} />}
+            {data.stats && <StatsPanel stats={data.stats} previousStats={data.previousStats} />}
 
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
                 <div className="min-w-0">

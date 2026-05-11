@@ -27,9 +27,14 @@ export async function getDashboardData(startTime?: number, endTime?: number) {
     const start = startTime || new Date().setHours(0, 0, 0, 0);
     const end = endTime || Date.now();
 
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const previousStart = start - oneDayMs;
+    const previousEnd = end - oneDayMs;
+
     // 并行获取所有数据 (all functions are now async)
-    const [stats, danmaku, gifts, guards, superChats, topDanmaku, topGifts] = await Promise.all([
+    const [stats, previousStats, danmaku, gifts, guards, superChats, topDanmaku, topGifts] = await Promise.all([
         getStats(roomId, start, end),
+        getStats(roomId, previousStart, previousEnd),
         getRecentDanmaku(roomId, 50, start, end),
         getRecentGifts(roomId, 50, start, end),
         getRecentGuards(roomId, 20, start, end),
@@ -41,6 +46,7 @@ export async function getDashboardData(startTime?: number, endTime?: number) {
     return {
         broadcaster,
         stats,
+        previousStats,
         danmaku,
         gifts,
         guards,

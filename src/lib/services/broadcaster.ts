@@ -183,6 +183,35 @@ export async function updateBroadcasterPassword(id: number, passwordHash: string
     return !!result;
 }
 
+export async function updateBroadcasterAuthCode(
+    id: number,
+    authCode: string,
+    passwordHash?: string
+): Promise<{ success: boolean; message?: string }> {
+    try {
+        await prisma.broadcaster.update({
+            where: { id },
+            data: {
+                authCode,
+                ...(passwordHash ? { passwordHash } : {}),
+                updatedAt: BigInt(Date.now())
+            }
+        });
+        return { success: true };
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2002') {
+                return { success: false, message: '身份码已存在' };
+            }
+            if (error.code === 'P2025') {
+                return { success: false, message: '主播不存在' };
+            }
+        }
+        console.error('Update broadcaster auth code failed:', error);
+        return { success: false, message: '更新失败' };
+    }
+}
+
 export async function deleteBroadcaster(id: number): Promise<boolean> {
     try {
         await prisma.broadcaster.delete({ where: { id } });

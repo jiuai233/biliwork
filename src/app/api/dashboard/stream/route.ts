@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
     const endTime = searchParams.get('endTime');
 
     const start = startTime ? parseInt(startTime) : new Date().setHours(0, 0, 0, 0);
-    const end = endTime ? parseInt(endTime) : Date.now();
 
     const encoder = new TextEncoder();
 
@@ -46,9 +45,13 @@ export async function GET(request: NextRequest) {
 
                     const roomId = broadcaster.room_id;
                     const currentEnd = endTime ? parseInt(endTime) : Date.now();
+                    const oneDayMs = 24 * 60 * 60 * 1000;
+                    const previousStart = start - oneDayMs;
+                    const previousEnd = currentEnd - oneDayMs;
 
-                    const [stats, danmaku, gifts, guards, superChats, topDanmaku, topGifts] = await Promise.all([
+                    const [stats, previousStats, danmaku, gifts, guards, superChats, topDanmaku, topGifts] = await Promise.all([
                         getStats(roomId, start, currentEnd),
+                        getStats(roomId, previousStart, previousEnd),
                         getRecentDanmaku(roomId, 50, start, currentEnd),
                         getRecentGifts(roomId, 50, start, currentEnd),
                         getRecentGuards(roomId, 20, start, currentEnd),
@@ -60,6 +63,7 @@ export async function GET(request: NextRequest) {
                     const payload = JSON.stringify({
                         broadcaster,
                         stats,
+                        previousStats,
                         danmaku,
                         gifts,
                         guards,

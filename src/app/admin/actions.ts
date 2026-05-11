@@ -5,6 +5,7 @@ import {
     getAllBroadcasters, addBroadcaster,
     updateBroadcasterStatus, deleteBroadcaster,
     updateBroadcasterPassword,
+    updateBroadcasterAuthCode,
     updateAdminPassword,
     getBroadcasterById
 } from '@/lib/data';
@@ -136,6 +137,28 @@ export async function updateBroadcasterPasswordAction(id: number, newPassword: s
         const hash = await bcrypt.hash(newPassword, 10);
         const success = await updateBroadcasterPassword(id, hash);
         return { success, message: success ? '密码已更新' : '更新失败' };
+    } catch {
+        return { success: false, message: '系统错误' };
+    }
+}
+
+export async function updateBroadcasterAuthCodeAction(
+    id: number,
+    newAuthCode: string,
+    resetPasswordToAuthCode = false
+) {
+    await requireAdmin();
+
+    const authCode = newAuthCode.trim();
+    if (!authCode) {
+        return { success: false, message: '身份码不能为空' };
+    }
+
+    try {
+        const passwordHash = resetPasswordToAuthCode
+            ? await bcrypt.hash(authCode, 10)
+            : undefined;
+        return await updateBroadcasterAuthCode(id, authCode, passwordHash);
     } catch {
         return { success: false, message: '系统错误' };
     }

@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from "react";
-import { Avatar, Button, Card } from "@heroui/react";
+import { Avatar, Card } from "@heroui/react";
+import { Button } from "@/components/ui/button";
 import { Gift, MessageSquareText, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,11 +73,11 @@ export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps
                         <Button
                             type="button"
                             size="sm"
-                            variant={activeTab === "danmaku" ? "primary" : "ghost"}
+                            variant="ghost"
                             onClick={() => setActiveTab("danmaku")}
                             className={cn(
                                 "inline-flex h-8 items-center justify-center gap-2 rounded-lg px-3 text-sm",
-                                activeTab === "danmaku" ? "text-white" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
+                                activeTab === "danmaku" ? "bg-blue-600 text-white hover:bg-blue-500" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
                             )}
                         >
                             <MessageSquareText className="h-4 w-4" />
@@ -85,11 +86,11 @@ export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps
                         <Button
                             type="button"
                             size="sm"
-                            variant={activeTab === "gift" ? "primary" : "ghost"}
+                            variant="ghost"
                             onClick={() => setActiveTab("gift")}
                             className={cn(
                                 "inline-flex h-8 items-center justify-center gap-2 rounded-lg px-3 text-sm",
-                                activeTab === "gift" ? "text-white" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
+                                activeTab === "gift" ? "bg-pink-600 text-white hover:bg-pink-500" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
                             )}
                         >
                             <Gift className="h-4 w-4" />

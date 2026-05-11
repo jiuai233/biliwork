@@ -14,7 +14,8 @@ import {
     Radio,
     ChevronUp
 } from "lucide-react";
-import { Avatar, Button } from "@heroui/react";
+import { Avatar } from "@heroui/react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/auth";
 import type { Broadcaster } from "@/lib/types";
