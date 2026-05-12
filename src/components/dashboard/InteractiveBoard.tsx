@@ -93,6 +93,30 @@ function isSourceConsumed(boardItems: BoardTransaction[], item: Transaction): bo
     return boardItems.some((boardItem) => boardItem.id === item.id || boardItem.mergedIds?.includes(item.id));
 }
 
+function mergeTransactionsIntoBoard(
+    currentItems: BoardTransaction[],
+    incomingItems: Transaction[],
+): BoardTransaction[] {
+    const nextItems = [...currentItems];
+
+    for (const item of incomingItems) {
+        if (isSourceConsumed(nextItems, item)) continue;
+
+        const mergeKey = getBoardMergeKey(item);
+        const existingIndex = mergeKey
+            ? nextItems.findIndex((boardItem) => getBoardMergeKey(boardItem) === mergeKey)
+            : -1;
+
+        if (existingIndex >= 0) {
+            nextItems[existingIndex] = mergeBoardTransaction(nextItems[existingIndex], item);
+        } else {
+            nextItems.push({ ...item, mergedIds: [item.id] });
+        }
+    }
+
+    return nextItems;
+}
+
 // --- Helper for Price Colors (Gift Only) ---
 const getPriceStyle = (price: number): React.CSSProperties => {
     if (price < 10) return { background: "linear-gradient(90deg, #3f3f46 0%, #18181b 100%)", borderLeft: "6px solid #a1a1aa" };
@@ -623,18 +647,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
             if (over.id === 'board-droppable' || boardItems.find(i => i.id === over.id)) {
                 const item = sourceItems.find(i => i.id === active.id);
                 if (item) {
-                    const mergeKey = getBoardMergeKey(item);
-                    const existingItem = mergeKey
-                        ? boardItems.find((boardItem) => getBoardMergeKey(boardItem) === mergeKey)
-                        : undefined;
-
-                    if (existingItem) {
-                        setBoardItems((items) => items.map((boardItem) =>
-                            boardItem.id === existingItem.id ? mergeBoardTransaction(boardItem, item) : boardItem
-                        ));
-                    } else {
-                        setBoardItems([...boardItems, { ...item, mergedIds: [item.id] }]);
-                    }
+                    setBoardItems((items) => mergeTransactionsIntoBoard(items, [item]));
                 }
             }
         }
@@ -650,6 +663,17 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
 
     const handleRemoveFromBoard = (id: string) => {
         setBoardItems(items => items.filter(i => i.id !== id));
+    };
+
+    const handleImportAllVisible = () => {
+        if (filteredSource.length === 0) {
+            toast.info("当前没有可导入记录");
+            return;
+        }
+
+        const importCount = filteredSource.length;
+        setBoardItems((items) => mergeTransactionsIntoBoard(items, filteredSource));
+        toast.success(`已导入 ${importCount} 条可用记录`);
     };
 
     const handleExport = async () => {
@@ -838,8 +862,18 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                     </div>
 
                     <div className="flex-1 min-h-0 bg-zinc-900/50 rounded-lg border border-zinc-800 flex flex-col">
-                        <div className="p-3 border-b border-zinc-800 text-sm text-zinc-400">
-                            可用记录 ({filteredSource.length})
+                        <div className="flex items-center justify-between gap-2 border-b border-zinc-800 p-3">
+                            <span className="text-sm text-zinc-400">可用记录 ({filteredSource.length})</span>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleImportAllVisible}
+                                disabled={filteredSource.length === 0}
+                                className="inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2 text-xs text-zinc-200 hover:bg-zinc-800"
+                            >
+                                全部导入
+                            </Button>
                         </div>
                         <div className="dark-scrollbar flex-1 overflow-y-auto p-3">
                             <div className="space-y-2">
