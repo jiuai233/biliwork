@@ -129,6 +129,33 @@ export class CollectorManager {
                 logger.error({ error }, 'Save live status failed');
             }
         };
+        client.onStarted = async (info) => {
+            try {
+                await pool.query(
+                    `
+                    UPDATE broadcasters
+                    SET room_id = $1,
+                        uid = $2,
+                        uname = $3,
+                        uface = $4,
+                        open_id = $5,
+                        updated_at = $6
+                    WHERE auth_code = $7
+                    `,
+                    [
+                        info.roomId,
+                        info.uid.toString(),
+                        info.uname,
+                        info.uface,
+                        info.openId,
+                        Date.now().toString(),
+                        authCode,
+                    ],
+                );
+            } catch (error) {
+                logger.error({ error, auth: authCode.slice(0, 8) }, 'Update broadcaster profile failed');
+            }
+        };
 
         try {
             await client.start();

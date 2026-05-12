@@ -39,6 +39,14 @@ interface StartResponse {
     };
 }
 
+export interface AnchorInfo {
+    roomId: number;
+    uid: number;
+    uname: string;
+    uface: string;
+    openId: string;
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object' ? value as Record<string, unknown> : {};
 }
@@ -58,6 +66,7 @@ export class BilibiliClient {
     onGuard?: (msg: GuardMessage) => void | Promise<void>;
     onSuperChat?: (msg: SuperChatMessage) => void | Promise<void>;
     onLiveStatus?: (msg: LiveStatusMessage) => void | Promise<void>;
+    onStarted?: (info: AnchorInfo) => void | Promise<void>;
 
     constructor(
         private accessKeyId: string,
@@ -99,6 +108,14 @@ export class BilibiliClient {
             room: response.data.anchor_info.room_id,
             uname: response.data.anchor_info.uname,
         }, 'Game started');
+
+        void this.onStarted?.({
+            roomId: response.data.anchor_info.room_id,
+            uid: response.data.anchor_info.uid,
+            uname: response.data.anchor_info.uname,
+            uface: response.data.anchor_info.uface,
+            openId: response.data.anchor_info.open_id,
+        });
     }
 
     private async connectWs() {
