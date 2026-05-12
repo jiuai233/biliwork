@@ -177,22 +177,118 @@ export async function getAllBroadcasters(): Promise<BroadcasterAdminRow[]> {
     }));
 }
 
-export async function addBroadcaster(authCode: string, active = 1, passwordHash: string | null = null): Promise<boolean> {
-    try {
-        const now = BigInt(Date.now());
-        await prisma.broadcaster.create({
-            data: {
-                authCode,
-                active,
-                passwordHash,
-                createdAt: now,
-                updatedAt: now
-            }
-        });
-        return true;
-    } catch (e) {
-        console.error('Add broadcaster failed:', e);
+export type CreateBroadcasterResult = {
+    success: boolean;
+    message?: string;
+};
+
+function getPrismaErrorCode(error: unknown): string | undefined {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        return error.code;
+    }
+
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+        return error.errorCode;
+    }
+
+    return undefined;
+}
+
+function getPrismaErrorTarget(error: unknown): string[] {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+        return [];
+    }
+
+    const target = error.meta?.target;
+    if (Array.isArray(target)) {
+        return target.map(String);
+    }
+
+    return typeof target === 'string' ? [target] : [];
+}
+
+function isUniqueConflictOn(error: unknown, field: string): boolean {
+    if (getPrismaErrorCode(error) !== 'P2002') {
         return false;
+    }
+
+    const target = getPrismaErrorTarget(error);
+    return target.some((value) => value === field || value.includes(field));
+}
+
+function getCreateBroadcasterErrorMessage(error: unknown): string {
+    const code = getPrismaErrorCode(error);
+
+    if (code === 'P2002') {
+        if (isUniqueConflictOn(error, 'id')) {
+            return '数据库主键序列异常，请稍后重试';
+        }
+
+        return '身份码已存在';
+    }
+
+    if (code === 'P1001') {
+        return '数据库连接失败，请检查 PostgreSQL 是否运行';
+    }
+
+    if (code === 'P2021') {
+        return '数据库缺少 broadcasters 表，请先初始化数据库';
+    }
+
+    if (code === 'P2022') {
+        return '数据库表结构不完整，请检查 broadcasters 字段';
+    }
+
+    return '添加失败，请查看服务端日志';
+}
+
+async function createBroadcasterRecord(authCode: string, active: number, passwordHash: string | null) {
+    const now = BigInt(Date.now());
+    await prisma.broadcaster.create({
+        data: {
+            authCode,
+            active,
+            passwordHash,
+            createdAt: now,
+            updatedAt: now
+        }
+    });
+}
+
+async function repairBroadcasterIdSequence() {
+    await prisma.$queryRaw`
+        SELECT setval(
+            pg_get_serial_sequence('broadcasters', 'id'),
+            COALESCE((SELECT MAX(id) FROM broadcasters), 1),
+            EXISTS(SELECT 1 FROM broadcasters)
+        )
+    `;
+}
+
+export async function addBroadcaster(
+    authCode: string,
+    active = 1,
+    passwordHash: string | null = null
+): Promise<CreateBroadcasterResult> {
+    try {
+        await createBroadcasterRecord(authCode, active, passwordHash);
+        return { success: true };
+    } catch (e) {
+        if (isUniqueConflictOn(e, 'id')) {
+            try {
+                await repairBroadcasterIdSequence();
+                await createBroadcasterRecord(authCode, active, passwordHash);
+                return { success: true };
+            } catch (retryError) {
+                const retryCode = getPrismaErrorCode(retryError);
+                console.error('Add broadcaster retry after sequence repair failed:', { code: retryCode, error: retryError });
+                return { success: false, message: getCreateBroadcasterErrorMessage(retryError) };
+            }
+        }
+
+        const code = getPrismaErrorCode(e);
+        console.error('Add broadcaster failed:', { code, error: e });
+        return { success: false, message: getCreateBroadcasterErrorMessage(e) };
     }
 }
 

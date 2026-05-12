@@ -117,13 +117,14 @@ export async function fetchBroadcasters() {
 
 export async function createBroadcasterAction(formData: FormData) {
     await requireAdmin();
-    const authCode = formData.get('authCode') as string;
+    const rawAuthCode = formData.get('authCode');
+    const authCode = typeof rawAuthCode === 'string' ? rawAuthCode.trim() : '';
     if (!authCode) return { success: false, message: '身份码不能为空' };
 
     const passwordHash = await bcrypt.hash(authCode, 10);
-    const success = await addBroadcaster(authCode, 1, passwordHash);
+    const result = await addBroadcaster(authCode, 1, passwordHash);
 
-    if (!success) return { success: false, message: '添加失败，可能已存在' };
+    if (!result.success) return { success: false, message: result.message || '添加失败' };
     return { success: true };
 }
 
