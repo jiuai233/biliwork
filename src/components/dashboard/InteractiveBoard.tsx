@@ -538,12 +538,26 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
     const [minPrice, setMinPrice] = useState("");
     const [filterType, setFilterType] = useState<'all' | 'super_chat' | 'gift' | 'guard'>('all');
     const [isMounted, setIsMounted] = useState(false);
+    const [scrollSpeed, setScrollSpeed] = useState(5);
     const currentSession = initialSessions.find((session) => !session.endTs);
     const historySessions = initialSessions.filter((session) => session.endTs);
 
     React.useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // 挂载时从 overlay store 恢复 board 状态
+    React.useEffect(() => {
+        if (!overlayCode || !isMounted) return;
+        fetch(`/api/overlay/${overlayCode}/poll`)
+            .then((res) => res.json())
+            .then((data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    setBoardItems(data);
+                }
+            })
+            .catch(() => { });
+    }, [overlayCode, isMounted]);
 
     // 自动同步 board 状态到 OBS 叠加层
     React.useEffect(() => {
@@ -559,6 +573,21 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
 
         return () => clearTimeout(timer);
     }, [boardItems, overlayCode, isMounted]);
+
+    // 同步滚动速度到 OBS config
+    React.useEffect(() => {
+        if (!overlayCode || !isMounted) return;
+
+        const timer = setTimeout(() => {
+            fetch(`/api/overlay/${overlayCode}/config`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scrollSpeed }),
+            }).catch(() => { });
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [scrollSpeed, overlayCode, isMounted]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -683,16 +712,29 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
         try {
             toast.info("正在生成图片...");
 
+            // Temporarily remove minHeight so the canvas shrinks to content height
+            const origMinHeight = element.style.minHeight;
+            element.style.minHeight = "0";
+
             const dataUrl = await domToPng(element, {
                 scale: 2,
-                backgroundColor: null, // Transparent background
+                backgroundColor: null,
+                filter: (el) => {
+                    if (el instanceof HTMLElement && el.hasAttribute("data-html2canvas-ignore")) {
+                        return false;
+                    }
+                    return true;
+                },
                 fetch: {
                     requestInit: {
-                        referrerPolicy: 'no-referrer',
-                        mode: 'cors',
-                    }
-                }
+                        referrerPolicy: "no-referrer",
+                        mode: "cors",
+                    },
+                },
             });
+
+            // Restore minHeight
+            element.style.minHeight = origMinHeight;
 
             const link = document.createElement("a");
             link.download = `bili-monitor-board-${Date.now()}.png`;
@@ -908,7 +950,21 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                 <span className="text-zinc-500">已选择 {boardItems.length} 个项目</span>
                             </div>
                         </div>
-                        <div className="flex shrink-0 gap-2">
+                        <div className="flex shrink-0 items-center gap-3">
+                            {overlayCode && (
+                                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                                    <span>滚动速度</span>
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="10"
+                                        value={scrollSpeed}
+                                        onChange={(e) => setScrollSpeed(Number(e.target.value))}
+                                        className="w-20 h-1.5 cursor-pointer accent-zinc-100"
+                                    />
+                                    <span className="w-4 text-center text-zinc-300 tabular-nums">{scrollSpeed}</span>
+                                </div>
+                            )}
                             <Button
                                 type="button"
                                 size="sm"

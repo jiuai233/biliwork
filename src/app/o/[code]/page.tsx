@@ -5,10 +5,10 @@ import { useParams } from 'next/navigation';
 
 /**
  * OBS 浏览器源 — 实时礼物/SC/舰长 叠加层
- * 
- * 独立页面，直接从数据库读取最新记录，无需登录。
+ *
+ * 独立页面，从 overlay store 读取制作板同步的数据。
  * 短链: /o/[code]  (code = roomId.toString(36))
- * 
+ *
  * 在 OBS 中：添加浏览器源 → 粘贴此 URL → 宽度 500, 高度 900
  */
 
@@ -69,7 +69,6 @@ function SCCard({ t }: { t: Transaction }) {
             width: '100%', maxWidth: '460px', borderRadius: '14px', overflow: 'hidden',
             boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             fontFamily: '"Microsoft YaHei", sans-serif',
-            animation: 'slideIn 0.4s ease-out',
         }}>
             <div style={{ backgroundColor: c.headerBg, padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -105,7 +104,7 @@ function GiftCard({ t }: { t: Transaction }) {
     return (
         <div style={{
             width: '100%', maxWidth: '460px', height: '68px', display: 'flex', alignItems: 'center',
-            position: 'relative', flexShrink: 0, animation: 'slideIn 0.4s ease-out',
+            position: 'relative', flexShrink: 0, flexGrow: 0,
         }}>
             <div style={barStyle} />
             <div style={{ position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', width: '100%', paddingRight: '12px' }}>
@@ -151,13 +150,18 @@ export default function OverlayPage() {
     const code = params.code as string;
     const [items, setItems] = useState<Transaction[]>([]);
     const prevIdsRef = useRef<string>('');
+    const [scrollSpeed, setScrollSpeed] = useState(5);
+    const [totalHeight, setTotalHeight] = useState(0);
+    const offsetRef = useRef(0);
+    const rafRef = useRef<number>(0);
+    const measureRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     // 挂载时强制清除背景
     useEffect(() => {
         document.body.className = '';
         document.body.style.cssText = 'background:transparent!important;margin:0;padding:0;overflow:hidden';
         document.documentElement.style.cssText = 'background:transparent!important';
-        // 持续清除 Next.js 开发浮标
         const observer = new MutationObserver(() => {
             document.querySelectorAll('nextjs-portal,[data-nextjs-toast]').forEach(el => el.remove());
         });
@@ -165,13 +169,64 @@ export default function OverlayPage() {
         return () => observer.disconnect();
     }, []);
 
-    // 轮询获取数据（最可靠的方式）
+    // 读取滚动速度配置（启动时 + 每 5 秒轮询）
+    useEffect(() => {
+        const fetchConfig = () => {
+            fetch(`/api/overlay/${code}/config`)
+                .then((res) => res.json())
+                .then((config) => {
+                    if (config.scrollSpeed) setScrollSpeed(config.scrollSpeed);
+                })
+                .catch(() => {});
+        };
+        fetchConfig();
+        const interval = setInterval(fetchConfig, 5000);
+        return () => clearInterval(interval);
+    }, [code]);
+
+    // 测量一份 items 的总高度
+    useEffect(() => {
+        if (measureRef.current) {
+            const h = measureRef.current.scrollHeight;
+            setTotalHeight(h);
+        }
+    }, [items]);
+
+    // items 变化时重置偏移
+    useEffect(() => {
+        offsetRef.current = 0;
+    }, [items]);
+
+    // rAF 驱动滚动 — 直接操作 DOM 避免 React re-render
+    // items <= 5 时不滚动，静止显示全部
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (items.length <= 5 || totalHeight === 0 || !el) return;
+
+        let lastTime = 0;
+        const step = (time: number) => {
+            if (lastTime) {
+                const delta = time - lastTime;
+                offsetRef.current += (scrollSpeed * 0.3 * delta) / 16;
+                if (offsetRef.current >= totalHeight) {
+                    offsetRef.current -= totalHeight;
+                }
+                el.style.transform = `translateY(${-offsetRef.current}px)`;
+            }
+            lastTime = time;
+            rafRef.current = requestAnimationFrame(step);
+        };
+
+        rafRef.current = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(rafRef.current);
+    }, [scrollSpeed, totalHeight, items.length]);
+
+    // 轮询获取数据
     const fetchData = useCallback(async () => {
         try {
             const res = await fetch(`/api/overlay/${code}/poll`);
             if (res.ok) {
                 const data = await res.json() as Transaction[];
-                // 只在数据真正变化时更新（避免不必要的重渲染/动画）
                 const newIds = data.map(d => d.id).join(',');
                 if (newIds !== prevIdsRef.current) {
                     prevIdsRef.current = newIds;
@@ -181,7 +236,6 @@ export default function OverlayPage() {
         } catch { }
     }, [code]);
 
-    // 立即加载 + 每 5 秒轮询
     useEffect(() => {
         const initialTimer = window.setTimeout(fetchData, 0);
         const intervalTimer = window.setInterval(fetchData, 5000);
@@ -197,27 +251,54 @@ export default function OverlayPage() {
                 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
                 html, body { background: transparent !important; background-color: transparent !important; overflow: hidden !important; }
                 body { font-family: "Microsoft YaHei", sans-serif; }
-                /* 隐藏所有 Next.js / Tailwind 附加元素 */
                 nextjs-portal, [data-sonner-toaster], [data-nextjs-dialog-overlay] { display: none !important; }
-                @keyframes slideIn {
-                    from { opacity: 0; transform: translateX(50px); }
-                    to { opacity: 1; transform: translateX(0); }
-                }
             `}</style>
             <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-end',
-                gap: '8px',
-                padding: '8px',
+                overflow: 'hidden',
                 width: '100%',
-                minHeight: '100vh',
+                height: '100vh',
+                position: 'relative',
             }}>
-                {items.map((item) => (
-                    item.type === 'super_chat'
-                        ? <SCCard key={item.id} t={item} />
-                        : <GiftCard key={item.id} t={item} />
-                ))}
+                {/* 隐藏的测量容器 — 只渲染一份 items 用来算总高度 */}
+                <div ref={measureRef} style={{
+                    position: 'absolute',
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                    gap: '8px',
+                    padding: '8px',
+                    width: '100%',
+                }}>
+                    {items.map((item) => (
+                        item.type === 'super_chat'
+                            ? <SCCard key={item.id} t={item} />
+                            : <GiftCard key={item.id} t={item} />
+                    ))}
+                </div>
+
+                {/* 滚动容器 — 渲染两份实现无缝循环 */}
+                <div ref={scrollRef} style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                    gap: '8px',
+                    padding: '8px',
+                    width: '100%',
+                }}>
+                    {items.map((item) => (
+                        item.type === 'super_chat'
+                            ? <SCCard key={item.id} t={item} />
+                            : <GiftCard key={item.id} t={item} />
+                    ))}
+                    {items.map((item) => (
+                        item.type === 'super_chat'
+                            ? <SCCard key={`dup-${item.id}`} t={item} />
+                            : <GiftCard key={`dup-${item.id}`} t={item} />
+                    ))}
+                </div>
+
                 {items.length === 0 && (
                     <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px', textAlign: 'center', width: '100%', paddingTop: '20px' }}>
                         等待礼物数据...

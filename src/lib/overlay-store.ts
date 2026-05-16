@@ -40,3 +40,25 @@ export function getOverlayItems(code: string): unknown[] {
     } catch { }
     return [];
 }
+
+function getConfigFilePath(code: string): string {
+    const safeCode = code.replace(/[^a-z0-9]/gi, '');
+    return path.join(STORE_DIR, `${safeCode}-config.json`);
+}
+
+export function setOverlayConfig(code: string, config: Record<string, unknown>) {
+    ensureDir();
+    const filePath = getConfigFilePath(code);
+    fs.writeFileSync(filePath, JSON.stringify(config), 'utf-8');
+}
+
+export function getOverlayConfig(code: string): Record<string, unknown> {
+    const filePath = getConfigFilePath(code);
+    try {
+        if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, 'utf-8');
+            return JSON.parse(data);
+        }
+    } catch { }
+    return {};
+}
