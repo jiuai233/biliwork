@@ -226,13 +226,15 @@ function SortableBoardItem({
         position: "relative",
         width: "500px",
         flexShrink: 0,
+        transformOrigin: "right center",
     };
 
-    // --- SC Card Layout (Reference Replica matching 4 tiers) ---
+    // --- SC Card Layout ---
     if (isSC && scColors) {
         return (
             <div
                 ref={setNodeRef}
+                data-board-card
                 style={{
                     ...containerStyle,
                     borderRadius: "16px",
@@ -353,6 +355,7 @@ function SortableBoardItem({
     return (
         <div
             ref={setNodeRef}
+            data-board-card
             style={{ ...containerStyle, display: "flex", alignItems: "center", height: "80px" }}
             {...attributes}
             {...listeners}
@@ -712,9 +715,17 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
         try {
             toast.info("正在生成图片...");
 
-            // Temporarily remove minHeight so the canvas shrinks to content height
+            // Read the actual card width from the first card, fallback to 500px
+            const firstCard = element.querySelector<HTMLElement>("[data-board-card]");
+            const cardWidth = firstCard ? `${firstCard.offsetWidth}px` : "500px";
+
+            // Temporarily shrink container to card width for clean export
             const origMinHeight = element.style.minHeight;
+            const origWidth = element.style.width;
+            const origPadding = element.style.padding;
             element.style.minHeight = "0";
+            element.style.width = cardWidth;
+            element.style.padding = "0";
 
             const dataUrl = await domToPng(element, {
                 scale: 2,
@@ -733,8 +744,10 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                 },
             });
 
-            // Restore minHeight
+            // Restore styles
             element.style.minHeight = origMinHeight;
+            element.style.width = origWidth;
+            element.style.padding = origPadding;
 
             const link = document.createElement("a");
             link.download = `bili-monitor-board-${Date.now()}.png`;
