@@ -234,3 +234,62 @@
 - 兼容性风险：拖拽单条导入行为保持一致。
 - 漏项检查：空列表、已导入记录过滤、礼物合并、SC 不合并均覆盖。
 - KISS/YAGNI/DRY/SOLID：新增一个小型纯函数，避免拖拽和批量导入两套逻辑。
+
+---
+
+# OBS 切片滚动开关与 8 条阈值计划
+
+## 改造范围
+
+- OBS overlay 滚动阈值从 5 条调整为 8 条。
+- 制作板增加自动滚动手动开关。
+- overlay config 增加 `scrollEnabled` 字段，与现有 `scrollSpeed` 一起同步。
+- overlay 只在开启滚动且条数超过 8 时渲染双份并启动循环。
+
+## 非目标项
+
+- 不改变切片卡片样式、排序、拖拽、导出图片逻辑。
+- 不新增服务端持久化机制，继续沿用 overlay config 文件存储。
+- 不改变速度滑块取值范围。
+
+## 输入输出
+
+- 输入：制作板 `scrollEnabled`、`scrollSpeed`、`boardItems.length`。
+- 输出：OBS overlay 中 `<= 8` 条显示单份；`> 8` 且开启滚动时循环显示。
+
+## 影响范围
+
+- `src/components/dashboard/InteractiveBoard.tsx`
+- `src/app/o/[code]/page.tsx`
+- `src/app/api/overlay/[code]/config/route.ts`
+
+## 实施顺序
+
+1. 扩展 config GET/PATCH 消费字段，默认 `scrollEnabled: true`。
+2. 制作板读取并同步 `scrollEnabled`。
+3. 增加自动滚动滑块开关 UI。
+4. overlay 端使用统一 `shouldScroll` 条件控制 rAF 和第二份渲染。
+5. 执行 diff 自查。
+6. 运行 lint/build 验证。
+
+## 风险点
+
+- 默认开启保持旧行为，但 `<= 8` 条会变成单份静止展示。
+- 如果已有 OBS 页面长时间不刷新，需要等待 5 秒轮询拿到新配置。
+
+## 回滚点
+
+- 回滚以上三个文件即可恢复原滚动行为。
+
+## 验证方式
+
+- `npm run lint`
+- `npm run build`
+
+## Plan Eng Review
+
+- 更短路径：只调整 overlay 条件可修重复，但无法满足手动开启需求。
+- 耦合风险：复用现有 config 同步链路，不新增 API。
+- 兼容性风险：旧 config 没有 `scrollEnabled` 时默认开启。
+- 漏项检查：覆盖关闭滚动、`<= 8`、`> 8`、速度配置轮询四类场景。
+- KISS/YAGNI/DRY/SOLID：只增加一个布尔配置和一个派生条件，不引入新状态管理。

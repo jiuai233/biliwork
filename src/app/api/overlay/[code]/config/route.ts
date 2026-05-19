@@ -13,7 +13,10 @@ export async function GET(
     }
 
     const config = getOverlayConfig(code);
-    return NextResponse.json({ scrollSpeed: config.scrollSpeed ?? 5 });
+    return NextResponse.json({
+        scrollSpeed: config.scrollSpeed ?? 5,
+        scrollEnabled: config.scrollEnabled ?? true,
+    });
 }
 
 export async function PATCH(

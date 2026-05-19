@@ -542,12 +542,29 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
     const [filterType, setFilterType] = useState<'all' | 'super_chat' | 'gift' | 'guard'>('all');
     const [isMounted, setIsMounted] = useState(false);
     const [scrollSpeed, setScrollSpeed] = useState(5);
+    const [scrollEnabled, setScrollEnabled] = useState(true);
     const currentSession = initialSessions.find((session) => !session.endTs);
     const historySessions = initialSessions.filter((session) => session.endTs);
 
     React.useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // 挂载时从 overlay config 恢复滚动设置
+    React.useEffect(() => {
+        if (!overlayCode || !isMounted) return;
+        fetch(`/api/overlay/${overlayCode}/config`)
+            .then((res) => res.json())
+            .then((config) => {
+                if (typeof config.scrollSpeed === "number") {
+                    setScrollSpeed(config.scrollSpeed);
+                }
+                if (typeof config.scrollEnabled === "boolean") {
+                    setScrollEnabled(config.scrollEnabled);
+                }
+            })
+            .catch(() => { });
+    }, [overlayCode, isMounted]);
 
     // 挂载时从 overlay store 恢复 board 状态
     React.useEffect(() => {
@@ -577,7 +594,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
         return () => clearTimeout(timer);
     }, [boardItems, overlayCode, isMounted]);
 
-    // 同步滚动速度到 OBS config
+    // 同步滚动设置到 OBS config
     React.useEffect(() => {
         if (!overlayCode || !isMounted) return;
 
@@ -585,12 +602,12 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
             fetch(`/api/overlay/${overlayCode}/config`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ scrollSpeed }),
+                body: JSON.stringify({ scrollSpeed, scrollEnabled }),
             }).catch(() => { });
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [scrollSpeed, overlayCode, isMounted]);
+    }, [scrollSpeed, scrollEnabled, overlayCode, isMounted]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -965,17 +982,42 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                         </div>
                         <div className="flex shrink-0 items-center gap-3">
                             {overlayCode && (
-                                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                                    <span>滚动速度</span>
-                                    <input
-                                        type="range"
-                                        min="1"
-                                        max="10"
-                                        value={scrollSpeed}
-                                        onChange={(e) => setScrollSpeed(Number(e.target.value))}
-                                        className="w-20 h-1.5 cursor-pointer accent-zinc-100"
-                                    />
-                                    <span className="w-4 text-center text-zinc-300 tabular-nums">{scrollSpeed}</span>
+                                <div className="flex items-center gap-3 text-sm text-zinc-400">
+                                    <div className="inline-flex items-center gap-2">
+                                        <span>自动滚动</span>
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            aria-checked={scrollEnabled}
+                                            onClick={() => setScrollEnabled((enabled) => !enabled)}
+                                            className={cn(
+                                                "relative h-5 w-9 rounded-full border transition-colors",
+                                                scrollEnabled
+                                                    ? "border-purple-400/50 bg-purple-500"
+                                                    : "border-zinc-700 bg-zinc-800"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow transition-transform",
+                                                    scrollEnabled ? "translate-x-4" : "translate-x-0.5"
+                                                )}
+                                            />
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span>滚动速度</span>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="10"
+                                            value={scrollSpeed}
+                                            onChange={(e) => setScrollSpeed(Number(e.target.value))}
+                                            disabled={!scrollEnabled}
+                                            className="h-1.5 w-20 cursor-pointer accent-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                        />
+                                        <span className="w-4 text-center text-zinc-300 tabular-nums">{scrollSpeed}</span>
+                                    </div>
                                 </div>
                             )}
                             <Button

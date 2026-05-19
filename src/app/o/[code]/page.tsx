@@ -151,6 +151,7 @@ export default function OverlayPage() {
     const [items, setItems] = useState<Transaction[]>([]);
     const prevIdsRef = useRef<string>('');
     const [scrollSpeed, setScrollSpeed] = useState(5);
+    const [scrollEnabled, setScrollEnabled] = useState(true);
     const [totalHeight, setTotalHeight] = useState(0);
     const offsetRef = useRef(0);
     const rafRef = useRef<number>(0);
@@ -175,7 +176,8 @@ export default function OverlayPage() {
             fetch(`/api/overlay/${code}/config`)
                 .then((res) => res.json())
                 .then((config) => {
-                    if (config.scrollSpeed) setScrollSpeed(config.scrollSpeed);
+                    if (typeof config.scrollSpeed === 'number') setScrollSpeed(config.scrollSpeed);
+                    if (typeof config.scrollEnabled === 'boolean') setScrollEnabled(config.scrollEnabled);
                 })
                 .catch(() => {});
         };
@@ -198,10 +200,15 @@ export default function OverlayPage() {
     }, [items]);
 
     // rAF 驱动滚动 — 直接操作 DOM 避免 React re-render
-    // items <= 5 时不滚动，静止显示全部
+    // 只有手动开启且 items > 8 时滚动，少量内容静止显示单份
     useEffect(() => {
         const el = scrollRef.current;
-        if (items.length <= 5 || totalHeight === 0 || !el) return;
+        const shouldScroll = scrollEnabled && items.length > 8;
+        if (!shouldScroll || totalHeight === 0 || !el) {
+            offsetRef.current = 0;
+            if (el) el.style.transform = 'translateY(0)';
+            return;
+        }
 
         let lastTime = 0;
         const step = (time: number) => {
@@ -219,7 +226,7 @@ export default function OverlayPage() {
 
         rafRef.current = requestAnimationFrame(step);
         return () => cancelAnimationFrame(rafRef.current);
-    }, [scrollSpeed, totalHeight, items.length]);
+    }, [scrollSpeed, scrollEnabled, totalHeight, items.length]);
 
     // 轮询获取数据
     const fetchData = useCallback(async () => {
@@ -244,6 +251,8 @@ export default function OverlayPage() {
             window.clearInterval(intervalTimer);
         };
     }, [fetchData]);
+
+    const shouldScroll = scrollEnabled && items.length > 8;
 
     return (
         <>
@@ -278,7 +287,7 @@ export default function OverlayPage() {
                     ))}
                 </div>
 
-                {/* 滚动容器 — 渲染两份实现无缝循环 */}
+                {/* 滚动容器 — 滚动时渲染两份实现无缝循环 */}
                 <div ref={scrollRef} style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -292,7 +301,7 @@ export default function OverlayPage() {
                             ? <SCCard key={item.id} t={item} />
                             : <GiftCard key={item.id} t={item} />
                     ))}
-                    {items.map((item) => (
+                    {shouldScroll && items.map((item) => (
                         item.type === 'super_chat'
                             ? <SCCard key={`dup-${item.id}`} t={item} />
                             : <GiftCard key={`dup-${item.id}`} t={item} />
