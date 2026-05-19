@@ -999,8 +999,8 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                         >
                                             <span
                                                 className={cn(
-                                                    "absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow transition-transform",
-                                                    scrollEnabled ? "translate-x-4" : "translate-x-0.5"
+                                                    "absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+                                                    scrollEnabled ? "translate-x-4" : "translate-x-0"
                                                 )}
                                             />
                                         </button>
