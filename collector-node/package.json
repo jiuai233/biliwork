@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx src/main.ts",
     "build": "tsc",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "reconcile:live-status": "node dist/scripts/reconcile-live-status.js",
+    "reconcile:live-status:dev": "tsx src/scripts/reconcile-live-status.ts"
   },
   "dependencies": {
     "dotenv": "^17.2.3",

@@ -32,14 +32,50 @@ export async function GET(request: NextRequest) {
     const start = startTime ? parseInt(startTime) : new Date().setHours(0, 0, 0, 0);
 
     const encoder = new TextEncoder();
+    let cleanupStream: () => void = () => undefined;
 
     const stream = new ReadableStream({
         async start(controller) {
+            let closed = false;
+            let interval: ReturnType<typeof setInterval> | null = null;
+
+            const cleanup = () => {
+                if (interval) {
+                    clearInterval(interval);
+                    interval = null;
+                }
+
+                if (closed) return;
+
+                closed = true;
+                try {
+                    controller.close();
+                } catch {
+                    // The client or runtime may have already closed the stream.
+                }
+            };
+            cleanupStream = cleanup;
+
+            const enqueue = (payload: unknown) => {
+                if (closed || request.signal.aborted) return;
+
+                try {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+                } catch (error) {
+                    console.error('SSE enqueue error:', error);
+                    cleanup();
+                }
+            };
+
             const sendData = async () => {
+                if (closed || request.signal.aborted) return;
+
                 try {
                     const broadcaster = await getBroadcasterByUid(uid);
+                    if (closed || request.signal.aborted) return;
+
                     if (!broadcaster || !broadcaster.room_id) {
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: '找不到主播信息' })}\n\n`));
+                        enqueue({ error: '找不到主播信息' });
                         return;
                     }
 
@@ -60,7 +96,7 @@ export async function GET(request: NextRequest) {
                         getTopGiftUsers(roomId, start, currentEnd)
                     ]);
 
-                    const payload = JSON.stringify({
+                    enqueue({
                         broadcaster,
                         stats,
                         previousStats,
@@ -72,32 +108,34 @@ export async function GET(request: NextRequest) {
                         topGifts,
                         timestamp: Date.now()
                     });
-
-                    controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
                 } catch (error) {
                     console.error('SSE stream error:', error);
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: '数据获取失败' })}\n\n`));
+                    enqueue({ error: '数据获取失败' });
                 }
             };
 
+            request.signal.addEventListener('abort', cleanup, { once: true });
+
             // 立即发送第一次数据
             await sendData();
+            if (closed || request.signal.aborted) {
+                cleanup();
+                return;
+            }
 
             // 每 15 秒推送一次更新
-            const interval = setInterval(async () => {
+            interval = setInterval(async () => {
                 try {
                     await sendData();
                 } catch {
-                    clearInterval(interval);
-                    controller.close();
+                    cleanup();
                 }
             }, 15000);
 
-            // 客户端断开时清理
-            request.signal.addEventListener('abort', () => {
-                clearInterval(interval);
-                controller.close();
-            });
+            if (closed || request.signal.aborted) cleanup();
+        },
+        cancel() {
+            cleanupStream();
         }
     });
 

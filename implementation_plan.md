@@ -117,6 +117,33 @@
 - 耦合风险：适配层只处理 Button/Input props 映射，不影响其他 HeroUI 组件。
 - 兼容性风险：保留 `disabled`、本地 variant、size 的旧调用方式。
 - 漏项检查：首页普通 action 和 SSE 都补 `previousStats`，避免首次加载和实时刷新表现不一致。
+
+## Live status reconcile script
+
+### 改造范围
+- 在 `collector-node` 增加一次性运维脚本，对账 B站当前直播状态与 `live_status` 最新事件。
+- 增加 npm 脚本入口，支持先 dry-run 再 `--apply`。
+
+### 模块拆分
+- `collector-node/src/scripts/reconcile-live-status.ts`：查询 active 主播、调用 B站房间接口、补差异事件。
+- `collector-node/package.json`：提供源码和构建后运行入口。
+
+### 实施顺序
+1. 添加对账脚本，默认只输出差异。
+2. 添加 npm scripts。
+3. 编译和 lint 验证。
+
+### 风险点
+- B站公开接口不可用时不能修正对应房间，脚本应跳过并输出错误。
+- 正在直播状态取决于接口实时结果，执行前应先 dry-run 复核。
+
+### 回滚点
+- 删除新增脚本和 npm scripts 即可回滚代码。
+- 已写入数据库的修正事件可按 `msg_id LIKE 'reconcile_live_status_%'` 定位。
+
+### 验证方式
+- `npm --prefix web/collector-node run build`
+- dry-run 输出不写库；`--apply` 才插入修正事件。
 - KISS/YAGNI/DRY/SOLID：不引入新的 UI 抽象，只把已有门面接到组件库。
 
 ---
