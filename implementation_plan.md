@@ -320,3 +320,63 @@
 - 兼容性风险：旧 config 没有 `scrollEnabled` 时默认开启。
 - 漏项检查：覆盖关闭滚动、`<= 8`、`> 8`、速度配置轮询四类场景。
 - KISS/YAGNI/DRY/SOLID：只增加一个布尔配置和一个派生条件，不引入新状态管理。
+
+---
+
+# 展示面板一致性与刷新修复计划
+
+## 改造范围
+
+- 修复 OBS overlay 只按 ID 判断变化导致合并卡片不刷新的问题。
+- 统一制作板预览和 OBS overlay 的卡片宽高基准。
+- 修复导出图片异常时画布临时样式未恢复的问题。
+- 给制作板记录列表增加手动刷新能力。
+
+## 非目标项
+
+- 不修改 overlay 写接口鉴权。
+- 不改变现有拖拽、排序、合并语义。
+- 不引入自动轮询，避免直播中持续请求影响编辑体验。
+
+## 输入输出
+
+- 输入：制作板当前选择的记录范围、boardItems、overlay config。
+- 输出：OBS 正确刷新内容变化；导出异常后 UI 恢复；用户可手动刷新可用记录。
+
+## 影响范围
+
+- `src/app/o/[code]/page.tsx`
+- `src/components/dashboard/InteractiveBoard.tsx`
+- `src/app/dashboard/board/actions.ts`
+
+## 实施顺序
+
+1. overlay 端用完整 JSON payload 签名判断数据变化。
+2. OBS 卡片尺寸对齐制作板卡片宽高。
+3. 导出截图临时样式改为 `try/finally` 恢复。
+4. 增加最近记录刷新 action 和制作板刷新按钮。
+5. 执行局部 review。
+6. 运行 lint/build 验证。
+
+## 风险点
+
+- JSON payload 对比比 ID 对比成本更高，但 overlay 数据上限小，5 秒轮询可接受。
+- OBS 尺寸变化会让现有浏览器源更接近制作板预览，但旧 OBS 源如果宽度过窄会按 `maxWidth` 收缩。
+- 手动刷新不会自动把新记录加入右侧，需要用户按筛选后导入。
+
+## 回滚点
+
+- 回滚上述三个文件即可恢复旧行为。
+
+## 验证方式
+
+- `npm --prefix web run lint`
+- `npm --prefix web run build`
+
+## Plan Eng Review
+
+- 更短路径：不抽共享组件，先统一关键尺寸常量和行为，避免扩大重构面。
+- 耦合风险：刷新 action 复用现有鉴权和交易查询，不影响其他 dashboard 页面。
+- 兼容性风险：overlay payload 比较只影响是否更新本地状态，不改变 API 返回格式。
+- 漏项检查：覆盖合并内容变更、截图失败恢复、最近/当前/历史场次刷新、OBS 尺寸一致性。
+- KISS/YAGNI/DRY/SOLID：只加最小服务端 action 和局部常量，不引入新状态管理。

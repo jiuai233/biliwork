@@ -24,6 +24,10 @@ interface Transaction {
     ts: number;
 }
 
+const OVERLAY_CARD_WIDTH = 500;
+const OVERLAY_GIFT_CARD_HEIGHT = 80;
+const OVERLAY_CARD_GAP = 16;
+
 // SC 颜色
 const getSCColors = (price: number) => {
     if (price < 50) return { headerBg: '#e0f7fa', bodyBg: '#00bad0', headerText: '#006064' };
@@ -66,14 +70,14 @@ function SCCard({ t }: { t: Transaction }) {
     const c = getSCColors(t.price);
     return (
         <div style={{
-            width: '100%', maxWidth: '460px', borderRadius: '14px', overflow: 'hidden',
+            width: `${OVERLAY_CARD_WIDTH}px`, maxWidth: '100%', borderRadius: '16px', overflow: 'hidden',
             boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             fontFamily: '"Microsoft YaHei", sans-serif',
         }}>
             <div style={{ backgroundColor: c.headerBg, padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.8)', overflow: 'hidden', flexShrink: 0, background: '#ddd' }}>
-                        {t.uface && <img src={t.uface} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />}
+                        {t.uface && <img src={t.uface} alt={t.uname || '用户头像'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />}
                     </div>
                     <span style={{ fontSize: '14px', color: c.headerText, fontWeight: 'bold' }}>{t.uname}</span>
                 </div>
@@ -103,7 +107,7 @@ function GiftCard({ t }: { t: Transaction }) {
 
     return (
         <div style={{
-            width: '100%', maxWidth: '460px', height: '68px', display: 'flex', alignItems: 'center',
+            width: `${OVERLAY_CARD_WIDTH}px`, maxWidth: '100%', height: `${OVERLAY_GIFT_CARD_HEIGHT}px`, display: 'flex', alignItems: 'center',
             position: 'relative', flexShrink: 0, flexGrow: 0,
         }}>
             <div style={barStyle} />
@@ -116,7 +120,7 @@ function GiftCard({ t }: { t: Transaction }) {
                         boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
                     }}>
                         {t.uface ? (
-                            <img src={t.uface} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+                            <img src={t.uface} alt={t.uname || '用户头像'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
                         ) : (
                             <div style={{ width: '100%', height: '100%', background: '#3f3f46', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a1a1aa', fontSize: '18px', fontWeight: 'bold' }}>{t.uname?.[0] || '?'}</div>
                         )}
@@ -129,8 +133,8 @@ function GiftCard({ t }: { t: Transaction }) {
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '6px' }}>
-                    {isGuard && guard && <img src={guard.icon} style={{ width: '40px', height: '40px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }} />}
-                    {t.icon && !isGuard && <img src={t.icon} style={{ width: '44px', height: '44px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }} referrerPolicy="no-referrer" />}
+                    {isGuard && guard && <img src={guard.icon} alt="舰长图标" style={{ width: '40px', height: '40px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }} />}
+                    {t.icon && !isGuard && <img src={t.icon} alt={giftName || '礼物图标'} style={{ width: '44px', height: '44px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }} referrerPolicy="no-referrer" />}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                         {giftNum && <div style={{ fontFamily: 'Arial', fontWeight: 900, fontStyle: 'italic', fontSize: '22px', color: '#fde047', textShadow: '2px 2px 0px rgba(0,0,0,0.4)', lineHeight: 1 }}><span style={{ fontSize: '16px' }}>x</span>{giftNum}</div>}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
@@ -149,7 +153,7 @@ export default function OverlayPage() {
     const params = useParams();
     const code = params.code as string;
     const [items, setItems] = useState<Transaction[]>([]);
-    const prevIdsRef = useRef<string>('');
+    const prevPayloadRef = useRef<string>('');
     const [scrollSpeed, setScrollSpeed] = useState(5);
     const [scrollEnabled, setScrollEnabled] = useState(true);
     const [totalHeight, setTotalHeight] = useState(0);
@@ -234,9 +238,9 @@ export default function OverlayPage() {
             const res = await fetch(`/api/overlay/${code}/poll`);
             if (res.ok) {
                 const data = await res.json() as Transaction[];
-                const newIds = data.map(d => d.id).join(',');
-                if (newIds !== prevIdsRef.current) {
-                    prevIdsRef.current = newIds;
+                const nextPayload = JSON.stringify(data);
+                if (nextPayload !== prevPayloadRef.current) {
+                    prevPayloadRef.current = nextPayload;
                     setItems(data);
                 }
             }
@@ -276,8 +280,8 @@ export default function OverlayPage() {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-end',
-                    gap: '8px',
-                    padding: '8px',
+                    gap: `${OVERLAY_CARD_GAP}px`,
+                    padding: 0,
                     width: '100%',
                 }}>
                     {items.map((item) => (
@@ -292,8 +296,8 @@ export default function OverlayPage() {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-end',
-                    gap: '8px',
-                    padding: '8px',
+                    gap: `${OVERLAY_CARD_GAP}px`,
+                    padding: 0,
                     width: '100%',
                 }}>
                     {items.map((item) => (

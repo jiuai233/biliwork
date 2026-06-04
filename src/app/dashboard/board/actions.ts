@@ -3,6 +3,17 @@
 import { requireAuth } from '@/lib/auth';
 import { getBroadcasterByUid, getUnifiedTransactions } from '@/lib/data';
 
+export async function getRecentBoardTransactions() {
+    const uid = await requireAuth();
+    const broadcaster = await getBroadcasterByUid(uid);
+
+    if (!broadcaster?.room_id) {
+        throw new Error('找不到主播信息');
+    }
+
+    return getUnifiedTransactions(broadcaster.room_id, 500);
+}
+
 export async function getBoardTransactionsForSession(startTs: number, endTs?: number | null) {
     const uid = await requireAuth();
     const broadcaster = await getBroadcasterByUid(uid);

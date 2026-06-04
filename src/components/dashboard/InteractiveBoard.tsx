@@ -24,11 +24,11 @@ import { Transaction } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DraggableTransactionCard } from "./DraggableTransactionCard";
-import { Clock, Download, Loader2, Monitor, Radio, Search, X } from "lucide-react";
+import { Clock, Download, Loader2, Monitor, Radio, RefreshCw, Search, X } from "lucide-react";
 import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { getBoardTransactionsForSession } from "@/app/dashboard/board/actions";
+import { getBoardTransactionsForSession, getRecentBoardTransactions } from "@/app/dashboard/board/actions";
 
 type BoardTransaction = Transaction & {
     mergedIds?: string[];
@@ -43,6 +43,9 @@ type BoardSession = {
     areaName: string | null;
     totalIncome: number;
 };
+
+const BOARD_CARD_WIDTH = 500;
+const BOARD_GIFT_CARD_HEIGHT = 80;
 
 type ParsedCountContent = {
     name: string;
@@ -224,7 +227,7 @@ function SortableBoardItem({
         transition,
         opacity: isDragging ? 0.5 : 1,
         position: "relative",
-        width: "500px",
+        width: `${BOARD_CARD_WIDTH}px`,
         flexShrink: 0,
         transformOrigin: "right center",
     };
@@ -356,7 +359,7 @@ function SortableBoardItem({
         <div
             ref={setNodeRef}
             data-board-card
-            style={{ ...containerStyle, display: "flex", alignItems: "center", height: "80px" }}
+            style={{ ...containerStyle, display: "flex", alignItems: "center", height: `${BOARD_GIFT_CARD_HEIGHT}px` }}
             {...attributes}
             {...listeners}
             className="group"
@@ -673,6 +676,42 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
         });
     };
 
+    const handleRefreshSource = () => {
+        const requestId = sessionRequestRef.current + 1;
+        sessionRequestRef.current = requestId;
+
+        startSessionTransition(async () => {
+            try {
+                let nextTransactions: Transaction[];
+
+                if (selectedSessionId === "recent") {
+                    nextTransactions = await getRecentBoardTransactions();
+                } else if (selectedSessionId === "current") {
+                    if (!currentSession) {
+                        toast.error("未检测到当前开播场次");
+                        return;
+                    }
+                    nextTransactions = await getBoardTransactionsForSession(currentSession.startTs, null);
+                } else {
+                    const session = initialSessions.find((item) => String(item.id) === selectedSessionId);
+                    if (!session) {
+                        toast.error("找不到已选择的场次");
+                        return;
+                    }
+                    nextTransactions = await getBoardTransactionsForSession(session.startTs, session.endTs);
+                }
+
+                if (sessionRequestRef.current !== requestId) return;
+                setSourceItems(nextTransactions);
+                toast.success("记录已刷新");
+            } catch (error) {
+                if (sessionRequestRef.current !== requestId) return;
+                console.error(error);
+                toast.error("刷新记录失败");
+            }
+        });
+    };
+
     if (!isMounted) {
         return <div className="h-[calc(100vh-200px)] flex items-center justify-center text-zinc-500">Loading Board...</div>;
     }
@@ -729,17 +768,18 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
         const element = document.getElementById("board-canvas");
         if (!element) return;
 
+        const origMinHeight = element.style.minHeight;
+        const origWidth = element.style.width;
+        const origPadding = element.style.padding;
+
         try {
             toast.info("正在生成图片...");
 
-            // Read the actual card width from the first card, fallback to 500px
+            // Read the actual card width from the first card, fallback to the board card width.
             const firstCard = element.querySelector<HTMLElement>("[data-board-card]");
-            const cardWidth = firstCard ? `${firstCard.offsetWidth}px` : "500px";
+            const cardWidth = firstCard ? `${firstCard.offsetWidth}px` : `${BOARD_CARD_WIDTH}px`;
 
-            // Temporarily shrink container to card width for clean export
-            const origMinHeight = element.style.minHeight;
-            const origWidth = element.style.width;
-            const origPadding = element.style.padding;
+            // Temporarily shrink container to card width for clean export.
             element.style.minHeight = "0";
             element.style.width = cardWidth;
             element.style.padding = "0";
@@ -761,11 +801,6 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                 },
             });
 
-            // Restore styles
-            element.style.minHeight = origMinHeight;
-            element.style.width = origWidth;
-            element.style.padding = origPadding;
-
             const link = document.createElement("a");
             link.download = `bili-monitor-board-${Date.now()}.png`;
             link.href = dataUrl;
@@ -774,6 +809,10 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
         } catch (err) {
             console.error(err);
             toast.error("导出失败，请重试");
+        } finally {
+            element.style.minHeight = origMinHeight;
+            element.style.width = origWidth;
+            element.style.padding = origPadding;
         }
     };
 
@@ -936,16 +975,29 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                     <div className="flex-1 min-h-0 bg-zinc-900/50 rounded-lg border border-zinc-800 flex flex-col">
                         <div className="flex items-center justify-between gap-2 border-b border-zinc-800 p-3">
                             <span className="text-sm text-zinc-400">可用记录 ({filteredSource.length})</span>
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={handleImportAllVisible}
-                                disabled={filteredSource.length === 0}
-                                className="inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2 text-xs text-zinc-200 hover:bg-zinc-800"
-                            >
-                                全部导入
-                            </Button>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleRefreshSource}
+                                    disabled={isSessionPending}
+                                    aria-label="刷新可用记录"
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md p-0 text-zinc-300 hover:bg-zinc-800"
+                                >
+                                    <RefreshCw className={cn("h-3.5 w-3.5", isSessionPending && "animate-spin")} />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleImportAllVisible}
+                                    disabled={filteredSource.length === 0}
+                                    className="inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2 text-xs text-zinc-200 hover:bg-zinc-800"
+                                >
+                                    全部导入
+                                </Button>
+                            </div>
                         </div>
                         <div className="dark-scrollbar flex-1 overflow-y-auto p-3">
                             <div className="space-y-2">

@@ -347,11 +347,18 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                                                             aria-label={canOpenBroadcasterPage ? `打开 ${broadcaster.uname || '主播'} 页面` : '暂无主播跳转信息'}
                                                             onClick={() => handleOpenBroadcasterPage(broadcaster)}
                                                         >
-                                                            <span
-                                                                className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-zinc-900 bg-cover bg-center text-sm font-semibold text-zinc-400"
-                                                                style={avatarSrc ? { backgroundImage: `url(${avatarSrc})` } : undefined}
-                                                            >
-                                                                {!avatarSrc && (broadcaster.uname?.[0] || '?')}
+                                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-zinc-900 text-sm font-semibold text-zinc-400">
+                                                                {avatarSrc ? (
+                                                                    // Bilibili avatar CDN may reject requests with a page Referer.
+                                                                    <img
+                                                                        src={avatarSrc}
+                                                                        alt={broadcaster.uname || '主播头像'}
+                                                                        className="h-full w-full object-cover"
+                                                                        referrerPolicy="no-referrer"
+                                                                    />
+                                                                ) : (
+                                                                    broadcaster.uname?.[0] || '?'
+                                                                )}
                                                             </span>
                                                         </button>
                                                         <div>
