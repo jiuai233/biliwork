@@ -1,12 +1,10 @@
-const path = require('path');
-
 module.exports = {
   apps: [
     {
       name: 'bili_next',
-      cwd: path.join(__dirname, '.next', 'standalone'),
-      script: 'server.js',
-      interpreter: 'node',
+      cwd: __dirname,
+      script: 'npm',
+      args: 'run start',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
