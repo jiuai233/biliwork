@@ -25,6 +25,7 @@
 
 # misc
 .DS_Store
+.codex/
 *.pem
 *.zip
 start-collector-node.sh

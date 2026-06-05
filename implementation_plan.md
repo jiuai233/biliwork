@@ -1,3 +1,89 @@
+# 登录页动态渲染修复计划
+
+## 改造范围
+
+- 将 `/admin/login` 和 `/login` 的客户端交互拆到独立 Client Component。
+- 在两个登录页 `page.tsx` 中声明 `dynamic = 'force-dynamic'` 和 `revalidate = 0`。
+- 保持登录表单、Server Action 调用和 UI 不变。
+
+## 非目标项
+
+- 不修改认证逻辑。
+- 不修改数据库、PM2、Nginx、Docker 配置。
+- 不处理 dashboard 其它 Server Action 页面。
+
+## 实施顺序
+
+1. 新增 `src/app/admin/login/AdminLoginClient.tsx`，承载原后台登录页客户端逻辑。
+2. 改造 `src/app/admin/login/page.tsx` 为动态 Server wrapper。
+3. 新增 `src/app/login/LoginClient.tsx`，承载原普通登录页客户端逻辑。
+4. 改造 `src/app/login/page.tsx` 为动态 Server wrapper。
+5. 执行 diff 自查和构建验证。
+6. 部署到远端并验证 `/admin/login` 响应头不再长缓存。
+
+## 风险点
+
+- Client Component 中的相对 action import 路径必须保持正确。
+- `page.tsx` 不再是 Client Component 后，不能残留客户端 hook。
+
+## 验证方式
+
+- `npm run build`
+- 远端 `curl -I https://bili.jiuai233.work/admin/login`
+- 远端 `curl -I https://bili.jiuai233.work/login`
+
+## Plan Eng Review
+
+- 更短路径：仅拆分登录页，不扩大到所有 dashboard 页面。
+- 耦合风险：只改变组件边界，不改 action 签名。
+- 兼容性风险：Next App Router 支持页面级 `dynamic`/`revalidate` 导出。
+- 漏项检查：后台登录和普通登录都覆盖。
+
+---
+
+# PM2 standalone 启动配置计划
+
+## 改造范围
+
+- 将 Next Web 服务 `bili_next` 固化到 `ecosystem.config.cjs`。
+- 使用 `.next/standalone/server.js` 启动，避免 `next start` 与 `output: 'standalone'` 不兼容。
+- 将 PM2 `max_memory_restart` 从 `512M` 提高到 `1G`。
+- 保留现有 `biweb-collector` PM2 配置。
+
+## 非目标项
+
+- 不修改数据库、Docker、Nginx、CDN 配置。
+- 不重新构建 Next 产物。
+- 不改业务代码。
+
+## 实施顺序
+
+1. 更新 `ecosystem.config.cjs`，加入 `bili_next` standalone app。
+2. 将配置同步到远端 `/www/wwwroot/bili-next/ecosystem.config.cjs`。
+3. 使用 PM2 按配置重启 `bili_next`。
+4. 验证 PM2 状态、监听端口和页面响应。
+
+## 风险点
+
+- 重启 `bili_next` 会产生短暂服务中断。
+- 若 `.next/standalone/server.js` 不存在，PM2 启动会失败；远端已确认该文件存在。
+
+## 验证方式
+
+- `pm2 list`
+- `pm2 describe bili_next`
+- `ss -ltnp | grep ':3000'`
+- `curl -I http://127.0.0.1:3000/admin/login`
+
+## Plan Eng Review
+
+- 更短路径：只固化 PM2 配置，不做无关重构。
+- 耦合风险：采集器配置保留，仅提升内存阈值。
+- 兼容性风险：`cwd` 使用 `__dirname` 拼接 standalone 路径，可随项目目录迁移。
+- 漏项检查：启动脚本、端口、HOSTNAME、NODE_ENV、TZ、内存阈值和验证步骤均覆盖。
+
+---
+
 # Admin 修改主播身份码计划
 
 ## 改造范围
