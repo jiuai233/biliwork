@@ -8,6 +8,7 @@ import {
     BarChart2,
     Settings,
     LogOut,
+    MessageCircle,
     Menu,
     X,
     Box,
@@ -19,6 +20,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/auth";
 import type { Broadcaster } from "@/lib/types";
+import { DashboardNoticeDialog } from "./DashboardNoticeDialog";
+
+const NOTICE_DISMISSED_KEY = "bili-dashboard-notice-dismissed";
+const NOTICE_LAST_SHOWN_KEY = "bili-dashboard-notice-last-shown";
 
 const navItems = [
     { name: "监控看板", href: "/dashboard", icon: LayoutDashboard },
@@ -36,7 +41,22 @@ function normalizeAvatarSrc(src: string | null | undefined): string | undefined 
     return src;
 }
 
-function SidebarUserMenu({ broadcaster, mobile = false }: { broadcaster: Broadcaster | null; mobile?: boolean }) {
+function getTodayKey() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function SidebarUserMenu({
+    broadcaster,
+    mobile = false,
+    onNoticeOpen,
+}: {
+    broadcaster: Broadcaster | null;
+    mobile?: boolean;
+    onNoticeOpen: () => void;
+}) {
     const [open, setOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const avatarSrc = normalizeAvatarSrc(broadcaster?.uface);
@@ -71,6 +91,18 @@ function SidebarUserMenu({ broadcaster, mobile = false }: { broadcaster: Broadca
         <div ref={menuRef} className="relative">
             {open && (
                 <div className="absolute bottom-[calc(100%+8px)] left-0 z-20 w-full rounded-xl border border-white/10 bg-zinc-950 p-2 shadow-2xl shadow-black/40">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                            onNoticeOpen();
+                            setOpen(false);
+                        }}
+                        className="mb-1 inline-flex h-10 w-full items-center justify-start gap-2 rounded-lg px-3 text-zinc-300 hover:bg-white/[0.06]"
+                    >
+                        <MessageCircle className="h-4 w-4" />
+                        问题反馈
+                    </Button>
                     <form action={logout}>
                         <Button
                             type="submit"
@@ -119,6 +151,50 @@ function SidebarUserMenu({ broadcaster, mobile = false }: { broadcaster: Broadca
 export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
     const pathname = usePathname();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [noticeOpen, setNoticeOpen] = useState(false);
+    const [dontShowAgain, setDontShowAgain] = useState(false);
+
+    useEffect(() => {
+        try {
+            const dismissed = window.localStorage.getItem(NOTICE_DISMISSED_KEY) === "true";
+            const lastShown = window.localStorage.getItem(NOTICE_LAST_SHOWN_KEY);
+            const today = getTodayKey();
+
+            if (dismissed) {
+                setDontShowAgain(true);
+                return;
+            }
+
+            if (lastShown !== today) {
+                window.localStorage.setItem(NOTICE_LAST_SHOWN_KEY, today);
+                setNoticeOpen(true);
+            }
+        } catch {
+            setNoticeOpen(true);
+        }
+    }, []);
+
+    const persistNoticePreference = () => {
+        try {
+            if (dontShowAgain) {
+                window.localStorage.setItem(NOTICE_DISMISSED_KEY, "true");
+            } else {
+                window.localStorage.removeItem(NOTICE_DISMISSED_KEY);
+            }
+        } catch { }
+    };
+
+    const handleNoticeOpenChange = (open: boolean) => {
+        if (!open) {
+            persistNoticePreference();
+        }
+        setNoticeOpen(open);
+    };
+
+    const handleNoticeConfirm = () => {
+        persistNoticePreference();
+        setNoticeOpen(false);
+    };
 
     return (
         <>
@@ -177,7 +253,11 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
                             ))}
                         </nav>
                         <div className="border-t border-zinc-800 p-4">
-                            <SidebarUserMenu broadcaster={broadcaster} mobile />
+                            <SidebarUserMenu
+                                broadcaster={broadcaster}
+                                mobile
+                                onNoticeOpen={() => setNoticeOpen(true)}
+                            />
                         </div>
                     </aside>
                 </div>
@@ -209,9 +289,20 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
                     ))}
                 </nav>
                 <div className="border-t border-zinc-800 p-4">
-                    <SidebarUserMenu broadcaster={broadcaster} />
+                    <SidebarUserMenu
+                        broadcaster={broadcaster}
+                        onNoticeOpen={() => setNoticeOpen(true)}
+                    />
                 </div>
             </div>
+
+            <DashboardNoticeDialog
+                open={noticeOpen}
+                dontShowAgain={dontShowAgain}
+                onDontShowAgainChange={setDontShowAgain}
+                onOpenChange={handleNoticeOpenChange}
+                onConfirm={handleNoticeConfirm}
+            />
         </>
     );
 }
