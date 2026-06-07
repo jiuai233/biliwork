@@ -66,25 +66,25 @@ export function StatsPanel({ stats, previousStats }: StatsPanelProps) {
     ];
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {items.map(({ label, value, statKey, isCurrency, icon: Icon, labelClass, iconClass, cardClass }) => (
                 <section
                     key={label}
                     className={cn(
-                        "relative min-h-[136px] overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br p-6 shadow-[0_20px_60px_rgba(0,0,0,0.20)]",
+                        "relative min-h-[104px] overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br p-4 shadow-[0_14px_40px_rgba(0,0,0,0.18)]",
                         cardClass
                     )}
                 >
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_14%,rgba(255,255,255,0.08),transparent_34%)]" />
                     <div className="relative flex items-start justify-between">
                         <p className={cn("text-sm font-semibold", labelClass)}>{label}</p>
-                        <div className={cn("rounded-xl p-2 shadow-lg", iconClass)}>
-                            <Icon className="h-5 w-5" />
+                        <div className={cn("rounded-lg p-1.5 shadow-lg", iconClass)}>
+                            <Icon className="h-4 w-4" />
                         </div>
                     </div>
-                    <div className="relative mt-5">
-                        <div className="text-4xl font-black tracking-normal text-white">{value}</div>
-                        <p className="mt-3 text-sm text-slate-400">
+                    <div className="relative mt-3">
+                        <div className="text-2xl font-black tracking-normal text-white md:text-3xl">{value}</div>
+                        <p className="mt-1 text-xs text-slate-400">
                             {formatDelta(Number(stats[statKey]), previousStats?.[statKey], isCurrency)}
                         </p>
                     </div>

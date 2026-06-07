@@ -72,17 +72,17 @@ export default async function RankingPage({ searchParams }: RankingPageProps) {
     ]);
 
     return (
-        <div className="space-y-5">
-            <Card variant="secondary" className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/55">
-                <Card.Header className="border-b border-white/10 px-5 py-4">
-                    <div className="flex w-full flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300">
-                                <BarChart2 className="h-7 w-7" />
+        <div className="space-y-4">
+            <Card variant="secondary" className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/55">
+                <Card.Header className="border-b border-white/10 px-4 py-3">
+                    <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+                                <BarChart2 className="h-5 w-5" />
                             </div>
                             <div>
-                                <Card.Title className="text-2xl font-extrabold text-white">数据排行</Card.Title>
-                                <Card.Description className="mt-1 text-sm text-slate-400">
+                                <Card.Title className="text-xl font-extrabold text-white">数据排行</Card.Title>
+                                <Card.Description className="mt-0.5 text-sm text-slate-400">
                                     查看弹幕榜和礼物榜的用户排行。
                                 </Card.Description>
                             </div>
@@ -90,12 +90,12 @@ export default async function RankingPage({ searchParams }: RankingPageProps) {
                         <AnalyticsDateFilter from={from} to={to} />
                     </div>
                 </Card.Header>
-                <Card.Content className="space-y-4 p-5">
+                <Card.Content className="space-y-3 p-4">
                     <RankingLimitControl value={limit} />
                     <StatsCharts
                         danmakuTop={topDanmaku}
                         giftTop={topGifts}
-                        className="h-[calc(100vh-245px)] min-h-[760px]"
+                        className="h-[calc(100vh-205px)] min-h-[520px]"
                     />
                 </Card.Content>
             </Card>

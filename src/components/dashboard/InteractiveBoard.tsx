@@ -480,7 +480,7 @@ function BoardArea({ items, onRemove }: { items: BoardTransaction[], onRemove: (
                 id="board-canvas"
                 style={{
                     // No background color for transparent export
-                    padding: "24px",
+                    padding: "16px",
                     width: "100%",
                     boxSizing: "border-box",
                     display: "flex",
@@ -824,10 +824,10 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="flex flex-col lg:flex-row h-[calc(100vh-200px)] gap-6">
+            <div className="flex min-w-0 flex-col gap-4 lg:h-[calc(100vh-220px)] lg:flex-row lg:gap-6">
                 {/* Sidebar: Source List */}
-                <div className="w-full lg:w-80 flex flex-col gap-4">
-                    <div className="bg-zinc-900/50 p-4 rounded-lg border border-zinc-800 space-y-4">
+                <div className="flex w-full min-w-0 flex-col gap-4 lg:w-80 lg:shrink-0">
+                    <div className="min-w-0 space-y-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
                         <h3 className="font-semibold text-zinc-100 flex items-center gap-2">
                             <Search className="w-4 h-4" /> 筛选记录
                         </h3>
@@ -972,7 +972,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                         </div>
                     </div>
 
-                    <div className="flex-1 min-h-0 bg-zinc-900/50 rounded-lg border border-zinc-800 flex flex-col">
+                    <div className="flex min-h-[320px] min-w-0 flex-col rounded-lg border border-zinc-800 bg-zinc-900/50 lg:min-h-0 lg:flex-1">
                         <div className="flex items-center justify-between gap-2 border-b border-zinc-800 p-3">
                             <span className="text-sm text-zinc-400">可用记录 ({filteredSource.length})</span>
                             <div className="flex shrink-0 items-center gap-1.5">
@@ -983,9 +983,10 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                     onClick={handleRefreshSource}
                                     disabled={isSessionPending}
                                     aria-label="刷新可用记录"
-                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md p-0 text-zinc-300 hover:bg-zinc-800"
+                                    className="inline-flex h-7 w-auto items-center justify-center gap-1.5 rounded-md px-2 text-xs text-zinc-300 hover:bg-zinc-800"
                                 >
                                     <RefreshCw className={cn("h-3.5 w-3.5", isSessionPending && "animate-spin")} />
+                                    <span>刷新</span>
                                 </Button>
                                 <Button
                                     type="button"
@@ -1010,8 +1011,8 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                 </div>
 
                 {/* Main: Board Area */}
-                <div className="flex-1 flex flex-col gap-4">
-                    <div className="flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-950/70 px-4 py-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex min-w-0 flex-1 flex-col gap-4">
+                    <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-950/70 px-4 py-3 md:flex-row md:items-center md:justify-between">
                         <div className="min-w-0">
                             <h2 className="text-lg font-semibold text-zinc-100">组合看板</h2>
                             <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
@@ -1032,14 +1033,15 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                 <span className="text-zinc-500">已选择 {boardItems.length} 个项目</span>
                             </div>
                         </div>
-                        <div className="flex shrink-0 items-center gap-3">
+                        <div className="flex w-full min-w-0 flex-wrap items-center gap-3 md:w-auto md:justify-end">
                             {overlayCode && (
-                                <div className="flex items-center gap-3 text-sm text-zinc-400">
+                                <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm text-zinc-400">
                                     <div className="inline-flex items-center gap-2">
                                         <span>自动滚动</span>
                                         <button
                                             type="button"
                                             role="switch"
+                                            aria-label="自动滚动"
                                             aria-checked={scrollEnabled}
                                             onClick={() => setScrollEnabled((enabled) => !enabled)}
                                             className={cn(
@@ -1096,7 +1098,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                     </div>
 
                     {/* Scrollable Canvas Container */}
-                    <div className="flex-1 min-h-0 rounded-xl border border-zinc-800 overflow-hidden bg-[#09090b]">
+                    <div className="min-h-[360px] min-w-0 flex-1 overflow-hidden rounded-xl border border-zinc-800 bg-[#09090b]">
                         <div className="dark-scrollbar h-full w-full overflow-auto">
                             <BoardArea items={boardItems} onRemove={handleRemoveFromBoard} />
                         </div>

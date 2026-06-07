@@ -57,8 +57,11 @@ export async function getBlindboxStats(
     const records: BlindboxRecord[] = rows.map(r => {
         const giftValue = BLINDBOX_GIFTS[r.giftName || ''] || 0;
         const cost = BLINDBOX_COST * r.giftNum;
+        const sourceId = r.id.toString();
+
         return {
             id: Number(r.id),
+            row_key: r.msgId ? `msg:${r.msgId}` : `gift:${sourceId}`,
             uname: r.uname,
             uface: r.uface,
             gift_name: r.giftName,

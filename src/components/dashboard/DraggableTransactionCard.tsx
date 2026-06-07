@@ -45,7 +45,7 @@ export function DraggableTransactionCard({
             {...listeners}
             {...attributes}
             className={cn(
-                "relative flex items-center gap-3 p-3 rounded-lg border cursor-grab active:cursor-grabbing transition-colors",
+                "relative flex min-w-0 items-center gap-3 rounded-lg border p-3 cursor-grab active:cursor-grabbing transition-colors",
                 getCardStyle(transaction.type),
                 isOverlay ? "shadow-2xl scale-105 z-50 cursor-grabbing bg-zinc-900" : ""
             )}
@@ -55,11 +55,11 @@ export function DraggableTransactionCard({
                 <Avatar.Fallback>{transaction.uname?.[0] ?? '?'}</Avatar.Fallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center">
+                <div className="flex min-w-0 items-center justify-between">
                     <span className="font-bold text-sm text-zinc-200 truncate pr-2">
                         {transaction.uname}
                     </span>
-                    <span className="text-xs font-mono text-zinc-400">
+                    <span className="shrink-0 text-xs font-mono text-zinc-400">
                         ¥{transaction.price}
                     </span>
                 </div>

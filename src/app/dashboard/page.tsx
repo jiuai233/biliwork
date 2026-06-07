@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DateRange } from "react-day-picker";
 import { endOfDay, startOfDay } from "date-fns";
 import { toast } from "sonner";
-import { Avatar } from "@heroui/react";
 import { Button } from "@/components/ui/button";
 import {
+    Gift as GiftIcon,
     Loader2,
+    MessageSquareText,
     RefreshCcw,
+    Shield,
     Wifi,
     WifiOff,
 } from "lucide-react";
@@ -18,8 +20,10 @@ import { DanmakuPanel } from "@/components/dashboard/DanmakuPanel";
 import { GiftPanel } from "@/components/dashboard/GiftPanel";
 import { GuardPanel } from "@/components/dashboard/GuardPanel";
 import { StatsPanel } from "@/components/dashboard/StatsPanel";
+import { StatsCharts } from "@/components/dashboard/StatsCharts";
 import { useSSE } from "@/hooks/useSSE";
 import { Broadcaster, DashboardStats, Danmaku, Gift, Guard, SuperChat } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type DashboardData = {
     broadcaster: Broadcaster | null;
@@ -45,20 +49,38 @@ const defaultData: DashboardData = {
     topGifts: [],
 };
 
-function SectionTitle({ accent, title }: { accent: string; title: string }) {
-    return (
-        <div className="mb-3 flex items-center">
-            <h3 className="flex items-center gap-3 text-lg font-extrabold text-white">
-                <span className={`h-6 w-1 rounded-full ${accent}`} />
-                {title}
-            </h3>
-        </div>
-    );
-}
+type FeedTab = "gifts" | "danmaku" | "guards";
+
+const feedTabs: {
+    key: FeedTab;
+    label: string;
+    icon: typeof GiftIcon;
+    activeClass: string;
+}[] = [
+        {
+            key: "gifts",
+            label: "礼物",
+            icon: GiftIcon,
+            activeClass: "bg-pink-600 text-white shadow-pink-950/40",
+        },
+        {
+            key: "danmaku",
+            label: "弹幕",
+            icon: MessageSquareText,
+            activeClass: "bg-blue-600 text-white shadow-blue-950/40",
+        },
+        {
+            key: "guards",
+            label: "上舰",
+            icon: Shield,
+            activeClass: "bg-indigo-600 text-white shadow-indigo-950/40",
+        },
+    ];
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<DashboardData>(defaultData);
+    const [activeFeed, setActiveFeed] = useState<FeedTab>("gifts");
 
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: new Date(),
@@ -110,15 +132,20 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="space-y-5">
-            <section className="relative rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.16),transparent_36%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.82))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.30)]">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_92%_18%,rgba(56,189,248,0.10),transparent_28%)]" />
-                <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                    <div>
-                        <h1 className="text-3xl font-black tracking-normal text-white">
+        <div className="min-w-0 space-y-4">
+            <section className="rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="min-w-0">
+                        <h1 className="truncate text-2xl font-black tracking-normal text-white md:text-3xl">
                             欢迎回来，{data.broadcaster?.uname ?? "主播"}
                         </h1>
-                        <p className="mt-2 text-sm font-medium text-slate-400">实时掌握直播动态，提升直播表现</p>
+                        <p className="mt-1 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-400">
+                            <span>Room ID: {data.broadcaster?.room_id ?? "-"}</span>
+                            <span className="h-1 w-1 rounded-full bg-slate-600" />
+                            <span className={data.broadcaster?.active ? "text-emerald-300" : "text-slate-500"}>
+                                {data.broadcaster?.active ? "监控中" : "已暂停"}
+                            </span>
+                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -150,41 +177,71 @@ export default function DashboardPage() {
                 </div>
             </section>
 
-            <div className="hidden items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/45 p-4 md:flex">
-                <Avatar className="h-12 w-12 border-2 border-violet-400/70 shadow-lg shadow-violet-900/25">
-                    <Avatar.Image src={data.broadcaster?.uface ?? undefined} referrerPolicy="no-referrer" />
-                    <Avatar.Fallback>{data.broadcaster?.uname?.[0] ?? "主"}</Avatar.Fallback>
-                </Avatar>
-                <div className="min-w-0">
-                    <div className="truncate text-sm font-bold text-white">{data.broadcaster?.uname}</div>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                        <span>Room ID: {data.broadcaster?.room_id ?? "-"}</span>
-                        <span className="h-1 w-1 rounded-full bg-slate-600" />
-                        <span className={data.broadcaster?.active ? "text-emerald-300" : "text-slate-500"}>
-                            {data.broadcaster?.active ? "监控中" : "已暂停"}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
             {data.stats && <StatsPanel stats={data.stats} previousStats={data.previousStats} />}
 
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-                <div className="min-w-0">
-                    <SectionTitle accent="bg-pink-500" title="最新礼物" />
-                    <GiftPanel data={data.gifts} className="h-[560px] xl:h-[760px]" />
+            <section className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
+                <div className="min-w-0 space-y-3">
+                    <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-white/10 bg-slate-950/65 px-4 py-3 xl:flex-row xl:items-center xl:justify-between">
+                        <div className="min-w-0">
+                            <h2 className="text-lg font-extrabold text-white">实时动态</h2>
+                            <p className="mt-1 text-sm text-slate-500">礼物、弹幕与上舰记录统一汇总。</p>
+                        </div>
+
+                        <div className="grid w-full grid-cols-3 gap-1 rounded-xl border border-white/10 bg-black/20 p-1 sm:w-auto">
+                            {feedTabs.map((tab) => {
+                                const Icon = tab.icon;
+                                const active = activeFeed === tab.key;
+
+                                return (
+                                    <Button
+                                        key={tab.key}
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        aria-pressed={active}
+                                        data-testid={`dashboard-feed-tab-${tab.key}`}
+                                        onClick={() => setActiveFeed(tab.key)}
+                                        className={cn(
+                                            "inline-flex h-10 min-w-0 flex-row items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold shadow-lg transition-colors",
+                                            active
+                                                ? tab.activeClass
+                                                : "text-slate-400 shadow-transparent hover:bg-white/[0.06] hover:text-white"
+                                        )}
+                                    >
+                                        <Icon className="h-4 w-4 shrink-0" />
+                                        <span>{tab.label}</span>
+                                    </Button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {activeFeed === "gifts" && (
+                        <GiftPanel
+                            data={data.gifts}
+                            className="h-[520px] rounded-xl shadow-none xl:h-[calc(100vh-345px)] xl:min-h-[520px]"
+                        />
+                    )}
+                    {activeFeed === "danmaku" && (
+                        <DanmakuPanel
+                            data={data.danmaku}
+                            className="h-[520px] rounded-xl shadow-none xl:h-[calc(100vh-345px)] xl:min-h-[520px]"
+                        />
+                    )}
+                    {activeFeed === "guards" && (
+                        <GuardPanel
+                            data={data.guards}
+                            className="h-[520px] rounded-xl shadow-none xl:h-[calc(100vh-345px)] xl:min-h-[520px]"
+                        />
+                    )}
                 </div>
 
-                <div className="min-w-0">
-                    <SectionTitle accent="bg-blue-500" title="实时弹幕" />
-                    <DanmakuPanel data={data.danmaku} className="h-[560px] xl:h-[760px]" />
-                </div>
-
-                <div className="min-w-0">
-                    <SectionTitle accent="bg-indigo-500" title="最近上舰" />
-                    <GuardPanel data={data.guards} className="h-[560px] xl:h-[760px]" />
-                </div>
-            </div>
+                <StatsCharts
+                    danmakuTop={data.topDanmaku}
+                    giftTop={data.topGifts}
+                    className="h-[520px] rounded-xl shadow-none 2xl:h-[calc(100vh-262px)] 2xl:min-h-[520px]"
+                />
+            </section>
         </div>
     );
 }

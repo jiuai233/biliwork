@@ -29,12 +29,12 @@ export default async function DashboardLayout({
     const broadcaster = await getBroadcasterByUid(uid);
 
     return (
-        <div className="flex min-h-screen bg-zinc-950">
+        <div className="flex min-h-screen bg-zinc-950 lg:h-screen lg:overflow-hidden">
             <Sidebar broadcaster={broadcaster ?? null} />
 
             {/* Main Content */}
-            <div className="flex-1 lg:pl-64">
-                <main className="p-6 lg:p-8 max-w-[1600px] mx-auto min-h-screen">
+            <div className="min-w-0 flex-1 lg:h-full lg:pl-64">
+                <main className="min-h-screen w-full min-w-0 px-4 pb-6 pt-20 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden lg:p-8">
                     {children}
                 </main>
             </div>

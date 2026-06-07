@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getLiveRecordsData } from "./actions";
 import { Broadcaster } from "@/lib/types";
@@ -44,7 +44,7 @@ export default function LiveRecordsPage() {
         };
     });
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async (showError = false) => {
         try {
             if (!dateRange?.from) return;
 
@@ -55,16 +55,16 @@ export default function LiveRecordsPage() {
             setData(result);
         } catch (error) {
             console.error("Fetch Error:", error);
-            if (loading) toast.error("获取数据失败");
+            if (showError) toast.error("获取数据失败");
         } finally {
             setLoading(false);
         }
-    };
+    }, [dateRange]);
 
     useEffect(() => {
         setLoading(true);
-        fetchData();
-    }, [dateRange]);
+        fetchData(true);
+    }, [fetchData]);
 
     // 计算总计
     const totalSessions = data.sessions.length;
@@ -95,19 +95,19 @@ export default function LiveRecordsPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-4">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900/40 p-6 rounded-xl border border-zinc-800 backdrop-blur-sm">
+            <div className="flex min-w-0 flex-col justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 backdrop-blur-sm md:flex-row md:items-center">
                 <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-900/20">
-                        <Radio className="h-7 w-7 text-white" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/15 text-green-300">
+                        <Radio className="h-5 w-5" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-zinc-100">开播记录</h2>
-                        <p className="text-sm text-zinc-500 mt-1">每场直播的收入统计</p>
+                        <h2 className="text-xl font-bold text-zinc-100">开播记录</h2>
+                        <p className="mt-0.5 text-sm text-zinc-500">每场直播的收入统计</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-3">
                     <AnalyticsDateRangePicker date={dateRange} setDate={setDateRange} />
                     <Button
                         type="button"
@@ -124,44 +124,44 @@ export default function LiveRecordsPage() {
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-                <div className="p-4 rounded-xl border bg-gradient-to-br from-green-500/20 to-emerald-500/10 border-green-500/30 backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-2">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+                <div className="rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/20 to-emerald-500/10 p-3 backdrop-blur-sm">
+                    <div className="mb-1 flex items-center justify-between">
                         <span className="text-zinc-400 text-sm">开播次数</span>
                         <Radio className="h-4 w-4 text-green-400" />
                     </div>
                     <div className="text-xl font-bold text-zinc-100">{totalSessions}</div>
                 </div>
-                <div className="p-4 rounded-xl border bg-gradient-to-br from-blue-500/20 to-cyan-500/10 border-blue-500/30 backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-2">
+                <div className="rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 p-3 backdrop-blur-sm">
+                    <div className="mb-1 flex items-center justify-between">
                         <span className="text-zinc-400 text-sm">总时长</span>
                         <Clock className="h-4 w-4 text-blue-400" />
                     </div>
                     <div className="text-xl font-bold text-zinc-100">{formatDuration(totalDuration)}</div>
                 </div>
-                <div className="p-4 rounded-xl border bg-gradient-to-br from-amber-500/20 to-orange-500/10 border-amber-500/30 backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-2">
+                <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-orange-500/10 p-3 backdrop-blur-sm">
+                    <div className="mb-1 flex items-center justify-between">
                         <span className="text-zinc-400 text-sm">总收入</span>
                         <Coins className="h-4 w-4 text-amber-400" />
                     </div>
                     <div className="text-xl font-bold text-zinc-100">{totalIncome.toFixed(1)} ¥</div>
                 </div>
-                <div className="p-4 rounded-xl border bg-zinc-900/50 border-zinc-800 backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-2">
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 backdrop-blur-sm">
+                    <div className="mb-1 flex items-center justify-between">
                         <span className="text-zinc-400 text-sm">礼物</span>
                         <Gift className="h-4 w-4 text-pink-400" />
                     </div>
                     <div className="text-xl font-bold text-zinc-100">{totalGift.toFixed(1)} ¥</div>
                 </div>
-                <div className="p-4 rounded-xl border bg-zinc-900/50 border-zinc-800 backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-2">
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 backdrop-blur-sm">
+                    <div className="mb-1 flex items-center justify-between">
                         <span className="text-zinc-400 text-sm">舰长</span>
                         <Shield className="h-4 w-4 text-blue-400" />
                     </div>
                     <div className="text-xl font-bold text-zinc-100">{totalGuard.toFixed(1)} ¥</div>
                 </div>
-                <div className="p-4 rounded-xl border bg-zinc-900/50 border-zinc-800 backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-2">
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 backdrop-blur-sm">
+                    <div className="mb-1 flex items-center justify-between">
                         <span className="text-zinc-400 text-sm">SC</span>
                         <MessageSquare className="h-4 w-4 text-yellow-400" />
                     </div>
@@ -170,12 +170,13 @@ export default function LiveRecordsPage() {
             </div>
 
             {/* Sessions Table */}
-            <div className="h-[500px] overflow-auto rounded-xl border border-zinc-800 bg-zinc-900/50">
-                <Table variant="secondary" className="min-w-[1100px]">
-                    <Table.Content
-                        aria-label="开播记录"
-                        className="w-full table-fixed border-collapse [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/60 [&_tbody_tr:hover]:bg-zinc-800/30 [&_td]:px-4 [&_td]:py-3 [&_th]:sticky [&_th]:top-0 [&_th]:bg-zinc-900 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-zinc-400"
-                    >
+            <div className="h-[calc(100vh-295px)] min-h-[420px] w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50">
+                <div className="dark-scrollbar h-full w-full max-w-full overflow-auto">
+                    <Table variant="secondary" className="w-max min-w-[1100px]">
+                        <Table.Content
+                            aria-label="开播记录"
+                            className="w-full table-fixed border-collapse [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/60 [&_tbody_tr:hover]:bg-zinc-800/30 [&_td]:px-4 [&_td]:py-2.5 [&_th]:sticky [&_th]:top-0 [&_th]:bg-zinc-900 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-zinc-400"
+                        >
                         <Table.Header>
                             <Table.Column id="start" isRowHeader>开播时间</Table.Column>
                             <Table.Column id="end">下播时间</Table.Column>
@@ -244,8 +245,9 @@ export default function LiveRecordsPage() {
                                 </Table.Row>
                             )}
                         </Table.Body>
-                    </Table.Content>
-                </Table>
+                        </Table.Content>
+                    </Table>
+                </div>
             </div>
         </div>
     );

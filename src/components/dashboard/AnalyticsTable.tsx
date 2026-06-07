@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowDown, ArrowUp, RotateCcw, Search } from "lucide-react";
 
 import type { Transaction } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
 type TransactionType = "all" | Transaction["type"];
 type SortKey = "ts" | "price";
@@ -141,6 +142,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
     const pageCount = Math.max(Math.ceil(sortedData.length / pageSize), 1);
     const currentPage = Math.min(pageIndex, pageCount - 1);
     const pageData = sortedData.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
+    const hasRows = pageData.length > 0;
 
     React.useEffect(() => {
         setPageIndex(0);
@@ -164,9 +166,9 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
     };
 
     return (
-        <div className="w-full space-y-3">
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/50 px-3 py-2">
-                <div className="relative w-[260px] max-w-full">
+        <div className="flex min-h-[520px] w-full min-w-0 max-w-full flex-col gap-3 overflow-hidden lg:min-h-0 lg:flex-1">
+            <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/50 px-3 py-2">
+                <div className="relative w-full min-w-0 sm:w-[260px]">
                     <Search className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
                     <Input
                         value={keyword}
@@ -176,7 +178,10 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     />
                 </div>
 
-                <div className="flex h-9 overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                <div
+                    data-testid="analytics-type-filter"
+                    className="grid h-9 w-full max-w-full grid-cols-4 overflow-hidden rounded-xl border border-white/10 bg-black/20 sm:w-auto"
+                >
                     {typeOptions.map((option) => (
                         <Button
                             key={option.value}
@@ -185,7 +190,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                             variant="ghost"
                             onClick={() => setTypeFilter(option.value)}
                             className={[
-                                "inline-flex h-9 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-white/10 px-3 text-xs last:border-r-0",
+                                "inline-flex h-9 min-w-0 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-white/10 px-3 text-xs last:border-r-0 sm:min-w-14",
                                 typeFilter === option.value
                                     ? "bg-blue-600 text-white"
                                     : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100",
@@ -196,14 +201,14 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     ))}
                 </div>
 
-                <div className="flex h-9 items-center rounded-xl border border-white/10 bg-white/[0.04] px-2 text-sm text-zinc-400 hover:bg-white/[0.06]">
+                <div className="flex h-9 max-w-full items-center rounded-xl border border-white/10 bg-white/[0.04] px-2 text-sm text-zinc-400 hover:bg-white/[0.06]">
                     <span className="mr-1 text-xs">金额</span>
                     <Input
                         inputMode="decimal"
                         value={minPrice}
                         onChange={(event) => setMinPrice(event.target.value)}
                         placeholder="0"
-                        className="h-7 w-14 border-0 bg-transparent p-0 text-sm text-zinc-100 placeholder:text-zinc-600 hover:bg-transparent focus:bg-transparent"
+                        className="h-7 w-14 border-0 bg-transparent p-0 text-sm text-zinc-100 placeholder:text-zinc-600 hover:bg-transparent focus:bg-transparent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
                     <span className="mx-1 text-zinc-600">-</span>
                     <Input
@@ -211,7 +216,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                         value={maxPrice}
                         onChange={(event) => setMaxPrice(event.target.value)}
                         placeholder="不限"
-                        className="h-7 w-16 border-0 bg-transparent p-0 text-sm text-zinc-100 placeholder:text-zinc-600 hover:bg-transparent focus:bg-transparent"
+                        className="h-7 w-16 border-0 bg-transparent p-0 text-sm text-zinc-100 placeholder:text-zinc-600 hover:bg-transparent focus:bg-transparent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
                 </div>
 
@@ -226,7 +231,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     重置
                 </Button>
 
-                <div className="ml-auto flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+                <div className="flex w-full min-w-0 flex-wrap items-center gap-3 text-xs text-zinc-500 sm:ml-auto sm:w-auto">
                     <span>筛选后 {filteredData.length} / {data.length} 条</span>
                     <span>合计 {formatCurrency(summary.total)}</span>
                     <span>礼物 {summary.gift}</span>
@@ -235,11 +240,17 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                 </div>
             </div>
 
-            <Table variant="secondary" className="w-full overflow-hidden rounded-2xl border border-zinc-800 bg-[#18181b] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-                <Table.ScrollContainer className="w-full overflow-x-auto rounded-2xl">
+            <Table variant="secondary" className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-zinc-800 bg-[#18181b] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+                <Table.ScrollContainer
+                    data-testid="analytics-records-viewport"
+                    className={cn(
+                        "min-h-[420px] w-full max-w-full rounded-xl bg-[#18181b] lg:min-h-0 lg:flex-1",
+                        hasRows ? "overflow-auto" : "overflow-x-auto overflow-y-hidden"
+                    )}
+                >
                     <Table.Content
                         aria-label="营收记录明细"
-                        className="w-full min-w-[920px] table-fixed border-collapse bg-[#18181b] [&_tbody_tr]:h-14 [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/80 [&_tbody_tr:last-child]:border-b-0 [&_tbody_tr:hover]:bg-zinc-800/55 [&_td]:px-4 [&_td]:py-2 [&_th]:h-10 [&_th]:border-b [&_th]:border-zinc-800 [&_th]:bg-[#27272a] [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-semibold [&_th]:text-zinc-200"
+                        className="w-full min-w-[920px] table-fixed border-collapse bg-[#18181b] [&_tbody_tr]:h-12 [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/80 [&_tbody_tr:last-child]:border-b-0 [&_tbody_tr:hover]:bg-zinc-800/55 [&_td]:px-4 [&_td]:py-2 [&_th]:h-9 [&_th]:border-b [&_th]:border-zinc-800 [&_th]:bg-[#27272a] [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-semibold [&_th]:text-zinc-200"
                     >
                         <Table.Header>
                             <Table.Column id="ts" isRowHeader className="w-[210px]">
@@ -271,7 +282,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                             </Table.Column>
                         </Table.Header>
                         <Table.Body>
-                            {pageData.length ? (
+                            {hasRows ? (
                                 pageData.map((item) => (
                                     <Table.Row key={item.id} id={item.id}>
                                         <Table.Cell className="whitespace-nowrap text-zinc-100">
@@ -303,7 +314,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                                 ))
                             ) : (
                                 <Table.Row id="empty">
-                                    <Table.Cell colSpan={5} className="h-24 text-center text-zinc-500">
+                                    <Table.Cell colSpan={5} className="h-[360px] text-center text-zinc-500">
                                         暂无数据
                                     </Table.Cell>
                                 </Table.Row>
@@ -313,7 +324,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                 </Table.ScrollContainer>
             </Table>
 
-            <div className="flex flex-col gap-3 py-1 text-sm text-zinc-300 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 shrink-0 flex-col gap-3 py-1 text-sm text-zinc-300 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-3">
                     <span>共 {filteredData.length} 条</span>
                     <div className="flex items-center gap-1">
@@ -341,7 +352,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
                     <span className="min-w-[90px] text-center">
                         第 {currentPage + 1} / {pageCount} 页
                     </span>

@@ -77,19 +77,19 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
     });
 
     return (
-        <div className="space-y-5">
-            <header>
-                <h2 className="text-3xl font-bold tracking-tight text-zinc-50">数据分析</h2>
+        <div className="min-w-0 space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-4 lg:overflow-hidden">
+            <header className="shrink-0">
+                <h2 className="text-2xl font-bold tracking-tight text-zinc-50 md:text-3xl">数据分析</h2>
                 <p className="mt-1 text-sm text-zinc-400">
                     查看详细的礼物、舰长和醒目留言记录。
                 </p>
             </header>
 
-            <Card variant="secondary" className="border border-zinc-800 bg-zinc-950/55">
-                <Card.Header className="border-b border-zinc-800 px-5 py-4">
+            <Card variant="secondary" className="min-w-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/55 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+                <Card.Header className="shrink-0 border-b border-zinc-800 px-4 py-3">
                     <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                         <div>
-                            <Card.Title className="text-2xl font-semibold text-zinc-50">营收记录明细</Card.Title>
+                            <Card.Title className="text-xl font-semibold text-zinc-50">营收记录明细</Card.Title>
                             <Card.Description className="mt-1 text-sm text-zinc-400">
                                 展示 {formatDisplayDate(from)} 至 {formatDisplayDate(to)} 的全部付费互动记录，共 {transactions.length} 条
                             </Card.Description>
@@ -97,7 +97,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
                         <AnalyticsDateFilter from={from} to={to} />
                     </div>
                 </Card.Header>
-                <Card.Content className="px-5 py-4">
+                <Card.Content className="min-w-0 px-4 py-4 sm:px-5 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
                     <AnalyticsTable data={transactions} />
                 </Card.Content>
             </Card>

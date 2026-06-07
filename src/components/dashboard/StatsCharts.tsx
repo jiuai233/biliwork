@@ -54,13 +54,13 @@ export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps
             )}
         >
             <div className="flex h-full min-h-0 flex-col">
-                <div className="flex flex-col gap-4 border-b border-white/10 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300">
-                            <Trophy className="h-6 w-6" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+                            <Trophy className="h-5 w-5" />
                         </div>
                         <div>
-                            <div className="text-lg font-extrabold text-white">
+                            <div className="text-base font-extrabold text-white">
                                 {activeTab === "danmaku" ? "弹幕活跃榜" : "礼物贡献榜"}
                             </div>
                             <div className="mt-1 text-xs text-slate-500">
@@ -99,23 +99,23 @@ export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps
                     </div>
                 </div>
 
-                <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4">
-                    <div className="space-y-3 pr-1">
+                <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-3">
+                    <div className="space-y-2 pr-1">
                         {activeData.map((item, index) => {
                             const percent = Math.max(4, Math.round((item.value / maxValue) * 100));
                             return (
                                 <div
                                     key={`${item.uname}-${index}`}
                                     className={cn(
-                                        "min-h-[78px] rounded-2xl border px-4 py-3 transition hover:bg-white/[0.045]",
+                                        "min-h-[64px] rounded-xl border px-3 py-2.5 transition hover:bg-white/[0.045]",
                                         rankClass(index)
                                     )}
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-black/20 text-sm font-black">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black/20 text-xs font-black">
                                             #{index + 1}
                                         </div>
-                                        <Avatar className="h-11 w-11 shrink-0 border border-white/10">
+                                        <Avatar className="h-9 w-9 shrink-0 border border-white/10">
                                             <Avatar.Image src={normalizeAvatarSrc(item.uface)} referrerPolicy="no-referrer" />
                                             <Avatar.Fallback>{item.uname?.[0] ?? "?"}</Avatar.Fallback>
                                         </Avatar>
@@ -127,7 +127,7 @@ export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps
                                                     index === 0 ? "text-amber-200" : "text-white"
                                                 )}>{item.label}</div>
                                             </div>
-                                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
                                                 <div
                                                     className={cn(
                                                         "h-full rounded-full",

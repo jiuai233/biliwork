@@ -23,13 +23,13 @@ export default async function BoardPage() {
     ]);
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight text-white">切片/晒单 制作板</h2>
-                <p className="text-muted-foreground">
+        <div className="min-w-0 space-y-4">
+            <header className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+                <h2 className="text-2xl font-bold tracking-normal text-white md:text-3xl">切片/晒单 制作板</h2>
+                <p className="mt-1 text-sm text-zinc-400">
                     拖拽筛选高光时刻，自由组合并生成图片用于分享。
                 </p>
-            </div>
+            </header>
 
             <InteractiveBoard
                 initialTransactions={transactions}

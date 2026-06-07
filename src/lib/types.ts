@@ -102,6 +102,7 @@ export const BLINDBOX_COST = 150;
 // 单条盲盒记录
 export interface BlindboxRecord {
     id: number;
+    row_key: string;
     uname: string | null;
     uface: string | null;
     gift_name: string | null;

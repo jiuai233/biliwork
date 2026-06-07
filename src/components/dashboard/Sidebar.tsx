@@ -155,23 +155,30 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
     const [dontShowAgain, setDontShowAgain] = useState(false);
 
     useEffect(() => {
+        let noticeState = {
+            open: false,
+            dontShowAgain: false,
+        };
+
         try {
             const dismissed = window.localStorage.getItem(NOTICE_DISMISSED_KEY) === "true";
             const lastShown = window.localStorage.getItem(NOTICE_LAST_SHOWN_KEY);
             const today = getTodayKey();
 
             if (dismissed) {
-                setDontShowAgain(true);
-                return;
-            }
-
-            if (lastShown !== today) {
+                noticeState = { open: false, dontShowAgain: true };
+            } else if (lastShown !== today) {
                 window.localStorage.setItem(NOTICE_LAST_SHOWN_KEY, today);
-                setNoticeOpen(true);
+                noticeState = { open: true, dontShowAgain: false };
             }
         } catch {
-            setNoticeOpen(true);
+            noticeState = { open: true, dontShowAgain: false };
         }
+
+        window.setTimeout(() => {
+            setDontShowAgain(noticeState.dontShowAgain);
+            setNoticeOpen(noticeState.open);
+        }, 0);
     }, []);
 
     const persistNoticePreference = () => {
@@ -204,6 +211,8 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
                     type="button"
                     variant="outline"
                     size="sm"
+                    aria-label="打开菜单"
+                    data-testid="mobile-menu-button"
                     className="inline-flex h-10 w-10 items-center justify-center rounded-md border-zinc-800 bg-zinc-900 p-0"
                     onClick={() => setIsSidebarOpen(true)}
                 >
