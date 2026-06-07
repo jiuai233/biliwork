@@ -1,5 +1,38 @@
 # Dashboard UI 密度与 Playwright 自动化计划
 
+## 本轮修正补充：开播记录列宽与内部滚动条一致性
+
+### 改造范围
+
+- 修复 `/dashboard/live` 表格 `w-max + table-fixed` 导致列宽异常放大、只露出开播时间列的问题。
+- 将 `/dashboard/live` 接入桌面 flex 高度链路，滚动留在开播记录卡片内部。
+- 将 `/dashboard/analytics` 表格内部滚动条统一为项目的 `dark-scrollbar` 样式。
+- 补充 Playwright 断言，防止开播记录表格再次出现超大 scrollWidth。
+
+### 非目标项
+
+- 不修改开播记录查询、收入统计、详情跳转逻辑。
+- 不修改数据分析筛选、排序、分页逻辑。
+- 不修改全局浏览器页面滚动策略。
+
+### 实施顺序
+
+1. live 表格去掉 `w-max`，改为 `w-full min-w-[1100px]`，并给关键列固定合理宽度。
+2. live 页面外层、统计区、表格卡片接入 `lg:flex lg:min-h-0` 高度链路。
+3. analytics 表格滚动容器添加 `dark-scrollbar`。
+4. 更新 e2e：桌面端 live 表格不应比容器宽出异常值。
+5. 运行 lint、Playwright，并截图复核。
+
+### Plan Eng Review
+
+- 更短路径：修错用的表格宽度 class，不重写表格组件。
+- 耦合风险：只影响 live 页面 presentation 和 analytics 滚动条样式。
+- 兼容性风险：移动端保留横向滚动，桌面端可用宽度足够展示全部列。
+- 漏项检查：列宽、卡片内部滚动、页面级无滚动、交互测试都覆盖。
+- KISS/YAGNI/DRY：复用现有 `dark-scrollbar`，不新增滚动条主题。
+
+---
+
 ## 本轮修正补充：桌面页面级滚动收敛
 
 ### 改造范围

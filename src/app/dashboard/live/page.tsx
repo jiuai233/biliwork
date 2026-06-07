@@ -95,9 +95,9 @@ export default function LiveRecordsPage() {
     }
 
     return (
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-4 lg:overflow-hidden">
             {/* Header */}
-            <div className="flex min-w-0 flex-col justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 backdrop-blur-sm md:flex-row md:items-center">
+            <div className="flex min-w-0 shrink-0 flex-col justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 backdrop-blur-sm md:flex-row md:items-center">
                 <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/15 text-green-300">
                         <Radio className="h-5 w-5" />
@@ -124,7 +124,7 @@ export default function LiveRecordsPage() {
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+            <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-6">
                 <div className="rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/20 to-emerald-500/10 p-3 backdrop-blur-sm">
                     <div className="mb-1 flex items-center justify-between">
                         <span className="text-zinc-400 text-sm">开播次数</span>
@@ -170,23 +170,23 @@ export default function LiveRecordsPage() {
             </div>
 
             {/* Sessions Table */}
-            <div className="h-[calc(100vh-295px)] min-h-[420px] w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50">
-                <div className="dark-scrollbar h-full w-full max-w-full overflow-auto">
-                    <Table variant="secondary" className="w-max min-w-[1100px]">
+            <div className="min-h-[420px] w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50 lg:min-h-0 lg:flex-1">
+                <div data-testid="live-records-viewport" className="dark-scrollbar h-full w-full max-w-full overflow-auto">
+                    <Table variant="secondary" className="w-full min-w-[1100px]">
                         <Table.Content
                             aria-label="开播记录"
-                            className="w-full table-fixed border-collapse [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/60 [&_tbody_tr:hover]:bg-zinc-800/30 [&_td]:px-4 [&_td]:py-2.5 [&_th]:sticky [&_th]:top-0 [&_th]:bg-zinc-900 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-zinc-400"
+                            className="w-full table-fixed border-collapse [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/60 [&_tbody_tr:hover]:bg-zinc-800/30 [&_td]:px-4 [&_td]:py-2.5 [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-zinc-900 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-zinc-400"
                         >
                         <Table.Header>
-                            <Table.Column id="start" isRowHeader>开播时间</Table.Column>
-                            <Table.Column id="end">下播时间</Table.Column>
-                            <Table.Column id="duration">时长</Table.Column>
-                            <Table.Column id="title">直播标题</Table.Column>
-                            <Table.Column id="area">分区</Table.Column>
-                            <Table.Column id="gift" className="text-right">礼物</Table.Column>
-                            <Table.Column id="guard" className="text-right">舰长</Table.Column>
-                            <Table.Column id="sc" className="text-right">SC</Table.Column>
-                            <Table.Column id="total" className="text-right">总收入</Table.Column>
+                            <Table.Column id="start" isRowHeader className="w-[130px]">开播时间</Table.Column>
+                            <Table.Column id="end" className="w-[130px]">下播时间</Table.Column>
+                            <Table.Column id="duration" className="w-[90px]">时长</Table.Column>
+                            <Table.Column id="title" className="w-[220px]">直播标题</Table.Column>
+                            <Table.Column id="area" className="w-[120px]">分区</Table.Column>
+                            <Table.Column id="gift" className="w-[110px] text-right">礼物</Table.Column>
+                            <Table.Column id="guard" className="w-[110px] text-right">舰长</Table.Column>
+                            <Table.Column id="sc" className="w-[100px] text-right">SC</Table.Column>
+                            <Table.Column id="total" className="w-[120px] text-right">总收入</Table.Column>
                             <Table.Column id="actions" className="w-[80px] text-center">操作</Table.Column>
                         </Table.Header>
                         <Table.Body>

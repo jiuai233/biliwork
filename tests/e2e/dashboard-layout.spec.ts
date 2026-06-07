@@ -50,6 +50,7 @@ test.describe('dashboard local layout', () => {
                 });
 
                 expect(typeFilterHasScrollbar, 'analytics type filter should not expose native scrollbars').toBe(false);
+                await expect(dashboardPage.getByTestId('analytics-records-viewport')).toHaveClass(/dark-scrollbar/);
 
                 if (viewport && viewport.width >= 1024) {
                     const recordsHeight = await dashboardPage.getByTestId('analytics-records-viewport').evaluate((element) => {
@@ -80,6 +81,26 @@ test.describe('dashboard local layout', () => {
                     });
 
                     expect(hasVerticalScroll, 'empty blindbox records should not scroll or expose a second layer').toBe(false);
+                }
+            }
+
+            if (route === '/dashboard/live' && viewport && viewport.width >= 1024) {
+                const liveTableMetrics = await dashboardPage.getByTestId('live-records-viewport').evaluate((element) => {
+                    const table = element.querySelector('table');
+                    const headerWidths = [...element.querySelectorAll('th')]
+                        .slice(0, 5)
+                        .map((header) => Math.round(header.getBoundingClientRect().width));
+
+                    return {
+                        scrollWidth: element.scrollWidth,
+                        tableWidth: table ? Math.round(table.getBoundingClientRect().width) : 0,
+                        headerWidths,
+                    };
+                });
+
+                expect(liveTableMetrics.tableWidth, 'live records table width should stay bounded').toBeLessThan(1800);
+                for (const width of liveTableMetrics.headerWidths) {
+                    expect(width, 'live records columns should not expand abnormally').toBeLessThan(320);
                 }
             }
         });

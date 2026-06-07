@@ -48,3 +48,4 @@ yarn-error.log*
 next-env.d.ts
 next-dev.out.log
 next-dev.err.log
+implementation_plan.md

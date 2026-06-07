@@ -244,7 +244,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                 <Table.ScrollContainer
                     data-testid="analytics-records-viewport"
                     className={cn(
-                        "min-h-[420px] w-full max-w-full rounded-xl bg-[#18181b] lg:min-h-0 lg:flex-1",
+                        "dark-scrollbar min-h-[420px] w-full max-w-full rounded-xl bg-[#18181b] lg:min-h-0 lg:flex-1",
                         hasRows ? "overflow-auto" : "overflow-x-auto overflow-y-hidden"
                     )}
                 >
