@@ -22,9 +22,6 @@ import { logout } from "@/lib/auth";
 import type { Broadcaster } from "@/lib/types";
 import { DashboardNoticeDialog } from "./DashboardNoticeDialog";
 
-const NOTICE_DISMISSED_KEY = "bili-dashboard-notice-dismissed";
-const NOTICE_LAST_SHOWN_KEY = "bili-dashboard-notice-last-shown";
-
 const navItems = [
     { name: "监控看板", href: "/dashboard", icon: LayoutDashboard },
     { name: "盲盒分析", href: "/dashboard/blindbox", icon: Box },
@@ -41,21 +38,12 @@ function normalizeAvatarSrc(src: string | null | undefined): string | undefined 
     return src;
 }
 
-function getTodayKey() {
-    const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `${now.getFullYear()}-${month}-${day}`;
-}
-
 function SidebarUserMenu({
     broadcaster,
     mobile = false,
-    onNoticeOpen,
 }: {
     broadcaster: Broadcaster | null;
     mobile?: boolean;
-    onNoticeOpen: () => void;
 }) {
     const [open, setOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -91,18 +79,6 @@ function SidebarUserMenu({
         <div ref={menuRef} className="relative">
             {open && (
                 <div className="absolute bottom-[calc(100%+8px)] left-0 z-20 w-full rounded-xl border border-white/10 bg-zinc-950 p-2 shadow-2xl shadow-black/40">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                            onNoticeOpen();
-                            setOpen(false);
-                        }}
-                        className="mb-1 inline-flex h-10 w-full items-center justify-start gap-2 rounded-lg px-3 text-zinc-300 hover:bg-white/[0.06]"
-                    >
-                        <MessageCircle className="h-4 w-4" />
-                        问题反馈
-                    </Button>
                     <form action={logout}>
                         <Button
                             type="submit"
@@ -144,6 +120,26 @@ function SidebarUserMenu({
     );
 }
 
+function FeedbackSidebarButton({ onClick }: { onClick: () => void }) {
+    return (
+        <Button
+            type="button"
+            variant="ghost"
+            data-testid="dashboard-feedback-entry"
+            onClick={onClick}
+            className="group flex h-auto w-full items-center justify-start gap-3 rounded-xl border border-sky-400/20 bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(168,85,247,0.10))] px-3 py-3 text-left text-sky-100 shadow-[0_14px_34px_rgba(2,6,23,0.24)] hover:border-sky-300/35 hover:bg-sky-500/15"
+        >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sky-300/25 bg-sky-400/10 text-sky-200">
+                <MessageCircle className="h-4 w-4" />
+            </span>
+            <span className="min-w-0">
+                <span className="block text-sm font-semibold text-zinc-100">问题反馈</span>
+                <span className="mt-0.5 block truncate text-xs text-zinc-400">加入 QQ 群反馈问题</span>
+            </span>
+        </Button>
+    );
+}
+
 /**
  * 侧边栏客户端组件
  * 从 layout.tsx 中拆分出来，使 layout 可以作为 Server Component
@@ -152,56 +148,6 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
     const pathname = usePathname();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [noticeOpen, setNoticeOpen] = useState(false);
-    const [dontShowAgain, setDontShowAgain] = useState(false);
-
-    useEffect(() => {
-        let noticeState = {
-            open: false,
-            dontShowAgain: false,
-        };
-
-        try {
-            const dismissed = window.localStorage.getItem(NOTICE_DISMISSED_KEY) === "true";
-            const lastShown = window.localStorage.getItem(NOTICE_LAST_SHOWN_KEY);
-            const today = getTodayKey();
-
-            if (dismissed) {
-                noticeState = { open: false, dontShowAgain: true };
-            } else if (lastShown !== today) {
-                window.localStorage.setItem(NOTICE_LAST_SHOWN_KEY, today);
-                noticeState = { open: true, dontShowAgain: false };
-            }
-        } catch {
-            noticeState = { open: true, dontShowAgain: false };
-        }
-
-        window.setTimeout(() => {
-            setDontShowAgain(noticeState.dontShowAgain);
-            setNoticeOpen(noticeState.open);
-        }, 0);
-    }, []);
-
-    const persistNoticePreference = () => {
-        try {
-            if (dontShowAgain) {
-                window.localStorage.setItem(NOTICE_DISMISSED_KEY, "true");
-            } else {
-                window.localStorage.removeItem(NOTICE_DISMISSED_KEY);
-            }
-        } catch { }
-    };
-
-    const handleNoticeOpenChange = (open: boolean) => {
-        if (!open) {
-            persistNoticePreference();
-        }
-        setNoticeOpen(open);
-    };
-
-    const handleNoticeConfirm = () => {
-        persistNoticePreference();
-        setNoticeOpen(false);
-    };
 
     return (
         <>
@@ -260,12 +206,19 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
                                     {item.name}
                                 </Link>
                             ))}
+                            <div className="pt-3">
+                                <FeedbackSidebarButton
+                                    onClick={() => {
+                                        setNoticeOpen(true);
+                                        setIsSidebarOpen(false);
+                                    }}
+                                />
+                            </div>
                         </nav>
                         <div className="border-t border-zinc-800 p-4">
                             <SidebarUserMenu
                                 broadcaster={broadcaster}
                                 mobile
-                                onNoticeOpen={() => setNoticeOpen(true)}
                             />
                         </div>
                     </aside>
@@ -297,20 +250,18 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
                         </Link>
                     ))}
                 </nav>
-                <div className="border-t border-zinc-800 p-4">
+                <div className="space-y-3 border-t border-zinc-800 p-4">
+                    <FeedbackSidebarButton onClick={() => setNoticeOpen(true)} />
                     <SidebarUserMenu
                         broadcaster={broadcaster}
-                        onNoticeOpen={() => setNoticeOpen(true)}
                     />
                 </div>
             </div>
 
             <DashboardNoticeDialog
                 open={noticeOpen}
-                dontShowAgain={dontShowAgain}
-                onDontShowAgainChange={setDontShowAgain}
-                onOpenChange={handleNoticeOpenChange}
-                onConfirm={handleNoticeConfirm}
+                onOpenChange={setNoticeOpen}
+                onConfirm={() => setNoticeOpen(false)}
             />
         </>
     );

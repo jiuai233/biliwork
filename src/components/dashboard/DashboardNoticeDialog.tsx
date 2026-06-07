@@ -1,6 +1,6 @@
 'use client';
 
-import { Checkbox } from '@/components/ui/checkbox';
+import { Copy, ExternalLink, MessageCircle } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -10,46 +10,84 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+
+const QQ_GROUP_NUMBER = '672791477';
+const QQ_GROUP_INVITE_URL = 'https://qm.qq.com/q/XrBYAZ4aMc';
 
 interface DashboardNoticeDialogProps {
     open: boolean;
-    dontShowAgain: boolean;
-    onDontShowAgainChange: (checked: boolean) => void;
     onOpenChange: (open: boolean) => void;
     onConfirm: () => void;
 }
 
 export function DashboardNoticeDialog({
     open,
-    dontShowAgain,
-    onDontShowAgainChange,
     onOpenChange,
     onConfirm,
 }: DashboardNoticeDialogProps) {
+    const copyGroupNumber = async () => {
+        try {
+            await navigator.clipboard.writeText(QQ_GROUP_NUMBER);
+            toast.success('QQ群号已复制');
+        } catch {
+            toast.error(`复制失败，请手动搜索群号 ${QQ_GROUP_NUMBER}`);
+        }
+    };
+
+    const openInviteLink = async () => {
+        try {
+            await navigator.clipboard.writeText(QQ_GROUP_NUMBER);
+        } catch { }
+
+        window.open(QQ_GROUP_INVITE_URL, '_blank', 'noopener,noreferrer');
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border-white/10 bg-zinc-950/80 text-zinc-100 shadow-2xl shadow-black/50 backdrop-blur-xl sm:max-w-md">
+            <DialogContent className="border-sky-300/20 bg-zinc-950 text-zinc-100 shadow-2xl shadow-black/70 sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="text-xl text-zinc-100">问题反馈</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2 text-xl text-zinc-100">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-200">
+                            <MessageCircle className="h-4 w-4" />
+                        </span>
+                        问题反馈
+                    </DialogTitle>
                     <DialogDescription className="text-sm leading-6 text-zinc-400">
-                        如果有问题请加QQ群：672791477
+                        遇到问题可以加入 QQ 群反馈。点击下方按钮会打开官方加群链接；如果浏览器拦截，请复制群号手动搜索。
                     </DialogDescription>
                 </DialogHeader>
 
-                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-sm text-zinc-300">
-                    <Checkbox
-                        checked={dontShowAgain}
-                        onCheckedChange={(checked) => onDontShowAgainChange(checked === true)}
-                        className="border-zinc-500 data-[state=checked]:border-violet-400 data-[state=checked]:bg-violet-500"
-                    />
-                    不再提示
-                </label>
+                <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                    <div className="text-xs font-medium text-zinc-500">QQ群号</div>
+                    <div className="mt-1 flex items-center justify-between gap-3">
+                        <div className="text-2xl font-black tracking-normal text-zinc-100">{QQ_GROUP_NUMBER}</div>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={copyGroupNumber}
+                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-zinc-200 hover:bg-white/[0.09]"
+                        >
+                            <Copy className="h-4 w-4" />
+                            复制
+                        </Button>
+                    </div>
+                </div>
 
-                <DialogFooter>
+                <DialogFooter className="gap-2 sm:justify-between">
+                    <Button
+                        type="button"
+                        onClick={openInviteLink}
+                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-sky-500 text-white hover:bg-sky-400"
+                    >
+                        <ExternalLink className="h-4 w-4" />
+                        打开加群链接
+                    </Button>
                     <Button
                         type="button"
                         onClick={onConfirm}
-                        className="h-10 rounded-lg bg-zinc-100 text-zinc-950 hover:bg-white"
+                        variant="secondary"
+                        className="h-10 rounded-lg border border-white/10 bg-white/[0.06] text-zinc-100 hover:bg-white/[0.09]"
                     >
                         知道了
                     </Button>

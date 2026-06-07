@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+const localWorkers = Number(process.env.PLAYWRIGHT_WORKERS || 1);
 
 export default defineConfig({
     testDir: './tests/e2e',
@@ -11,12 +12,13 @@ export default defineConfig({
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
+    workers: process.env.CI ? undefined : Math.max(1, localWorkers),
     reporter: [['list'], ['html', { open: 'never' }]],
     use: {
         baseURL,
-        trace: 'retain-on-failure',
+        trace: process.env.CI ? 'retain-on-failure' : 'off',
         screenshot: 'only-on-failure',
-        video: 'retain-on-failure',
+        video: process.env.CI ? 'retain-on-failure' : 'off',
     },
     webServer: {
         command: 'npm run dev',

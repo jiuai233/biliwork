@@ -17,6 +17,25 @@ test.describe('dashboard interactions', () => {
         await expect(guardTab).toHaveAttribute('aria-pressed', 'true');
     });
 
+    test('feedback entry opens QQ group dialog', async ({ page }) => {
+        const dashboardPage = await openFirstBroadcasterDashboard(page);
+        await dashboardPage.goto('/dashboard');
+
+        const mobileMenuButton = dashboardPage.getByTestId('mobile-menu-button');
+        if (await mobileMenuButton.isVisible().catch(() => false)) {
+            await mobileMenuButton.click();
+        }
+
+        await dashboardPage.locator('[data-testid="dashboard-feedback-entry"]:visible').click();
+
+        const dialog = dashboardPage.getByRole('dialog');
+        await expect(dialog.getByRole('heading', { name: '问题反馈' })).toBeVisible();
+        await expect(dialog.getByText('672791477')).toBeVisible();
+        await expect(dialog.getByRole('button', { name: '打开加群链接' })).toBeVisible();
+        await expect(dialog.getByRole('button', { name: '复制', exact: true })).toBeVisible();
+        await expect(dialog.getByText('不再提示')).toHaveCount(0);
+    });
+
     test('blindbox search and refresh controls are usable', async ({ page }) => {
         const dashboardPage = await openFirstBroadcasterDashboard(page);
         await dashboardPage.goto('/dashboard/blindbox');
