@@ -47,11 +47,18 @@ export async function getBlindboxStats(
         where.uname = { contains: username.trim() };
     }
 
-    const rows = await prisma.gift.findMany({
-        where,
-        orderBy: { ts: 'desc' },
-        take: limit
-    });
+    const [rows, distributionRows] = await Promise.all([
+        prisma.gift.findMany({
+            where,
+            orderBy: { ts: 'desc' },
+            take: limit
+        }),
+        prisma.gift.groupBy({
+            by: ['giftName'],
+            where,
+            _sum: { giftNum: true }
+        })
+    ]);
 
     // 计算每条记录的盈亏
     const records: BlindboxRecord[] = rows.map(r => {
@@ -73,13 +80,6 @@ export async function getBlindboxStats(
         };
     });
 
-    // 计算总开盒次数（一条记录可能开了多个盒）
-    const totalBoxes = records.reduce((sum, r) => sum + r.gift_num, 0);
-    const totalCost = totalBoxes * BLINDBOX_COST;
-    const totalOutput = records.reduce((sum, r) => sum + r.gift_value, 0);
-    const netProfit = totalOutput - totalCost;
-    const profitRate = totalCost > 0 ? ((netProfit / totalCost) * 100) : 0;
-
     // 礼物分布统计
     const distributionMap = new Map<string, { count: number; totalValue: number }>();
 
@@ -88,16 +88,24 @@ export async function getBlindboxStats(
         distributionMap.set(name, { count: 0, totalValue: 0 });
     }
 
-    // 统计每种礼物
-    for (const r of records) {
-        if (r.gift_name) {
-            const existing = distributionMap.get(r.gift_name);
+    // 统计每种礼物。列表只展示最近 limit 条，但汇总应覆盖完整筛选范围。
+    for (const row of distributionRows) {
+        if (row.giftName) {
+            const existing = distributionMap.get(row.giftName);
+            const count = row._sum.giftNum ?? 0;
             if (existing) {
-                existing.count += r.gift_num;
-                existing.totalValue += r.gift_value;
+                existing.count = count;
+                existing.totalValue = count * (BLINDBOX_GIFTS[row.giftName] || 0);
             }
         }
     }
+
+    // 计算总开盒次数（一条记录可能开了多个盒）
+    const totalBoxes = Array.from(distributionMap.values()).reduce((sum, item) => sum + item.count, 0);
+    const totalCost = totalBoxes * BLINDBOX_COST;
+    const totalOutput = Array.from(distributionMap.values()).reduce((sum, item) => sum + item.totalValue, 0);
+    const netProfit = totalOutput - totalCost;
+    const profitRate = totalCost > 0 ? ((netProfit / totalCost) * 100) : 0;
 
     const distribution: GiftDistribution[] = [];
     for (const [name, data] of distributionMap) {
