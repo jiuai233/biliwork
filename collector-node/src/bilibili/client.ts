@@ -20,6 +20,7 @@ const HEARTBEAT_URL = 'https://live-open.biliapi.com/v2/app/heartbeat';
 
 const HEARTBEAT_INTERVAL_MS = 20_000;
 const GAME_HEARTBEAT_FAILURE_LIMIT = 5;
+const REQUEST_TIMEOUT_MS = 15_000;
 
 const OP_HEARTBEAT = 2;
 const OP_MESSAGE = 5;
@@ -55,10 +56,16 @@ export interface AnchorInfo {
     openId: string;
 }
 
+export type ClientUnhealthyReason =
+    | 'game_heartbeat_failed'
+    | 'ws_closed'
+    | 'ws_heartbeat_not_open'
+    | 'ws_heartbeat_failed';
+
 export interface ClientUnhealthyInfo {
-    reason: 'game_heartbeat_failed';
-    failures: number;
-    error: unknown;
+    reason: ClientUnhealthyReason;
+    failures?: number;
+    error?: unknown;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -72,8 +79,9 @@ export class BilibiliClient {
     private ws?: WebSocket;
     private wsHeartbeatTimer?: NodeJS.Timeout;
     private gameHeartbeatTimer?: NodeJS.Timeout;
-    private closed = false;
     private gameHeartbeatFailures = 0;
+    private gameHeartbeatInFlight = false;
+    private closed = false;
     private unhealthyNotified = false;
     private log;
 
@@ -167,9 +175,13 @@ export class BilibiliClient {
             this.handlePacket(buffer);
         });
         this.ws.on('error', (error) => this.log.error({ error }, 'WS error'));
-        this.ws.on('close', () => {
+        this.ws.on('close', (code, reason) => {
             if (!this.closed) {
-                this.log.warn('WS closed');
+                this.log.warn({
+                    code,
+                    reason: reason.toString('utf8'),
+                }, 'WS closed');
+                this.markUnhealthy('ws_closed');
             }
         });
 
@@ -177,9 +189,14 @@ export class BilibiliClient {
 
         this.wsHeartbeatTimer = setInterval(() => {
             try {
+                if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                    this.markUnhealthy('ws_heartbeat_not_open');
+                    return;
+                }
                 this.sendPacket(Buffer.alloc(0), OP_HEARTBEAT);
             } catch (error) {
                 this.log.error({ error }, 'WS heartbeat failed');
+                this.markUnhealthy('ws_heartbeat_failed', error);
             }
         }, HEARTBEAT_INTERVAL_MS);
 
@@ -189,38 +206,52 @@ export class BilibiliClient {
     }
 
     private async sendGameHeartbeat() {
+        if (this.closed || this.gameHeartbeatInFlight) return;
+
+        this.gameHeartbeatInFlight = true;
         try {
             const response = await this.signedRequest<HeartbeatResponse>(HEARTBEAT_URL, { game_id: this.gameId });
             if (response.code !== 0) {
                 throw new Error(`heartbeat api error: ${JSON.stringify(response)}`);
             }
+            if (this.closed) return;
+            if (this.gameHeartbeatFailures > 0) {
+                this.log.info({ failures: this.gameHeartbeatFailures }, 'Game heartbeat recovered');
+            }
             this.gameHeartbeatFailures = 0;
         } catch (error) {
+            if (this.closed) return;
+
             this.gameHeartbeatFailures += 1;
             const failures = this.gameHeartbeatFailures;
 
-            this.log.warn({ error, failures }, 'Game heartbeat failed');
-
-            if (failures < GAME_HEARTBEAT_FAILURE_LIMIT || this.closed || this.unhealthyNotified) {
-                return;
-            }
-
-            this.unhealthyNotified = true;
-            this.log.error({
+            this.log.warn({
                 error,
                 failures,
-            }, 'Game heartbeat unhealthy threshold reached');
+                limit: GAME_HEARTBEAT_FAILURE_LIMIT,
+            }, 'Game heartbeat failed');
 
-            try {
-                await this.onUnhealthy?.({
-                    reason: 'game_heartbeat_failed',
-                    failures,
-                    error,
-                });
-            } catch (callbackError) {
-                this.log.error({ error: callbackError }, 'Client unhealthy handler failed');
+            if (failures >= GAME_HEARTBEAT_FAILURE_LIMIT) {
+                this.markUnhealthy('game_heartbeat_failed', error, failures);
             }
+        } finally {
+            this.gameHeartbeatInFlight = false;
         }
+    }
+
+    private markUnhealthy(reason: ClientUnhealthyReason, error?: unknown, failures?: number) {
+        if (this.closed || this.unhealthyNotified) return;
+
+        this.unhealthyNotified = true;
+        this.log.warn({ reason, error, failures }, 'Client unhealthy');
+        this.close();
+        Promise.resolve(this.onUnhealthy?.({ reason, error, failures }))
+            .catch((callbackError) => {
+                this.log.error({
+                    error: callbackError,
+                    reason,
+                }, 'Client unhealthy callback failed');
+            });
     }
 
     private sendPacket(body: Buffer, op: number) {
@@ -325,6 +356,7 @@ export class BilibiliClient {
         const response = await fetch(url, {
             method: 'POST',
             body,
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
             headers: {
                 'Authorization': signature,
                 'Content-Type': 'application/json',

@@ -31,35 +31,54 @@ export async function runArchive() {
 }
 
 async function exportToParquet(cutoffTs: number, exportPath: string) {
-    const rows = await pool.query<{
+    type ArchiveRow = {
         id: string;
         room_id: number;
         uname: string | null;
         msg: string | null;
         ts: string | null;
         created_at: Date;
-    }>(
-        'SELECT id, room_id, uname, msg, ts, created_at FROM danmaku WHERE ts < $1',
-        [cutoffTs],
-    );
+    };
 
     const writer = await ParquetWriter.openFile(schema, exportPath);
+    const batchSize = 10_000;
+    let cursorTs = '-9223372036854775808';
+    let cursorId = '-9223372036854775808';
+    let count = 0;
+
     try {
-        for (const row of rows.rows) {
-            await writer.appendRow({
-                id: row.id,
-                room_id: row.room_id,
-                uname: row.uname || '',
-                msg: row.msg || '',
-                ts: row.ts || '0',
-                created_at: row.created_at.toISOString(),
-            });
+        for (;;) {
+            const rows = await pool.query<ArchiveRow>(`
+                SELECT id, room_id, uname, msg, ts, created_at
+                FROM danmaku
+                WHERE ts < $1 AND (ts, id) > ($2, $3)
+                ORDER BY ts, id
+                LIMIT $4
+            `, [cutoffTs, cursorTs, cursorId, batchSize]);
+
+            for (const row of rows.rows) {
+                await writer.appendRow({
+                    id: row.id,
+                    room_id: row.room_id,
+                    uname: row.uname || '',
+                    msg: row.msg || '',
+                    ts: row.ts || '0',
+                    created_at: row.created_at.toISOString(),
+                });
+            }
+
+            count += rows.rowCount || 0;
+            if (rows.rows.length < batchSize) break;
+
+            const last = rows.rows.at(-1)!;
+            cursorTs = last.ts!;
+            cursorId = last.id;
         }
     } finally {
         await writer.close();
     }
 
-    logger.info({ count: rows.rowCount, exportPath }, 'Exported danmaku rows');
+    logger.info({ count, exportPath }, 'Exported danmaku rows');
 }
 
 async function purgeOldData(cutoffTs: number) {

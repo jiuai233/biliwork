@@ -13,6 +13,64 @@ import { getSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+const REFRESH_MS = 15_000;
+const snapshots = new Map<string, { promise: Promise<unknown>; expiresAt: number }>();
+
+function getSnapshot(uid: number, start: number, endTime: string | null) {
+    const key = `${uid}:${start}:${endTime ?? 'live'}`;
+    const cached = snapshots.get(key);
+    if (cached && cached.expiresAt > Date.now()) return cached.promise;
+
+    const entry = {
+        expiresAt: Number.POSITIVE_INFINITY,
+        promise: (async () => {
+            const broadcaster = await getBroadcasterByUid(uid);
+            if (!broadcaster?.room_id) return { error: '找不到主播信息' };
+
+            const roomId = broadcaster.room_id;
+            const currentEnd = endTime ? parseInt(endTime) : Date.now();
+            const oneDayMs = 24 * 60 * 60 * 1000;
+            const previousStart = start - oneDayMs;
+            const previousEnd = currentEnd - oneDayMs;
+            const [stats, previousStats, danmaku, gifts, guards, superChats, topDanmaku, topGifts] = await Promise.all([
+                getStats(roomId, start, currentEnd),
+                getStats(roomId, previousStart, previousEnd),
+                getRecentDanmaku(roomId, 50, start, currentEnd),
+                getRecentGifts(roomId, 50, start, currentEnd),
+                getRecentGuards(roomId, 20, start, currentEnd),
+                getRecentSuperChats(roomId, 20, start, currentEnd),
+                getTopDanmakuUsers(roomId, start, currentEnd),
+                getTopGiftUsers(roomId, start, currentEnd)
+            ]);
+
+            return {
+                broadcaster,
+                stats,
+                previousStats,
+                danmaku,
+                gifts,
+                guards,
+                superChats,
+                topDanmaku,
+                topGifts,
+                timestamp: Date.now()
+            };
+        })()
+    };
+
+    snapshots.set(key, entry);
+    entry.promise.then(
+        () => {
+            entry.expiresAt = Date.now() + REFRESH_MS;
+            setTimeout(() => {
+                if (snapshots.get(key) === entry) snapshots.delete(key);
+            }, REFRESH_MS);
+        },
+        () => { if (snapshots.get(key) === entry) snapshots.delete(key); }
+    );
+    return entry.promise;
+}
+
 /**
  * SSE (Server-Sent Events) 端点
  * 替代前端 setInterval 轮询，由服务器持续推送数据更新
@@ -37,12 +95,12 @@ export async function GET(request: NextRequest) {
     const stream = new ReadableStream({
         async start(controller) {
             let closed = false;
-            let interval: ReturnType<typeof setInterval> | null = null;
+            let timer: ReturnType<typeof setTimeout> | null = null;
 
             const cleanup = () => {
-                if (interval) {
-                    clearInterval(interval);
-                    interval = null;
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
                 }
 
                 if (closed) return;
@@ -71,43 +129,9 @@ export async function GET(request: NextRequest) {
                 if (closed || request.signal.aborted) return;
 
                 try {
-                    const broadcaster = await getBroadcasterByUid(uid);
+                    const payload = await getSnapshot(uid, start, endTime);
                     if (closed || request.signal.aborted) return;
-
-                    if (!broadcaster || !broadcaster.room_id) {
-                        enqueue({ error: '找不到主播信息' });
-                        return;
-                    }
-
-                    const roomId = broadcaster.room_id;
-                    const currentEnd = endTime ? parseInt(endTime) : Date.now();
-                    const oneDayMs = 24 * 60 * 60 * 1000;
-                    const previousStart = start - oneDayMs;
-                    const previousEnd = currentEnd - oneDayMs;
-
-                    const [stats, previousStats, danmaku, gifts, guards, superChats, topDanmaku, topGifts] = await Promise.all([
-                        getStats(roomId, start, currentEnd),
-                        getStats(roomId, previousStart, previousEnd),
-                        getRecentDanmaku(roomId, 50, start, currentEnd),
-                        getRecentGifts(roomId, 50, start, currentEnd),
-                        getRecentGuards(roomId, 20, start, currentEnd),
-                        getRecentSuperChats(roomId, 20, start, currentEnd),
-                        getTopDanmakuUsers(roomId, start, currentEnd),
-                        getTopGiftUsers(roomId, start, currentEnd)
-                    ]);
-
-                    enqueue({
-                        broadcaster,
-                        stats,
-                        previousStats,
-                        danmaku,
-                        gifts,
-                        guards,
-                        superChats,
-                        topDanmaku,
-                        topGifts,
-                        timestamp: Date.now()
-                    });
+                    enqueue(payload);
                 } catch (error) {
                     console.error('SSE stream error:', error);
                     enqueue({ error: '数据获取失败' });
@@ -123,14 +147,13 @@ export async function GET(request: NextRequest) {
                 return;
             }
 
-            // 每 15 秒推送一次更新
-            interval = setInterval(async () => {
-                try {
+            const scheduleNext = () => {
+                timer = setTimeout(async () => {
                     await sendData();
-                } catch {
-                    cleanup();
-                }
-            }, 15000);
+                    if (!closed && !request.signal.aborted) scheduleNext();
+                }, REFRESH_MS);
+            };
+            scheduleNext();
 
             if (closed || request.signal.aborted) cleanup();
         },

@@ -267,27 +267,43 @@ export async function getLiveSessionsWithIncome(
         SELECT 'sc' as source, ts, (rmb * 1000) as value
         FROM super_chat
         WHERE room_id = ${roomId} AND ts >= ${BigInt(overallStart)} AND ts <= ${BigInt(overallEnd)}
+        ORDER BY ts
     `;
 
-    // 为每个场次分配收入
+    const orderedSessions = [...visibleSessions].sort(
+        (a, b) => Number(a.start.ts || 0) - Number(b.start.ts || 0)
+    );
+    const totals = new Map<PairedLiveSession, { gift: number; guard: number; sc: number }>(
+        orderedSessions.map(session => [session, { gift: 0, guard: 0, sc: 0 }])
+    );
+    let sessionIndex = 0;
+
+    for (const row of incomeRows) {
+        const rowTs = Number(row.ts);
+        while (sessionIndex < orderedSessions.length) {
+            const session = orderedSessions[sessionIndex];
+            const endTs = session.end?.ts ? Number(session.end.ts) : session.inferredEndTs ?? Date.now();
+            if (rowTs <= endTs) break;
+            sessionIndex++;
+        }
+
+        const session = orderedSessions[sessionIndex];
+        if (!session || rowTs < Number(session.start.ts || 0)) continue;
+
+        const total = totals.get(session)!;
+        const value = Number(row.value);
+        if (row.source === 'gift') total.gift += value;
+        else if (row.source === 'guard') total.guard += value;
+        else if (row.source === 'sc') total.sc += value;
+    }
+
     const result: LiveSession[] = visibleSessions.map(session => {
         const sTs = session.start.ts ? Number(session.start.ts) : 0;
         const eTs = session.end?.ts ? Number(session.end.ts) : session.inferredEndTs ?? Date.now();
-
-        let giftVal = 0, guardVal = 0, scVal = 0;
-        for (const row of incomeRows) {
-            const rowTs = Number(row.ts);
-            if (rowTs >= sTs && rowTs <= eTs) {
-                const val = Number(row.value);
-                if (row.source === 'gift') giftVal += val;
-                else if (row.source === 'guard') guardVal += val;
-                else if (row.source === 'sc') scVal += val;
-            }
-        }
-
-        const giftIncome = giftVal / 1000;
-        const guardIncome = guardVal / 1000;
-        const scIncome = scVal / 1000; // SC value 已乘以1000, 除回来
+        const total = totals.get(session)!;
+        const giftIncome = total.gift / 1000;
+        const guardIncome = total.guard / 1000;
+        const scIncome = total.sc / 1000; // SC value 已乘以1000, 除回来
         const totalIncome = giftIncome + guardIncome + scIncome;
         const duration = session.end?.ts ? Math.round((eTs - sTs) / 60000) : 0;
 

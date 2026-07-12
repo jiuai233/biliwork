@@ -17,6 +17,7 @@ export class CollectorManager {
     private authStartCooldownUntil = new Map<string, number>();
     private startQueueRunning = false;
     private globalStartCooldownUntil = 0;
+    private wakeStartQueue?: () => void;
     private timer?: NodeJS.Timeout;
     private stopped = false;
     private restarting = false;
@@ -33,6 +34,8 @@ export class CollectorManager {
         logger.info('Stopping Collector Manager');
         this.stopped = true;
         if (this.timer) clearInterval(this.timer);
+        this.wakeStartQueue?.();
+        this.wakeStartQueue = undefined;
         for (const client of this.collectors.values()) {
             client.close();
         }
@@ -128,7 +131,7 @@ export class CollectorManager {
                         cooldownMs,
                         queued: this.startQueue.length,
                     }, 'Start queue paused after Bilibili access limit');
-                    await sleep(cooldownMs);
+                    await this.waitForStartQueue(cooldownMs);
                     continue;
                 }
 
@@ -136,10 +139,23 @@ export class CollectorManager {
                 if (!authCode) continue;
 
                 this.queuedStarts.delete(authCode);
+                const active = await this.isBroadcasterActive(authCode);
+                if (active === false) {
+                    logger.info({ auth: authCode.slice(0, 8) }, 'Skipping collector start because broadcaster is inactive');
+                    continue;
+                }
+                if (active === undefined) {
+                    this.enqueueStart(authCode);
+                    if (!this.stopped && this.startQueue.length > 0) {
+                        await this.waitForStartQueue(START_SPACING_MS);
+                    }
+                    continue;
+                }
+
                 await this.startCollector(authCode);
 
                 if (!this.stopped && this.startQueue.length > 0) {
-                    await sleep(START_SPACING_MS);
+                    await this.waitForStartQueue(START_SPACING_MS);
                 }
             }
         } finally {
@@ -150,9 +166,21 @@ export class CollectorManager {
         }
     }
 
+    private async isBroadcasterActive(authCode: string): Promise<boolean | undefined> {
+        try {
+            const result = await pool.query<{ auth_code: string }>(
+                'SELECT auth_code FROM broadcasters WHERE auth_code = $1 AND active = 1 LIMIT 1',
+                [authCode],
+            );
+            return result.rows.length > 0;
+        } catch (error) {
+            logger.error({ error, auth: authCode.slice(0, 8) }, 'Failed to verify broadcaster before collector start');
+            return undefined;
+        }
+    }
+
     private async startCollector(authCode: string) {
-        if (this.stopped) return;
-        if (this.collectors.has(authCode) || this.starting.has(authCode)) return;
+        if (this.stopped || this.starting.has(authCode) || this.collectors.has(authCode)) return;
 
         this.starting.add(authCode);
         logger.info({ auth: authCode.slice(0, 8) }, 'Starting collector');
@@ -255,6 +283,19 @@ export class CollectorManager {
         } finally {
             this.starting.delete(authCode);
         }
+    }
+
+    private waitForStartQueue(ms: number) {
+        return new Promise<void>((resolve) => {
+            const timer = setTimeout(done, ms);
+            const self = this;
+            function done() {
+                clearTimeout(timer);
+                if (self.wakeStartQueue === done) self.wakeStartQueue = undefined;
+                resolve();
+            }
+            this.wakeStartQueue = done;
+        });
     }
 
     private handleClientUnhealthy(authCode: string, client: BilibiliClient, info: ClientUnhealthyInfo) {
