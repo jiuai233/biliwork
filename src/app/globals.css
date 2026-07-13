@@ -46,73 +46,133 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* Light theme (default when html lacks .dark). */
 :root {
   --radius: 0.625rem;
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #f4f4f6;
+  --foreground: #18181b;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #18181b;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #171717;
-  --primary-foreground: #fafafa;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #171717;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --accent: #f5f5f5;
-  --accent-foreground: #171717;
-  --destructive: #ef4444;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #a3a3a3;
-  --chart-1: #f97316;
-  --chart-2: #14b8a6;
-  --chart-3: #3b82f6;
-  --chart-4: #eab308;
-  --chart-5: #f59e0b;
-  --sidebar: #fafafa;
-  --sidebar-foreground: #0a0a0a;
-  --sidebar-primary: #171717;
-  --sidebar-primary-foreground: #fafafa;
-  --sidebar-accent: #f5f5f5;
-  --sidebar-accent-foreground: #171717;
-  --sidebar-border: #e5e5e5;
-  --sidebar-ring: #a3a3a3;
+  --popover-foreground: #18181b;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #ececf0;
+  --secondary-foreground: #3f3f46;
+  --muted: #ececf0;
+  --muted-foreground: #71717b;
+  --accent: rgba(24, 24, 27, 0.05);
+  --accent-foreground: #18181b;
+  --destructive: #dc2626;
+  --border: rgba(24, 24, 27, 0.1);
+  --input: rgba(24, 24, 27, 0.16);
+  --ring: #7c3aed;
+  --chart-1: #2563eb;
+  --chart-2: #16a34a;
+  --chart-3: #d97706;
+  --chart-4: #9333ea;
+  --chart-5: #dc2626;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(24, 24, 27, 0.05);
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: rgba(24, 24, 27, 0.1);
+  --sidebar-ring: #7c3aed;
 }
 
 .dark {
   --background: #09090b;
   --foreground: #fafafa;
-  --card: #171717;
+  --card: #101014;
   --card-foreground: #fafafa;
-  --popover: #171717;
+  --popover: #17171c;
   --popover-foreground: #fafafa;
-  --primary: #e5e5e5;
-  --primary-foreground: #171717;
-  --secondary: #262626;
-  --secondary-foreground: #fafafa;
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
-  --accent: #262626;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --secondary: #1b1b21;
+  --secondary-foreground: #e4e4e7;
+  --muted: #1b1b21;
+  --muted-foreground: #9f9fa9;
+  --accent: rgba(255, 255, 255, 0.06);
   --accent-foreground: #fafafa;
-  --destructive: #dc2626;
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.15);
-  --ring: #737373;
+  --destructive: #ef4444;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #8b5cf6;
   --chart-1: #3b82f6;
   --chart-2: #22c55e;
   --chart-3: #f59e0b;
   --chart-4: #a855f7;
   --chart-5: #ef4444;
-  --sidebar: #171717;
+  --sidebar: #101014;
   --sidebar-foreground: #fafafa;
-  --sidebar-primary: #3b82f6;
+  --sidebar-primary: #8b5cf6;
   --sidebar-primary-foreground: #fafafa;
-  --sidebar-accent: #262626;
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
   --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-ring: #737373;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #8b5cf6;
+}
+
+/*
+ * Accent shades 200-400 are tuned for dark surfaces. In light mode remap them
+ * to their darker equivalents so every `text-sky-300`-style accent stays
+ * readable without per-usage dark: variants.
+ */
+html:not(.dark) {
+  --color-amber-200: var(--color-amber-700);
+  --color-amber-300: var(--color-amber-600);
+  --color-amber-400: var(--color-amber-600);
+  --color-blue-200: var(--color-blue-700);
+  --color-blue-300: var(--color-blue-600);
+  --color-blue-400: var(--color-blue-600);
+  --color-cyan-200: var(--color-cyan-700);
+  --color-cyan-300: var(--color-cyan-600);
+  --color-cyan-400: var(--color-cyan-600);
+  --color-emerald-200: var(--color-emerald-700);
+  --color-emerald-300: var(--color-emerald-600);
+  --color-emerald-400: var(--color-emerald-600);
+  --color-fuchsia-200: var(--color-fuchsia-700);
+  --color-fuchsia-300: var(--color-fuchsia-600);
+  --color-fuchsia-400: var(--color-fuchsia-600);
+  --color-green-200: var(--color-green-700);
+  --color-green-300: var(--color-green-600);
+  --color-green-400: var(--color-green-600);
+  --color-indigo-200: var(--color-indigo-700);
+  --color-indigo-300: var(--color-indigo-600);
+  --color-indigo-400: var(--color-indigo-600);
+  --color-lime-200: var(--color-lime-700);
+  --color-lime-300: var(--color-lime-600);
+  --color-lime-400: var(--color-lime-600);
+  --color-orange-200: var(--color-orange-700);
+  --color-orange-300: var(--color-orange-600);
+  --color-orange-400: var(--color-orange-600);
+  --color-pink-200: var(--color-pink-700);
+  --color-pink-300: var(--color-pink-600);
+  --color-pink-400: var(--color-pink-600);
+  --color-purple-200: var(--color-purple-700);
+  --color-purple-300: var(--color-purple-600);
+  --color-purple-400: var(--color-purple-600);
+  --color-red-200: var(--color-red-700);
+  --color-red-300: var(--color-red-600);
+  --color-red-400: var(--color-red-600);
+  --color-rose-200: var(--color-rose-700);
+  --color-rose-300: var(--color-rose-600);
+  --color-rose-400: var(--color-rose-600);
+  --color-sky-200: var(--color-sky-700);
+  --color-sky-300: var(--color-sky-600);
+  --color-sky-400: var(--color-sky-600);
+  --color-teal-200: var(--color-teal-700);
+  --color-teal-300: var(--color-teal-600);
+  --color-teal-400: var(--color-teal-600);
+  --color-violet-200: var(--color-violet-700);
+  --color-violet-300: var(--color-violet-600);
+  --color-violet-400: var(--color-violet-600);
+  --color-yellow-200: var(--color-yellow-700);
+  --color-yellow-300: var(--color-yellow-600);
+  --color-yellow-400: var(--color-yellow-600);
 }
 
 @layer base {
@@ -120,11 +180,36 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.06), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(59, 130, 246, 0.04), transparent);
+  }
+  .dark body {
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.12), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(59, 130, 246, 0.06), transparent);
   }
 }
 
 @layer utilities {
+  /* Transparency backdrop for overlay/board previews (translucent cards read against it). */
+  .checkerboard {
+    background-color: #fafafa;
+    background-image:
+      linear-gradient(45deg, #e4e4e7 25%, transparent 25%, transparent 75%, #e4e4e7 75%),
+      linear-gradient(45deg, #e4e4e7 25%, transparent 25%, transparent 75%, #e4e4e7 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+  }
+
+  .dark .checkerboard {
+    background-color: #131316;
+    background-image:
+      linear-gradient(45deg, #1e1e23 25%, transparent 25%, transparent 75%, #1e1e23 75%),
+      linear-gradient(45deg, #1e1e23 25%, transparent 25%, transparent 75%, #1e1e23 75%);
+  }
+
   .dark-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: rgba(148, 163, 184, 0.36) transparent;

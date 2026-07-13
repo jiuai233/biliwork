@@ -1,7 +1,10 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-import { Toaster } from "sonner";
+import { ThemeAwareToaster } from "@/components/shared/theme";
+
+/** Runs before paint so the stored theme applies without a flash. Dark is the default. */
+const THEME_INIT_SCRIPT = `(function(){try{if(localStorage.getItem("biweb-theme")!=="light")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}})()`;
 
 export const metadata: Metadata = {
   title: 'Bilibili Live Monitor',
@@ -14,10 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className="dark">
-      <body className="font-sans bg-zinc-950 text-zinc-100 min-h-screen">
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="min-h-screen font-sans bg-background text-foreground">
         {children}
-        <Toaster richColors position="top-center" theme="dark" />
+        <ThemeAwareToaster />
       </body>
     </html>
   );
