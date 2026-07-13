@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { GET } from '@/app/api/dashboard/stream/route';
 import { getBroadcasterByUid, getStats } from '@/lib/data';
 

@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Dockerfile copies .next/standalone; keep in sync.
+  output: "standalone",
   reactCompiler: true,
   experimental: {
     serverActions: {

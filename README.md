@@ -11,8 +11,8 @@ B站直播数据监控面板 - 前端项目
 
 ## 技术栈
 
-- **框架**: Next.js 15 (App Router)
-- **UI**: Tailwind CSS + shadcn/ui
+- **框架**: Next.js 16 (App Router, React 19)
+- **UI**: Tailwind CSS 4 + HeroUI + 共享组件（`src/components/shared`）
 - **数据库**: PostgreSQL + Prisma ORM
 - **动画**: Framer Motion
 
@@ -106,10 +106,15 @@ src/
 │   ├── admin/              # 管理后台
 │   └── login/              # 登录页
 ├── components/             # 组件
+│   ├── admin/              # 管理后台组件
+│   ├── bilibili/           # B站礼物/SC/舰长卡片（看板与 OBS overlay 共用）
 │   ├── dashboard/          # 面板组件
+│   ├── shared/             # 页面级共享组件（PageHeader/StatCard/SectionCard 等）
 │   └── ui/                 # UI 基础组件
 └── lib/                    # 工具库
     ├── services/           # 数据服务
+    ├── bilibili-cards.ts   # 卡片配色/尺寸常量
+    ├── format.ts           # 通用格式化
     └── types.ts            # 类型定义
 ```
 
