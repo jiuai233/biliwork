@@ -3,18 +3,21 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Avatar } from "@heroui/react";
+import { Avatar } from "@/components/ui/avatar";
 import { Transaction } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { Plus } from "lucide-react";
 
 interface DraggableTransactionCardProps {
     transaction: Transaction;
     isOverlay?: boolean;
+    onAdd?: (transaction: Transaction) => void;
 }
 
 export function DraggableTransactionCard({
     transaction,
     isOverlay = false,
+    onAdd,
 }: DraggableTransactionCardProps) {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: transaction.id,
@@ -34,7 +37,7 @@ export function DraggableTransactionCard({
             case "super_chat":
                 return "border-red-500/30 bg-red-500/5 hover:bg-red-500/10";
             default:
-                return "border-zinc-800 bg-zinc-900";
+                return "border-border bg-card";
         }
     };
 
@@ -45,29 +48,36 @@ export function DraggableTransactionCard({
             {...listeners}
             {...attributes}
             className={cn(
-                "relative flex min-w-0 items-center gap-3 rounded-lg border p-3 cursor-grab active:cursor-grabbing transition-colors",
+                "relative flex min-w-0 cursor-grab items-center gap-2.5 rounded-lg border p-2 transition-colors active:cursor-grabbing",
                 getCardStyle(transaction.type),
-                isOverlay ? "shadow-2xl scale-105 z-50 cursor-grabbing bg-zinc-900" : ""
+                isOverlay && "z-50 scale-105 cursor-grabbing bg-card shadow-2xl",
             )}
         >
-            <Avatar className="h-8 w-8 border border-white/10 shrink-0">
-                <Avatar.Image src={transaction.uface ?? undefined} referrerPolicy="no-referrer" />
-                <Avatar.Fallback>{transaction.uname?.[0] ?? '?'}</Avatar.Fallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
+            <Avatar src={transaction.uface} name={transaction.uname} className="h-8 w-8 shrink-0" />
+            <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 items-center justify-between">
-                    <span className="font-bold text-sm text-zinc-200 truncate pr-2">
-                        {transaction.uname}
-                    </span>
-                    <span className="shrink-0 text-xs font-mono text-zinc-400">
-                        ¥{transaction.price}
-                    </span>
+                    <span className="truncate pr-2 text-sm font-bold text-foreground">{transaction.uname}</span>
+                    <span className="shrink-0 font-mono text-xs text-muted-foreground">¥{transaction.price}</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-zinc-500 truncate mt-0.5">
-                    {transaction.icon && <img src={transaction.icon} alt="icon" className="w-4 h-4 object-contain shrink-0" referrerPolicy="no-referrer" />}
+                <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
+                    {transaction.icon && (
+                        <img src={transaction.icon} alt="" className="h-4 w-4 shrink-0 object-contain" referrerPolicy="no-referrer" />
+                    )}
                     <span className="truncate">{transaction.content}</span>
                 </div>
             </div>
+            {onAdd && (
+                <button
+                    type="button"
+                    aria-label={`添加 ${transaction.uname} 的记录`}
+                    title="加入组合看板"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={() => onAdd(transaction)}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-background/70 text-muted-foreground transition hover:border-primary/40 hover:bg-primary/15 hover:text-primary"
+                >
+                    <Plus className="h-4 w-4" />
+                </button>
+            )}
         </div>
     );
 }
