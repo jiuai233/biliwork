@@ -17,16 +17,16 @@ export default function Error({
     }, [error]);
 
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-black text-white">
-            <Card className="w-full max-w-md border-zinc-800 bg-zinc-950">
+        <div className="flex h-screen w-full items-center justify-center bg-background text-foreground">
+            <Card className="w-full max-w-md border-border bg-card">
                 <CardContent className="p-6 text-center">
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400">
                         <AlertTriangle className="h-6 w-6" />
                     </div>
-                    <h1 className="mt-4 text-xl font-semibold text-zinc-100">出错了</h1>
-                    <p className="mt-2 text-sm text-zinc-400">加载管理面板时遇到问题。</p>
+                    <h1 className="mt-4 text-xl font-semibold text-foreground">出错了</h1>
+                    <p className="mt-2 text-sm text-muted-foreground">加载管理面板时遇到问题。</p>
                     <div className="mt-5 flex justify-center gap-2">
-                        <Button variant="outline" className="border-zinc-700 text-zinc-200" onClick={() => window.location.reload()}>
+                        <Button variant="outline" className="border-border text-secondary-foreground" onClick={() => window.location.reload()}>
                             刷新页面
                         </Button>
                         <Button className="bg-blue-600 text-white hover:bg-blue-500" onClick={() => reset()}>
@@ -34,7 +34,7 @@ export default function Error({
                         </Button>
                     </div>
                 {error.digest && (
-                    <p className="mt-4 text-xs text-zinc-600">Error Digest: {error.digest}</p>
+                    <p className="mt-4 text-xs text-muted-foreground/60">Error Digest: {error.digest}</p>
                 )}
                 </CardContent>
             </Card>

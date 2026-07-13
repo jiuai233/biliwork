@@ -1,21 +1,10 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Card, Table } from '@heroui/react';
+import { Card } from '@heroui/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Copy,
-    Gauge,
-    Eye,
-    KeyRound,
-    LogOut,
-    PauseCircle,
-    Pencil,
-    PlayCircle,
-    Plus,
-    Trash2,
-} from 'lucide-react';
+import { KeyRound, LogOut, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     createBroadcasterAction,
@@ -27,25 +16,9 @@ import {
     adminLogout,
     revealBroadcasterAuthCodeAction,
 } from '@/app/admin/actions';
-import { Broadcaster, DashboardStats } from '@/lib/types';
+import { AdminModal } from './AdminModal';
+import { BroadcasterTable, type BroadcasterWithStats } from './BroadcasterTable';
 import { PasswordDialog } from './PasswordDialog';
-
-type BroadcasterWithStats = Broadcaster & { stats?: DashboardStats; isLive?: boolean };
-
-const emptyStats: DashboardStats = {
-    danmakuCount: 0,
-    giftCount: 0,
-    guardCount: 0,
-    scCount: 0,
-    totalIncome: 0,
-};
-
-function normalizeAvatarSrc(src: string | null): string | undefined {
-    if (!src) return undefined;
-    if (src.startsWith('//')) return `https:${src}`;
-    if (src.startsWith('http://')) return src.replace(/^http:\/\//, 'https://');
-    return src;
-}
 
 export default function BroadcasterManager({ initialBroadcasters }: { initialBroadcasters: BroadcasterWithStats[] }) {
     const [broadcasters, setBroadcasters] = useState<BroadcasterWithStats[]>(initialBroadcasters);
@@ -232,6 +205,19 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
         });
     };
 
+    const closeRevealDialog = () => {
+        setAuthCodeDialogId(null);
+        setAdminPassword('');
+        setAuthCodeError('');
+    };
+
+    const closeAuthCodeEdit = () => {
+        setAuthCodeEditId(null);
+        setNewBroadcasterAuthCode('');
+        setResetPasswordToAuthCode(false);
+        setAuthCodeError('');
+    };
+
     const selectedAuthBroadcaster = authCodeDialogId
         ? broadcasters.find((b) => b.id === authCodeDialogId)
         : null;
@@ -240,18 +226,18 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
         : null;
 
     return (
-        <div className="min-h-screen bg-black p-8 text-zinc-100">
+        <div className="min-h-screen bg-background p-8 text-foreground">
             <div className="mx-auto max-w-[1600px] space-y-6">
-                <header className="flex flex-col gap-4 border-b border-zinc-800 pb-6 md:flex-row md:items-center md:justify-between">
+                <header className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-zinc-100">监控控制台</h1>
-                        <p className="mt-1 text-sm text-zinc-400">管理您的 Bilibili 数据采集任务</p>
+                        <h1 className="text-3xl font-bold text-foreground">监控控制台</h1>
+                        <p className="mt-1 text-sm text-muted-foreground">管理您的 Bilibili 数据采集任务</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <Button
                             type="button"
                             variant="outline"
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-zinc-200 hover:bg-white/[0.06]"
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border px-4 text-secondary-foreground hover:bg-accent"
                             onClick={() => setAdminPwdOpen(true)}
                         >
                             <KeyRound className="h-4 w-4" />
@@ -260,7 +246,7 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                         <Button
                             type="button"
                             variant="outline"
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-500/40 px-4 text-red-300 hover:bg-red-500/10"
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-500/40 px-4 text-red-700 hover:bg-red-500/10 dark:text-red-300"
                             onClick={() => startTransition(() => adminLogout())}
                         >
                             <LogOut className="h-4 w-4" />
@@ -269,23 +255,23 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                     </div>
                 </header>
 
-                <Card variant="secondary" className="rounded-2xl border border-zinc-800 bg-zinc-950/70">
+                <Card variant="secondary" className="rounded-2xl border border-border bg-card">
                     <Card.Content className="p-4">
                         <form onSubmit={handleAdd} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div className="min-w-0 flex-1 space-y-2 lg:max-w-[520px]">
-                                <label htmlFor="authCode" className="block text-sm font-medium text-zinc-300">添加新主播</label>
+                                <label htmlFor="authCode" className="block text-sm font-medium text-secondary-foreground">添加新主播</label>
                                 <Input
                                     id="authCode"
                                     name="authCode"
                                     value={newAuthCode}
                                     onChange={(event) => setNewAuthCode(event.target.value)}
                                     placeholder="输入身份码添加监控..."
-                                    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] text-zinc-100 hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                                    className="h-11 w-full rounded-xl"
                                 />
                             </div>
                             <Button
                                 type="submit"
-                                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-zinc-100 px-5 font-semibold text-zinc-950 hover:bg-white"
+                                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90"
                                 disabled={isPending || !newAuthCode.trim()}
                             >
                                 <Plus className="h-4 w-4" />
@@ -295,197 +281,28 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                     </Card.Content>
                 </Card>
 
-                <Card variant="secondary" className="overflow-hidden border border-zinc-800 bg-zinc-950/70">
-                    <Table variant="secondary">
-                        <Table.ScrollContainer className="overflow-x-auto">
-                            <Table.Content
-                                aria-label="主播监控列表"
-                                className="w-full min-w-[1240px] table-fixed border-collapse bg-zinc-950 [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/70 [&_tbody_tr:hover]:bg-zinc-900/70 [&_td]:px-4 [&_td]:py-3 [&_th]:border-b [&_th]:border-zinc-800 [&_th]:bg-zinc-900 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-zinc-300"
-                            >
-                                <Table.Header>
-                                    <Table.Column id="status" isRowHeader className="w-[100px]">状态</Table.Column>
-                                    <Table.Column id="profile" className="w-[280px]">主播信息</Table.Column>
-                                    <Table.Column id="room" className="w-[180px]">身份码 / 房间号</Table.Column>
-                                    <Table.Column id="stats" className="w-[150px]">今日流水</Table.Column>
-                                    <Table.Column id="updated" className="w-[190px]">最后更新</Table.Column>
-                                    <Table.Column id="actions" className="w-[340px] text-right">操作</Table.Column>
-                                </Table.Header>
-                                <Table.Body>
-                                    {broadcasters.map((broadcaster) => {
-                                        const stats = broadcaster.stats ?? emptyStats;
-                                        const avatarSrc = normalizeAvatarSrc(broadcaster.uface);
-                                        const revealedAuthCode = revealedAuthCodes[broadcaster.id];
-                                        const canOpenBroadcasterPage = Boolean(broadcaster.room_id || broadcaster.uid);
-
-                                        return (
-                                            <Table.Row key={broadcaster.id} id={broadcaster.id}>
-                                                <Table.Cell>
-                                                    <div className="flex flex-col gap-2">
-                                                        <span className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-200">
-                                                            <span className={broadcaster.active ? 'h-2 w-2 rounded-full bg-emerald-400' : 'h-2 w-2 rounded-full bg-red-400'} />
-                                                            <span className={broadcaster.active ? 'text-emerald-300' : 'text-red-300'}>
-                                                                {broadcaster.active ? '监控中' : '已暂停'}
-                                                            </span>
-                                                        </span>
-                                                        {broadcaster.isLive && (
-                                                            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-300">
-                                                                <span className="h-1.5 w-1.5 rounded-full bg-sky-300 shadow-[0_0_10px_rgba(125,211,252,0.85)]" />
-                                                                直播中
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </Table.Cell>
-                                                <Table.Cell>
-                                                    <div className="flex items-center gap-3">
-                                                        <button
-                                                            type="button"
-                                                            className={canOpenBroadcasterPage
-                                                                ? "rounded-full transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/50"
-                                                                : "cursor-default rounded-full"
-                                                            }
-                                                            title={canOpenBroadcasterPage ? '打开主播页面' : '暂无主播跳转信息'}
-                                                            aria-label={canOpenBroadcasterPage ? `打开 ${broadcaster.uname || '主播'} 页面` : '暂无主播跳转信息'}
-                                                            onClick={() => handleOpenBroadcasterPage(broadcaster)}
-                                                        >
-                                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-zinc-900 text-sm font-semibold text-zinc-400">
-                                                                {avatarSrc ? (
-                                                                    // Bilibili avatar CDN may reject requests with a page Referer.
-                                                                    <img
-                                                                        src={avatarSrc}
-                                                                        alt={broadcaster.uname || '主播头像'}
-                                                                        className="h-full w-full object-cover"
-                                                                        referrerPolicy="no-referrer"
-                                                                    />
-                                                                ) : (
-                                                                    broadcaster.uname?.[0] || '?'
-                                                                )}
-                                                            </span>
-                                                        </button>
-                                                        <div>
-                                                            <div className="flex min-w-0 items-center gap-2">
-                                                                <span className="truncate font-medium text-zinc-100">{broadcaster.uname || '获取中...'}</span>
-                                                                {broadcaster.isLive && (
-                                                                    <span className="shrink-0 rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
-                                                                        LIVE
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="text-sm text-zinc-500">UID: {broadcaster.uid || '-'}</div>
-                                                        </div>
-                                                    </div>
-                                                </Table.Cell>
-                                                <Table.Cell>
-                                                    <div>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="secondary"
-                                                            className="inline-flex h-8 max-w-[170px] items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2 font-mono text-xs text-zinc-200 hover:bg-white/[0.08]"
-                                                            onClick={() => {
-                                                                if (revealedAuthCode) {
-                                                                    void handleCopyAuthCode(revealedAuthCode);
-                                                                    return;
-                                                                }
-                                                                setAuthCodeDialogId(broadcaster.id);
-                                                                setAdminPassword('');
-                                                                setAuthCodeError('');
-                                                            }}
-                                                        >
-                                                            {revealedAuthCode ? <Copy className="h-3.5 w-3.5 shrink-0" /> : <Eye className="h-3.5 w-3.5 shrink-0" />}
-                                                            <span
-                                                                className="truncate"
-                                                                title={revealedAuthCode ? '点击复制身份码' : '验证管理员密码后查看完整身份码'}
-                                                            >
-                                                                {revealedAuthCode || `${(broadcaster.auth_code || '').slice(0, 8)}...`}
-                                                            </span>
-                                                        </Button>
-                                                        <div className="mt-1 text-sm text-zinc-500">Room: {broadcaster.room_id || '-'}</div>
-                                                    </div>
-                                                </Table.Cell>
-                                                <Table.Cell>
-                                                    <div className="font-semibold text-yellow-400">¥{stats.totalIncome}</div>
-                                                    <div className="text-xs text-zinc-500">
-                                                        礼物 {stats.giftCount} / 舰长 {stats.guardCount}
-                                                    </div>
-                                                </Table.Cell>
-                                                <Table.Cell className="text-zinc-500">
-                                                    {new Date(broadcaster.updated_at).toLocaleString('zh-CN')}
-                                                </Table.Cell>
-                                                <Table.Cell>
-                                                    <div className="flex min-w-[308px] items-center justify-end gap-2 whitespace-nowrap">
-                                                        {broadcaster.uid && broadcaster.room_id && (
-                                                            <Button
-                                                                type="button"
-                                                                size="sm"
-                                                                className="inline-flex h-9 min-w-[72px] shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-white hover:bg-blue-500 whitespace-nowrap"
-                                                                disabled={openingDashboardId === broadcaster.id}
-                                                                onClick={() => handleOpenDashboard(broadcaster.id)}
-                                                            >
-                                                                <Gauge className="h-4 w-4" />
-                                                                {openingDashboardId === broadcaster.id ? '打开中' : '看板'}
-                                                            </Button>
-                                                        )}
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            aria-label="修改身份码"
-                                                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 p-0 text-zinc-300 hover:bg-white/[0.06]"
-                                                            onClick={() => handleOpenAuthCodeEdit(broadcaster)}
-                                                        >
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            aria-label="修改主播密码"
-                                                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 p-0 text-zinc-300 hover:bg-white/[0.06]"
-                                                            onClick={() => {
-                                                                setSelectedBroadcasterId(broadcaster.id);
-                                                                setPwdDialogOpen(true);
-                                                            }}
-                                                        >
-                                                            <KeyRound className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            className="inline-flex h-9 min-w-[78px] shrink-0 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-zinc-200 hover:bg-white/[0.06] whitespace-nowrap"
-                                                            disabled={isPending}
-                                                            onClick={() => handleToggle(broadcaster.id, broadcaster.active)}
-                                                        >
-                                                            {broadcaster.active ? <PauseCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
-                                                            {broadcaster.active ? '暂停' : '启用'}
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            aria-label="删除主播"
-                                                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/50 p-0 text-red-400 hover:bg-red-500/10"
-                                                            disabled={isPending}
-                                                            onClick={() => handleDelete(broadcaster.id)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </Table.Cell>
-                                            </Table.Row>
-                                        );
-                                    })}
-                                    {broadcasters.length === 0 && (
-                                        <Table.Row id="empty">
-                                            <Table.Cell colSpan={6} className="py-10 text-center text-zinc-500">
-                                                暂无监控任务
-                                            </Table.Cell>
-                                        </Table.Row>
-                                    )}
-                                </Table.Body>
-                            </Table.Content>
-                        </Table.ScrollContainer>
-                    </Table>
+                <Card variant="secondary" className="overflow-hidden border border-border bg-card">
+                    <BroadcasterTable
+                        broadcasters={broadcasters}
+                        revealedAuthCodes={revealedAuthCodes}
+                        isPending={isPending}
+                        openingDashboardId={openingDashboardId}
+                        onCopyAuthCode={(code) => void handleCopyAuthCode(code)}
+                        onRequestReveal={(id) => {
+                            setAuthCodeDialogId(id);
+                            setAdminPassword('');
+                            setAuthCodeError('');
+                        }}
+                        onOpenDashboard={handleOpenDashboard}
+                        onOpenBroadcasterPage={handleOpenBroadcasterPage}
+                        onEditAuthCode={handleOpenAuthCodeEdit}
+                        onEditPassword={(id) => {
+                            setSelectedBroadcasterId(id);
+                            setPwdDialogOpen(true);
+                        }}
+                        onToggle={handleToggle}
+                        onDelete={handleDelete}
+                    />
                 </Card>
 
                 <PasswordDialog
@@ -509,146 +326,74 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                 />
 
                 {selectedAuthBroadcaster && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-                        <button
-                            type="button"
-                            aria-label="关闭弹窗"
-                            className="absolute inset-0"
-                            onClick={() => {
-                                if (isPending) return;
-                                setAuthCodeDialogId(null);
-                                setAdminPassword('');
-                                setAuthCodeError('');
+                    <AdminModal
+                        title="查看身份码"
+                        description={`请输入管理员密码，验证后显示 ${selectedAuthBroadcaster.uname || '该主播'} 的完整身份码。`}
+                        error={authCodeError}
+                        confirmLabel="确认查看"
+                        pendingLabel="验证中..."
+                        isPending={isPending}
+                        confirmDisabled={!adminPassword}
+                        onConfirm={handleRevealAuthCode}
+                        onClose={closeRevealDialog}
+                    >
+                        <Input
+                            value={adminPassword}
+                            type="password"
+                            onChange={(event) => {
+                                setAdminPassword(event.target.value);
+                                if (authCodeError) setAuthCodeError('');
                             }}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') handleRevealAuthCode();
+                            }}
+                            placeholder="输入管理员密码..."
+                            autoComplete="current-password"
+                            className="mt-4 h-10 w-full rounded-xl"
                         />
-                        <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-5 shadow-2xl shadow-black/50">
-                            <h2 className="text-xl font-bold text-zinc-100">查看身份码</h2>
-                            <p className="mt-2 text-sm leading-6 text-zinc-400">
-                                请输入管理员密码，验证后显示 {selectedAuthBroadcaster.uname || '该主播'} 的完整身份码。
-                            </p>
-                            {authCodeError && (
-                                <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                                    {authCodeError}
-                                </div>
-                            )}
-                            <Input
-                                value={adminPassword}
-                                type="password"
-                                onChange={(event) => {
-                                    setAdminPassword(event.target.value);
-                                    if (authCodeError) setAuthCodeError('');
-                                }}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') handleRevealAuthCode();
-                                }}
-                                placeholder="输入管理员密码..."
-                                autoComplete="current-password"
-                                className="mt-4 h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] text-zinc-100 hover:bg-white/[0.06]"
-                            />
-                            <div className="mt-5 flex justify-end gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => {
-                                        setAuthCodeDialogId(null);
-                                        setAdminPassword('');
-                                        setAuthCodeError('');
-                                    }}
-                                    disabled={isPending}
-                                    className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 px-4 text-zinc-200 hover:bg-white/[0.06]"
-                                >
-                                    取消
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={handleRevealAuthCode}
-                                    disabled={isPending || !adminPassword}
-                                    className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-100 px-4 text-zinc-950 hover:bg-white"
-                                >
-                                    {isPending ? '验证中...' : '确认查看'}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
+                    </AdminModal>
                 )}
 
                 {selectedAuthEditBroadcaster && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-                        <button
-                            type="button"
-                            aria-label="关闭弹窗"
-                            className="absolute inset-0"
-                            onClick={() => {
-                                if (isPending) return;
-                                setAuthCodeEditId(null);
-                                setNewBroadcasterAuthCode('');
-                                setResetPasswordToAuthCode(false);
-                                setAuthCodeError('');
+                    <AdminModal
+                        title="修改身份码"
+                        description={`只会更新 ${selectedAuthEditBroadcaster.uname || '该主播'} 的身份码配置，不会覆盖历史弹幕、礼物、SC 或开播记录。`}
+                        error={authCodeError}
+                        confirmLabel="保存"
+                        pendingLabel="保存中..."
+                        isPending={isPending}
+                        confirmDisabled={!newBroadcasterAuthCode.trim()}
+                        onConfirm={handleUpdateAuthCode}
+                        onClose={closeAuthCodeEdit}
+                    >
+                        <Input
+                            value={newBroadcasterAuthCode}
+                            onChange={(event) => {
+                                setNewBroadcasterAuthCode(event.target.value);
+                                if (authCodeError) setAuthCodeError('');
                             }}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') handleUpdateAuthCode();
+                            }}
+                            placeholder="输入新的身份码..."
+                            autoComplete="off"
+                            className="mt-4 h-10 w-full rounded-xl"
                         />
-                        <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-5 shadow-2xl shadow-black/50">
-                            <h2 className="text-xl font-bold text-zinc-100">修改身份码</h2>
-                            <p className="mt-2 text-sm leading-6 text-zinc-400">
-                                只会更新 {selectedAuthEditBroadcaster.uname || '该主播'} 的身份码配置，不会覆盖历史弹幕、礼物、SC 或开播记录。
-                            </p>
-                            {authCodeError && (
-                                <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                                    {authCodeError}
-                                </div>
-                            )}
-                            <Input
-                                value={newBroadcasterAuthCode}
-                                onChange={(event) => {
-                                    setNewBroadcasterAuthCode(event.target.value);
-                                    if (authCodeError) setAuthCodeError('');
-                                }}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') handleUpdateAuthCode();
-                                }}
-                                placeholder="输入新的身份码..."
-                                autoComplete="off"
-                                className="mt-4 h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] text-zinc-100 hover:bg-white/[0.06]"
+                        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-accent/30 p-3 text-sm text-secondary-foreground">
+                            <input
+                                type="checkbox"
+                                checked={resetPasswordToAuthCode}
+                                onChange={(event) => setResetPasswordToAuthCode(event.target.checked)}
+                                className="mt-0.5 h-4 w-4 rounded border-border bg-muted"
                             />
-                            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-zinc-300">
-                                <input
-                                    type="checkbox"
-                                    checked={resetPasswordToAuthCode}
-                                    onChange={(event) => setResetPasswordToAuthCode(event.target.checked)}
-                                    className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-900"
-                                />
-                                <span>
-                                    同时将主播登录密码重置为新身份码
-                                    <span className="mt-1 block text-xs leading-5 text-zinc-500">
-                                        不勾选时，主播登录密码保持不变。
-                                    </span>
+                            <span>
+                                同时将主播登录密码重置为新身份码
+                                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                                    不勾选时，主播登录密码保持不变。
                                 </span>
-                            </label>
-                            <div className="mt-5 flex justify-end gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => {
-                                        setAuthCodeEditId(null);
-                                        setNewBroadcasterAuthCode('');
-                                        setResetPasswordToAuthCode(false);
-                                        setAuthCodeError('');
-                                    }}
-                                    disabled={isPending}
-                                    className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 px-4 text-zinc-200 hover:bg-white/[0.06]"
-                                >
-                                    取消
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={handleUpdateAuthCode}
-                                    disabled={isPending || !newBroadcasterAuthCode.trim()}
-                                    className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-100 px-4 text-zinc-950 hover:bg-white"
-                                >
-                                    {isPending ? '保存中...' : '保存'}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
+                            </span>
+                        </label>
+                    </AdminModal>
                 )}
             </div>
         </div>

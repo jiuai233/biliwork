@@ -40,7 +40,7 @@ export function LoginClient() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 relative overflow-hidden">
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-500/20 blur-[120px] rounded-full mix-blend-screen animate-pulse" />
                 <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-500/20 blur-[120px] rounded-full mix-blend-screen animate-pulse delay-1000" />
@@ -52,38 +52,38 @@ export function LoginClient() {
                 transition={{ duration: 0.5 }}
                 className="z-10 w-full max-w-md"
             >
-                <Card className="border-zinc-800 bg-zinc-900/50 shadow-2xl backdrop-blur-xl">
+                <Card className="border-border bg-card/70 shadow-2xl backdrop-blur-xl">
                     <CardHeader className="space-y-1 px-6 pt-6">
-                        <CardTitle className="text-center text-2xl font-bold leading-tight bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                        <CardTitle className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-center text-2xl font-bold leading-tight text-transparent">
                             Bilibili Live Monitor
                         </CardTitle>
-                        <CardDescription className="text-center text-zinc-400">
+                        <CardDescription className="text-center text-muted-foreground">
                             请输入您的 UID 和 登录密码
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="px-6 pb-6 pt-4">
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div className="space-y-2">
-                                <label htmlFor="uid" className="text-sm font-medium text-zinc-300">UID</label>
+                                <label htmlFor="uid" className="text-sm font-medium text-secondary-foreground">UID</label>
                                 <Input
                                     id="uid"
                                     placeholder="请输入 B站 UID"
                                     type="text"
                                     value={uid}
                                     onChange={(e) => setUid(e.target.value)}
-                                    className="h-11 rounded-lg border border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500 hover:border-white/20 hover:bg-white/[0.08] focus:border-violet-400/70 focus:ring-2 focus:ring-violet-500/20"
+                                    className="h-11 rounded-lg"
                                     required
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label htmlFor="password" className="text-sm font-medium text-zinc-300">密码</label>
+                                <label htmlFor="password" className="text-sm font-medium text-secondary-foreground">密码</label>
                                 <Input
                                     id="password"
                                     placeholder="请输入您的登录密码"
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="h-11 rounded-lg border border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500 hover:border-white/20 hover:bg-white/[0.08] focus:border-violet-400/70 focus:ring-2 focus:ring-violet-500/20"
+                                    className="h-11 rounded-lg"
                                     required
                                 />
                             </div>
