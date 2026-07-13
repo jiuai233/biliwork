@@ -1,54 +1,3 @@
-# Global Date Range Picker Plan
-
-## Scope
-
-- Unify date-range behavior across dashboard, live, blindbox, analytics, and ranking.
-- Apply common presets in one click: today, yesterday, last 3/7/14 days, and previous rolling month.
-- Hide the calendar behind an explicit custom option.
-- Keep custom selection as an internal draft until the user applies it.
-- Add direct start/end inputs and month jumping so custom ranges can span arbitrary months.
-- Disable future dates and use compact human-readable trigger labels.
-- Preserve URL query semantics and all existing data-fetch boundaries.
-
-## Affected Files
-
-- `src/components/dashboard/AnalyticsDateRangePicker.tsx`
-- `src/components/dashboard/AnalyticsDateFilter.tsx`
-- Dashboard pages already consuming these components.
-- Focused component/E2E tests.
-
-## Execution Order
-
-1. Separate one-click presets from custom draft/apply behavior.
-2. Add direct date entry and month jumping to custom mode.
-3. Keep URL-backed filters applying directly from the shared picker.
-4. Update focused tests for one-click presets, cancel, arbitrary custom ranges, and single-apply behavior.
-5. Review scoped diff; run Jest, ESLint, Playwright, and production build.
-
-## Risks and Acceptance
-
-- First date click must not update page state or trigger requests.
-- Cancel/outside click must discard draft selection.
-- Applying a preset or completed range must update exactly once.
-- Analytics/ranking retain URL parameters; other pages retain client-side requests.
-- Desktop and mobile remain reachable without viewport overflow.
-
-## Review Remediation
-
-1. Gate board/config writes until their persisted state has finished hydrating.
-2. Ignore stale blindbox responses and reset invalid gift filters.
-3. Block repeated date submissions while pending; align responsive breakpoints.
-4. Add Escape/focus behavior, prevent future-month navigation, and keep custom actions reachable.
-5. Ignore invalid empty-canvas reorder targets.
-
-## Plan Eng Review
-
-- Shortest path: reuse the existing shared component and current `date-fns` dependency.
-- Compatibility: retain `date`/`setDate`; add optional `onApply` for URL-backed pages.
-- No new library, global store, or page-specific date implementation.
-
----
-
 # Blindbox Record Density Plan
 
 ## Scope
@@ -129,3 +78,36 @@
 - Coupling: presentation-only changes around existing handlers.
 - Compatibility: retain mobile stacking and every existing server action/API contract.
 - Test gap: layout density is visual; compile checks behavior contracts, final acceptance needs browser inspection.
+
+---
+
+# Remove TTS Announcement Plan
+
+## Scope
+
+- Remove the TTS toggle, amount threshold, and automatic speech from the highlights list.
+- Delete the now-unused Web Speech API wrapper.
+- Preserve highlight filtering, pinning, persistence, and rendering.
+
+## Affected Files
+
+- `src/components/dashboard/HighlightsList.tsx`
+- `src/lib/tts.ts`
+
+## Execution Order
+
+1. Remove TTS-only state, effects, helpers, imports, and controls from `HighlightsList`.
+2. Delete the unreferenced TTS module.
+3. Confirm no TTS references remain; review the diff and run focused tests, ESLint, and build.
+
+## Risks and Acceptance
+
+- Existing saved settings may retain obsolete TTS keys, but loading must ignore them without migration.
+- Amount filtering and pinned items must continue to persist per room.
+- No speech API access or TTS control remains in the application.
+
+## Plan Eng Review
+
+- Shortest path: delete the single call chain; no replacement or compatibility shim.
+- Compatibility: stored extra JSON keys are harmless and disappear on the next settings write.
+- Test gap: no existing focused TTS tests; static search plus dashboard tests cover removal and regression.

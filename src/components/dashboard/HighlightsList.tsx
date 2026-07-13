@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Pin, PinOff, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Pin, PinOff, Sparkles } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { speak, stopSpeaking, ttsSupported } from "@/lib/tts";
 import { Gift, Guard, SuperChat } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -39,22 +38,19 @@ type Highlight = {
 type ConsoleSettings = {
     pinned: Highlight[];
     minAmount: number;
-    ttsEnabled: boolean;
-    ttsMinAmount: number;
 };
 
 const DEFAULT_SETTINGS: ConsoleSettings = {
     pinned: [],
     minAmount: 0,
-    ttsEnabled: false,
-    ttsMinAmount: 30,
 };
 
 function loadSettings(storageKey: string): ConsoleSettings {
     try {
         const raw = window.localStorage.getItem(storageKey);
         if (!raw) return DEFAULT_SETTINGS;
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+        const { pinned = [], minAmount = 0 } = JSON.parse(raw) as Partial<ConsoleSettings>;
+        return { pinned, minAmount };
     } catch {
         return DEFAULT_SETTINGS;
     }
@@ -73,13 +69,6 @@ const kindMeta: Record<Highlight["kind"], { label: string; tone: string }> = {
     guard: { label: "上舰", tone: "border-indigo-500/40 bg-indigo-500/10 text-indigo-300" },
     gift: { label: "礼物", tone: "border-pink-500/40 bg-pink-500/10 text-pink-300" },
 };
-
-function announceText(item: Highlight) {
-    const name = item.uname || "匿名用户";
-    if (item.kind === "sc") return `${name} 的醒目留言，${Math.round(item.amount)}元：${item.detail}`;
-    if (item.kind === "guard") return `感谢 ${name} ${item.detail}`;
-    return `感谢 ${name} 投喂 ${item.detail}`;
-}
 
 function HighlightRow({
     item,
@@ -136,7 +125,6 @@ export function HighlightsList({ superChats, guards, gifts, roomId, className }:
     const storageKey = `biweb:console:${roomId ?? "default"}`;
     const [settings, setSettings] = useState<ConsoleSettings>(DEFAULT_SETTINGS);
     const [hydrated, setHydrated] = useState(false);
-    const seenKeysRef = useRef<Set<string> | null>(null);
 
     useEffect(() => {
         // localStorage is unavailable during SSR, so hydrate after mount
@@ -152,8 +140,6 @@ export function HighlightsList({ superChats, guards, gifts, roomId, className }:
             window.localStorage.setItem(storageKey, JSON.stringify(settings));
         } catch { /* storage full or blocked */ }
     }, [settings, hydrated, storageKey]);
-
-    useEffect(() => () => stopSpeaking(), []);
 
     const highlights = useMemo<Highlight[]>(() => {
         const items: Highlight[] = [];
@@ -197,24 +183,6 @@ export function HighlightsList({ superChats, guards, gifts, roomId, className }:
         return items.sort((a, b) => b.ts - a.ts);
     }, [superChats, guards, gifts]);
 
-    // TTS: announce only items that arrive after the first data snapshot.
-    // Settings changes re-run this effect, but by then every key is already
-    // marked as seen, so nothing is re-announced.
-    useEffect(() => {
-        if (seenKeysRef.current === null) {
-            seenKeysRef.current = new Set(highlights.map((item) => item.key));
-            return;
-        }
-        const seen = seenKeysRef.current;
-        const fresh = highlights.filter((item) => !seen.has(item.key));
-        for (const item of fresh) seen.add(item.key);
-
-        if (!settings.ttsEnabled) return;
-        for (const item of fresh) {
-            if (item.amount >= settings.ttsMinAmount) speak(announceText(item));
-        }
-    }, [highlights, settings.ttsEnabled, settings.ttsMinAmount]);
-
     const pinnedKeys = useMemo(() => new Set(settings.pinned.map((item) => item.key)), [settings.pinned]);
 
     const togglePin = (item: Highlight) => {
@@ -249,44 +217,6 @@ export function HighlightsList({ superChats, guards, gifts, roomId, className }:
                             {option.label}
                         </button>
                     ))}
-                </div>
-
-                <div className="ml-auto flex items-center gap-1.5">
-                    {settings.ttsEnabled && (
-                        <select
-                            aria-label="播报金额阈值"
-                            value={settings.ttsMinAmount}
-                            onChange={(event) => setSettings((prev) => ({ ...prev, ttsMinAmount: Number(event.target.value) }))}
-                            className="h-6 rounded-md border border-border bg-background px-1 text-[11px] text-foreground"
-                        >
-                            {AMOUNT_FILTERS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    播报 {option.label}
-                                </option>
-                            ))}
-                        </select>
-                    )}
-                    <button
-                        type="button"
-                        aria-label="语音播报"
-                        aria-pressed={settings.ttsEnabled}
-                        title={ttsSupported() ? "语音播报新的重点事件" : "当前浏览器不支持语音播报"}
-                        onClick={() => {
-                            setSettings((prev) => {
-                                if (prev.ttsEnabled) stopSpeaking();
-                                return { ...prev, ttsEnabled: !prev.ttsEnabled };
-                            });
-                        }}
-                        className={cn(
-                            "flex h-6 items-center gap-1 rounded-md border px-1.5 text-[11px] font-semibold",
-                            settings.ttsEnabled
-                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-                                : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
-                        )}
-                    >
-                        {settings.ttsEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
-                        TTS
-                    </button>
                 </div>
             </div>
 
