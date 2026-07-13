@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo, useState } from "react";
-import { Avatar, Card } from "@heroui/react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { SectionCard } from "@/components/shared/SectionCard";
+import { Tabs, Tab, TabList, TabPanel } from "@/components/shared/tabs";
+import { RankingList } from "@/components/dashboard/RankingList";
 import { Gift, MessageSquareText, Trophy } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface StatsChartsProps {
@@ -12,144 +14,67 @@ interface StatsChartsProps {
     className?: string;
 }
 
-type RankingTab = "danmaku" | "gift";
-
-function formatCurrency(value: number) {
-    return new Intl.NumberFormat("zh-CN", {
-        style: "currency",
-        currency: "CNY",
-        maximumFractionDigits: 1,
-    }).format(value);
-}
-
-function normalizeAvatarSrc(src: string | null | undefined): string | undefined {
-    if (!src) return undefined;
-    if (src.startsWith("//")) return `https:${src}`;
-    if (src.startsWith("http://")) return src.replace(/^http:\/\//, "https://");
-    return src;
-}
-
-function rankClass(index: number) {
-    if (index === 0) return "border-amber-400/30 bg-amber-400/10 text-amber-200";
-    if (index === 1) return "border-sky-300/25 bg-sky-300/10 text-sky-200";
-    if (index === 2) return "border-fuchsia-300/25 bg-fuchsia-300/10 text-fuchsia-200";
-    return "border-white/10 bg-white/[0.04] text-slate-300";
-}
-
 export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps) {
-    const [activeTab, setActiveTab] = useState<RankingTab>("danmaku");
-    const activeData = activeTab === "danmaku"
-        ? danmakuTop.map((item) => ({ uname: item.uname, uface: item.uface, value: item.count, label: `${item.count} 条` }))
-        : giftTop.map((item) => ({ uname: item.uname, uface: item.uface, value: item.total, label: formatCurrency(item.total) }));
+    const danmakuItems = danmakuTop.map((item) => ({
+        uname: item.uname,
+        uface: item.uface,
+        value: item.count,
+        label: `${item.count} 条`,
+    }));
+    const giftItems = giftTop.map((item) => ({
+        uname: item.uname,
+        uface: item.uface,
+        value: item.total,
+        label: formatCurrency(item.total, 1),
+    }));
+    const danmakuTotal = danmakuItems.reduce((sum, item) => sum + item.value, 0);
+    const giftTotal = giftItems.reduce((sum, item) => sum + item.value, 0);
 
-    const maxValue = useMemo(() => Math.max(...activeData.map((item) => item.value), 1), [activeData]);
-    const totalValue = activeData.reduce((sum, item) => sum + item.value, 0);
+    const [selected, setSelected] = useState<string>(
+        danmakuItems.length === 0 && giftItems.length > 0 ? "gift" : "danmaku",
+    );
+    const isGift = selected === "gift";
 
     return (
-        <Card
-            variant="secondary"
-            className={cn(
-                "min-h-0 overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_20%_0%,rgba(124,58,237,0.16),transparent_34%),rgba(2,6,23,0.78)]",
-                className
-            )}
+        <Tabs
+            selectedKey={selected}
+            onSelectionChange={(key) => setSelected(String(key))}
+            className={cn("flex min-h-0 flex-col", className)}
         >
-            <div className="flex h-full min-h-0 flex-col">
-                <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
-                            <Trophy className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <div className="text-base font-extrabold text-white">
-                                {activeTab === "danmaku" ? "弹幕活跃榜" : "礼物贡献榜"}
-                            </div>
-                            <div className="mt-1 text-xs text-slate-500">
-                                共 {activeData.length} 位用户，{activeTab === "danmaku" ? `累计 ${totalValue} 条弹幕` : `累计 ${formatCurrency(totalValue)}`}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex h-10 gap-1 rounded-xl border border-white/10 bg-black/20 p-1">
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setActiveTab("danmaku")}
-                            className={cn(
-                                "inline-flex h-8 items-center justify-center gap-2 rounded-lg px-3 text-sm",
-                                activeTab === "danmaku" ? "bg-blue-600 text-white hover:bg-blue-500" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
-                            )}
-                        >
-                            <MessageSquareText className="h-4 w-4" />
+            <SectionCard
+                className="flex min-h-0 flex-1 flex-col"
+                bodyClassName="flex min-h-0 flex-1 flex-col"
+                title={
+                    <span className="flex items-center gap-2">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                            <Trophy className="h-4 w-4" />
+                        </span>
+                        <span>{isGift ? "礼物贡献榜" : "弹幕活跃榜"}</span>
+                        <span className="text-xs font-normal text-muted-foreground">
+                            {(isGift ? giftItems : danmakuItems).length} 位
+                        </span>
+                    </span>
+                }
+                actions={
+                    <TabList aria-label="排行榜切换">
+                        <Tab id="danmaku">
+                            <MessageSquareText className="h-3.5 w-3.5" />
                             弹幕榜
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setActiveTab("gift")}
-                            className={cn(
-                                "inline-flex h-8 items-center justify-center gap-2 rounded-lg px-3 text-sm",
-                                activeTab === "gift" ? "bg-pink-600 text-white hover:bg-pink-500" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
-                            )}
-                        >
-                            <Gift className="h-4 w-4" />
+                        </Tab>
+                        <Tab id="gift">
+                            <Gift className="h-3.5 w-3.5" />
                             礼物榜
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-3">
-                    <div className="space-y-2 pr-1">
-                        {activeData.map((item, index) => {
-                            const percent = Math.max(4, Math.round((item.value / maxValue) * 100));
-                            return (
-                                <div
-                                    key={`${item.uname}-${index}`}
-                                    className={cn(
-                                        "min-h-[64px] rounded-xl border px-3 py-2.5 transition hover:bg-white/[0.045]",
-                                        rankClass(index)
-                                    )}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black/20 text-xs font-black">
-                                            #{index + 1}
-                                        </div>
-                                        <Avatar className="h-9 w-9 shrink-0 border border-white/10">
-                                            <Avatar.Image src={normalizeAvatarSrc(item.uface)} referrerPolicy="no-referrer" />
-                                            <Avatar.Fallback>{item.uname?.[0] ?? "?"}</Avatar.Fallback>
-                                        </Avatar>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div className="truncate font-bold text-white">{item.uname || "匿名用户"}</div>
-                                                <div className={cn(
-                                                    "shrink-0 font-mono text-sm font-bold",
-                                                    index === 0 ? "text-amber-200" : "text-white"
-                                                )}>{item.label}</div>
-                                            </div>
-                                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-                                                <div
-                                                    className={cn(
-                                                        "h-full rounded-full",
-                                                        activeTab === "danmaku" ? "bg-blue-400" : "bg-pink-400"
-                                                    )}
-                                                    style={{ width: `${percent}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-
-                        {activeData.length === 0 && (
-                            <div className="flex min-h-[420px] items-center justify-center text-sm text-slate-500">
-                                暂无数据
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </Card>
+                        </Tab>
+                    </TabList>
+                }
+            >
+                <TabPanel id="danmaku" className="flex min-h-0 flex-1 flex-col">
+                    <RankingList items={danmakuItems} barClass="bg-blue-400" totalLabel={`累计 ${danmakuTotal} 条弹幕`} />
+                </TabPanel>
+                <TabPanel id="gift" className="flex min-h-0 flex-1 flex-col">
+                    <RankingList items={giftItems} barClass="bg-pink-400" totalLabel={`累计 ${formatCurrency(giftTotal, 1)}`} />
+                </TabPanel>
+            </SectionCard>
+        </Tabs>
     );
 }

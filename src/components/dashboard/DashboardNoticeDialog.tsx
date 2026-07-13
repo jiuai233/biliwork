@@ -45,28 +45,28 @@ export function DashboardNoticeDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border-sky-300/20 bg-zinc-950 text-zinc-100 shadow-2xl shadow-black/70 sm:max-w-md">
+            <DialogContent className="border-border bg-popover text-foreground shadow-2xl shadow-black/70 sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-xl text-zinc-100">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-200">
+                    <DialogTitle className="flex items-center gap-2 text-xl text-foreground">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-300">
                             <MessageCircle className="h-4 w-4" />
                         </span>
                         问题反馈
                     </DialogTitle>
-                    <DialogDescription className="text-sm leading-6 text-zinc-400">
+                    <DialogDescription className="text-sm leading-6 text-muted-foreground">
                         遇到问题可以加入 QQ 群反馈。点击下方按钮会打开官方加群链接；如果浏览器拦截，请复制群号手动搜索。
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
-                    <div className="text-xs font-medium text-zinc-500">QQ群号</div>
+                <div className="rounded-xl border border-border bg-accent/40 p-4">
+                    <div className="text-xs font-medium text-muted-foreground">QQ群号</div>
                     <div className="mt-1 flex items-center justify-between gap-3">
-                        <div className="text-2xl font-black tracking-normal text-zinc-100">{QQ_GROUP_NUMBER}</div>
+                        <div className="text-2xl font-black tracking-normal text-foreground">{QQ_GROUP_NUMBER}</div>
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={copyGroupNumber}
-                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-zinc-200 hover:bg-white/[0.09]"
+                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-accent/50 px-3 text-sm text-secondary-foreground hover:bg-accent"
                         >
                             <Copy className="h-4 w-4" />
                             复制
@@ -87,7 +87,7 @@ export function DashboardNoticeDialog({
                         type="button"
                         onClick={onConfirm}
                         variant="secondary"
-                        className="h-10 rounded-lg border border-white/10 bg-white/[0.06] text-zinc-100 hover:bg-white/[0.09]"
+                        className="h-10 rounded-lg border border-border bg-accent/50 text-foreground hover:bg-accent"
                     >
                         知道了
                     </Button>

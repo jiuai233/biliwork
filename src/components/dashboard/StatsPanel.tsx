@@ -1,8 +1,8 @@
-
 'use client';
 
 import { DashboardStats } from "@/lib/types";
-import { MessageSquare, Gift, Shield, CreditCard } from "lucide-react";
+import { MessageSquare, Gift, Shield, MessageSquareHeart, CreditCard } from "lucide-react";
+import { StatCard, type StatTone } from "@/components/shared/StatCard";
 import { cn } from "@/lib/utils";
 
 interface StatsPanelProps {
@@ -10,85 +10,90 @@ interface StatsPanelProps {
     previousStats?: DashboardStats | null;
 }
 
-type StatKey = "danmakuCount" | "giftCount" | "guardCount" | "totalIncome";
-
-function formatDelta(current: number, previous: number | undefined, isCurrency = false) {
-    if (previous === undefined) return "较昨日 --";
+function Delta({ current, previous, isCurrency }: { current: number; previous: number | undefined; isCurrency?: boolean }) {
+    if (previous === undefined) return <span>较昨日 --</span>;
 
     const delta = Number((current - previous).toFixed(isCurrency ? 2 : 0));
-    if (delta === 0) return "较昨日 持平";
+    if (delta === 0) return <span>较昨日 持平</span>;
 
-    const sign = delta > 0 ? "+" : "";
-    const value = isCurrency ? `¥${Math.abs(delta).toFixed(1)}` : Math.abs(delta).toLocaleString();
+    const up = delta > 0;
+    const abs = isCurrency ? `¥${Math.abs(delta).toFixed(1)}` : Math.abs(delta).toLocaleString();
+    const percent = previous > 0 ? ` (${up ? "+" : "-"}${Math.abs((delta / previous) * 100).toFixed(0)}%)` : "";
 
-    return `较昨日 ${sign}${delta < 0 ? "-" : ""}${value}`;
+    return (
+        <span>
+            较昨日{" "}
+            <span className={cn("font-semibold", up ? "text-emerald-400" : "text-red-400")}>
+                {up ? "↑" : "↓"} {abs}{percent}
+            </span>
+        </span>
+    );
 }
 
 export function StatsPanel({ stats, previousStats }: StatsPanelProps) {
-    const items = [
+    const items: {
+        label: string;
+        value: string;
+        current: number;
+        previous: number | undefined;
+        isCurrency?: boolean;
+        icon: React.ReactNode;
+        tone: StatTone;
+    }[] = [
         {
-            label: "今日弹幕",
-            value: stats.danmakuCount,
-            statKey: "danmakuCount" as StatKey,
-            icon: MessageSquare,
-            labelClass: "text-sky-300",
-            iconClass: "text-sky-300 bg-sky-500/15 shadow-sky-500/20",
-            cardClass: "from-sky-500/10 via-slate-950/80 to-slate-950",
+            label: "弹幕",
+            value: stats.danmakuCount.toLocaleString(),
+            current: stats.danmakuCount,
+            previous: previousStats?.danmakuCount,
+            icon: <MessageSquare className="h-3.5 w-3.5" />,
+            tone: "sky",
         },
         {
-            label: "今日礼物",
-            value: stats.giftCount,
-            statKey: "giftCount" as StatKey,
-            icon: Gift,
-            labelClass: "text-pink-300",
-            iconClass: "text-pink-300 bg-pink-500/15 shadow-pink-500/20",
-            cardClass: "from-pink-500/10 via-slate-950/80 to-slate-950",
+            label: "礼物",
+            value: stats.giftCount.toLocaleString(),
+            current: stats.giftCount,
+            previous: previousStats?.giftCount,
+            icon: <Gift className="h-3.5 w-3.5" />,
+            tone: "pink",
         },
         {
-            label: "今日上舰",
-            value: stats.guardCount,
-            statKey: "guardCount" as StatKey,
-            icon: Shield,
-            labelClass: "text-indigo-300",
-            iconClass: "text-indigo-300 bg-indigo-500/15 shadow-indigo-500/20",
-            cardClass: "from-indigo-500/10 via-slate-950/80 to-slate-950",
+            label: "SC",
+            value: stats.scCount.toLocaleString(),
+            current: stats.scCount,
+            previous: previousStats?.scCount,
+            icon: <MessageSquareHeart className="h-3.5 w-3.5" />,
+            tone: "amber",
         },
         {
-            label: "预计营收 (SC)",
-            value: `¥${stats.totalIncome}`,
-            statKey: "totalIncome" as StatKey,
+            label: "上舰",
+            value: stats.guardCount.toLocaleString(),
+            current: stats.guardCount,
+            previous: previousStats?.guardCount,
+            icon: <Shield className="h-3.5 w-3.5" />,
+            tone: "indigo",
+        },
+        {
+            label: "预计营收",
+            value: `¥${stats.totalIncome.toLocaleString()}`,
+            current: stats.totalIncome,
+            previous: previousStats?.totalIncome,
             isCurrency: true,
-            icon: CreditCard,
-            labelClass: "text-emerald-300",
-            iconClass: "text-emerald-300 bg-emerald-500/15 shadow-emerald-500/20",
-            cardClass: "from-emerald-500/15 via-slate-950/80 to-slate-950",
+            icon: <CreditCard className="h-3.5 w-3.5" />,
+            tone: "emerald",
         },
     ];
 
     return (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {items.map(({ label, value, statKey, isCurrency, icon: Icon, labelClass, iconClass, cardClass }) => (
-                <section
+        <div className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {items.map(({ label, value, current, previous, isCurrency, icon, tone }) => (
+                <StatCard
                     key={label}
-                    className={cn(
-                        "relative min-h-[104px] overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br p-4 shadow-[0_14px_40px_rgba(0,0,0,0.18)]",
-                        cardClass
-                    )}
-                >
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_14%,rgba(255,255,255,0.08),transparent_34%)]" />
-                    <div className="relative flex items-start justify-between">
-                        <p className={cn("text-sm font-semibold", labelClass)}>{label}</p>
-                        <div className={cn("rounded-lg p-1.5 shadow-lg", iconClass)}>
-                            <Icon className="h-4 w-4" />
-                        </div>
-                    </div>
-                    <div className="relative mt-3">
-                        <div className="text-2xl font-black tracking-normal text-white md:text-3xl">{value}</div>
-                        <p className="mt-1 text-xs text-slate-400">
-                            {formatDelta(Number(stats[statKey]), previousStats?.[statKey], isCurrency)}
-                        </p>
-                    </div>
-                </section>
+                    label={label}
+                    value={value}
+                    icon={icon}
+                    tone={tone}
+                    delta={<Delta current={current} previous={previous} isCurrency={isCurrency} />}
+                />
             ))}
         </div>
     );

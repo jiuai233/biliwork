@@ -1,10 +1,11 @@
-
 'use client';
 
-import { Avatar } from "@heroui/react";
+import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gift } from "@/lib/types";
 import { Gift as GiftIcon } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { cn } from "@/lib/utils";
 
 interface GiftPanelProps {
@@ -12,54 +13,67 @@ interface GiftPanelProps {
     className?: string;
 }
 
+type GiftRow = Gift & { combo: number };
+
+/** Merge adjacent rows from the same user sending the same gift within 90s into a combo row. */
+function mergeCombos(data: Gift[]): GiftRow[] {
+    const rows: GiftRow[] = [];
+    for (const item of data) {
+        const last = rows[rows.length - 1];
+        const closeInTime = last?.ts && item.ts && Math.abs(last.ts - item.ts) <= 90_000;
+        if (last && closeInTime && last.uname === item.uname && last.gift_name === item.gift_name && last.r_price === item.r_price) {
+            last.combo += item.gift_num;
+        } else {
+            rows.push({ ...item, combo: item.gift_num });
+        }
+    }
+    return rows;
+}
+
 export function GiftPanel({ data, className }: GiftPanelProps) {
+    const rows = useMemo(() => mergeCombos(data), [data]);
+
     return (
-        <div className={cn("dark-scrollbar h-[420px] w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/55 p-4 shadow-[0_18px_55px_rgba(0,0,0,0.22)]", className)}>
-            <div className="space-y-2">
-                <AnimatePresence initial={false}>
-                    {data.map((item) => (
+        <div className={cn("dark-scrollbar h-[420px] w-full overflow-y-auto", className)}>
+            <AnimatePresence initial={false}>
+                {rows.map((item) => {
+                    const totalCny = (item.r_price * item.combo) / 1000;
+                    return (
                         <motion.div
                             key={item.msg_id || item.id}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.045] p-3"
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={cn(
+                                "flex h-9 items-center gap-2.5 border-b border-border/60 px-4 last:border-b-0 hover:bg-accent/40",
+                                totalCny >= 30 && "bg-pink-500/[0.06]",
+                            )}
                         >
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-9 w-9 border border-pink-400/40">
-                                    <Avatar.Image src={item.uface ?? undefined} referrerPolicy="no-referrer" />
-                                    <Avatar.Fallback>{item.uname?.[0] ?? '?'}</Avatar.Fallback>
-                                </Avatar>
-                                <div>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="font-semibold text-pink-300">{item.uname}</span>
-                                        <span className="text-xs text-zinc-500">送出</span>
-                                    </div>
-                                    <div className="font-bold text-zinc-100 flex items-center gap-1">
-                                        {item.gift_name} <span className="text-pink-500">x{item.gift_num}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-sm font-bold text-zinc-300">
-                                    ¥{(item.r_price * item.gift_num / 1000).toFixed(1)}
-                                </div>
-                                <div className="text-[10px] text-zinc-600">
-                                    {item.ts ? new Date(item.ts).toLocaleTimeString() : '-'}
-                                </div>
-                            </div>
+                            <span className="w-14 shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                                {item.ts ? new Date(item.ts).toLocaleTimeString("zh-CN", { hour12: false }) : "-"}
+                            </span>
+                            <Avatar src={item.uface} name={item.uname} className="h-6 w-6" />
+                            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">{item.uname}</span>
+                            <span className="shrink-0 text-[13px] text-secondary-foreground">
+                                {item.gift_name} <span className="font-semibold text-pink-400">x{item.combo}</span>
+                            </span>
+                            <span className={cn(
+                                "w-16 shrink-0 text-right text-[13px] font-bold tabular-nums",
+                                totalCny >= 30 ? "text-pink-300" : "text-foreground",
+                            )}>
+                                ¥{totalCny.toFixed(1)}
+                            </span>
                         </motion.div>
-                    ))}
-                </AnimatePresence>
-                {data.length === 0 && (
-                    <div className="flex h-[340px] flex-col items-center justify-center text-center text-slate-400">
-                        <div className="mb-4 rounded-full bg-white/[0.06] p-6 text-slate-500">
-                            <GiftIcon className="h-12 w-12" />
-                        </div>
-                        <div className="text-base font-medium text-slate-300">暂无礼物记录</div>
-                        <p className="mt-2 text-sm">快去直播间收获第一份礼物吧!</p>
-                    </div>
-                )}
-            </div>
+                    );
+                })}
+            </AnimatePresence>
+            {rows.length === 0 && (
+                <EmptyState
+                    icon={<GiftIcon className="h-10 w-10" />}
+                    title="暂无礼物记录"
+                    description="快去直播间收获第一份礼物吧"
+                    className="h-[340px]"
+                />
+            )}
         </div>
     );
 }

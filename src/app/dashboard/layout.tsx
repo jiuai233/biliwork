@@ -29,12 +29,13 @@ export default async function DashboardLayout({
     const broadcaster = await getBroadcasterByUid(uid);
 
     return (
-        <div className="flex min-h-screen bg-zinc-950 lg:h-screen lg:overflow-hidden">
+        <div className="flex min-h-screen bg-background lg:h-screen lg:overflow-hidden">
             <Sidebar broadcaster={broadcaster ?? null} />
 
             {/* Main Content */}
             <div className="min-w-0 flex-1 lg:h-full lg:pl-64">
-                <main className="min-h-screen w-full min-w-0 px-4 pb-6 pt-20 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden lg:p-8">
+                {/* overflow-y-auto: below the flex-fit breakpoints pages may exceed the viewport; scroll stays inside main. */}
+                <main className="min-h-screen w-full min-w-0 px-4 pb-6 pt-20 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:p-6 xl:p-8">
                     {children}
                 </main>
             </div>

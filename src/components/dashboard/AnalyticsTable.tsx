@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { ArrowDown, ArrowUp, RotateCcw, Search } from "lucide-react";
 
 import type { Transaction } from "@/lib/data";
+import { tableChrome } from "@/components/shared/table";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type TransactionType = "all" | Transaction["type"];
@@ -27,13 +29,6 @@ const typeOptions: { value: TransactionType; label: string }[] = [
 ];
 
 const pageSizeOptions = [10, 20, 50, 100];
-
-function formatCurrency(amount: number) {
-    return new Intl.NumberFormat("zh-CN", {
-        style: "currency",
-        currency: "CNY",
-    }).format(amount);
-}
 
 function formatTime(ts: number) {
     return new Date(ts).toLocaleString("zh-CN", { hour12: false });
@@ -82,7 +77,7 @@ function SortButton({
         <button
             type="button"
             onClick={onClick}
-            className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap text-left text-sm font-semibold text-zinc-100 transition-colors hover:text-white"
+            className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap text-left text-sm font-semibold text-foreground transition-colors hover:text-primary"
         >
             {children}
             <SortIndicator active={active} direction={direction} />
@@ -167,20 +162,20 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
 
     return (
         <div className="flex min-h-[520px] w-full min-w-0 max-w-full flex-col gap-3 overflow-hidden lg:min-h-0 lg:flex-1">
-            <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/50 px-3 py-2">
+            <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
                 <div className="relative w-full min-w-0 sm:w-[260px]">
-                    <Search className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         value={keyword}
                         onChange={(event) => setKeyword(event.target.value)}
                         placeholder="搜索用户 / 内容 / 金额"
-                        className="h-9 rounded-xl border border-white/10 bg-white/[0.04] pl-8 text-sm text-zinc-100 placeholder:text-zinc-500 hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                        className="h-9 pl-8 text-sm"
                     />
                 </div>
 
                 <div
                     data-testid="analytics-type-filter"
-                    className="grid h-9 w-full max-w-full grid-cols-4 overflow-hidden rounded-xl border border-white/10 bg-black/20 sm:w-auto"
+                    className="grid h-9 w-full max-w-full grid-cols-4 overflow-hidden rounded-xl border border-border bg-muted/40 sm:w-auto"
                 >
                     {typeOptions.map((option) => (
                         <Button
@@ -190,10 +185,10 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                             variant="ghost"
                             onClick={() => setTypeFilter(option.value)}
                             className={[
-                                "inline-flex h-9 min-w-0 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-white/10 px-3 text-xs last:border-r-0 sm:min-w-14",
+                                "inline-flex h-9 min-w-0 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-border px-3 text-xs last:border-r-0 sm:min-w-14",
                                 typeFilter === option.value
                                     ? "bg-blue-600 text-white"
-                                    : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100",
+                                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
                             ].join(" ")}
                         >
                             {option.label}
@@ -201,22 +196,22 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     ))}
                 </div>
 
-                <div className="flex h-9 max-w-full items-center rounded-xl border border-white/10 bg-white/[0.04] px-2 text-sm text-zinc-400 hover:bg-white/[0.06]">
+                <div className="flex h-9 max-w-full items-center rounded-xl border border-border bg-accent/40 px-2 text-sm text-muted-foreground">
                     <span className="mr-1 text-xs">金额</span>
                     <Input
                         inputMode="decimal"
                         value={minPrice}
                         onChange={(event) => setMinPrice(event.target.value)}
                         placeholder="0"
-                        className="h-7 w-14 border-0 bg-transparent p-0 text-sm text-zinc-100 placeholder:text-zinc-600 hover:bg-transparent focus:bg-transparent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        className="h-7 w-14 border-0 bg-transparent p-0 text-sm hover:bg-transparent focus:bg-transparent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
-                    <span className="mx-1 text-zinc-600">-</span>
+                    <span className="mx-1 text-muted-foreground/60">-</span>
                     <Input
                         inputMode="decimal"
                         value={maxPrice}
                         onChange={(event) => setMaxPrice(event.target.value)}
                         placeholder="不限"
-                        className="h-7 w-16 border-0 bg-transparent p-0 text-sm text-zinc-100 placeholder:text-zinc-600 hover:bg-transparent focus:bg-transparent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        className="h-7 w-16 border-0 bg-transparent p-0 text-sm hover:bg-transparent focus:bg-transparent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
                 </div>
 
@@ -224,14 +219,14 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="inline-flex h-9 flex-row items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-100"
+                    className="inline-flex h-9 flex-row items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-muted-foreground hover:bg-accent hover:text-foreground"
                     onClick={resetFilters}
                 >
                     <RotateCcw className="h-3.5 w-3.5 shrink-0" />
                     重置
                 </Button>
 
-                <div className="flex w-full min-w-0 flex-wrap items-center gap-3 text-xs text-zinc-500 sm:ml-auto sm:w-auto">
+                <div className="flex w-full min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground sm:ml-auto sm:w-auto">
                     <span>筛选后 {filteredData.length} / {data.length} 条</span>
                     <span>合计 {formatCurrency(summary.total)}</span>
                     <span>礼物 {summary.gift}</span>
@@ -240,17 +235,86 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                 </div>
             </div>
 
-            <Table variant="secondary" className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-zinc-800 bg-[#18181b] shadow-[0_0_0_1px_rgba(255,255,255,0.02)] lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+            <div className="flex min-w-0 shrink-0 flex-col gap-2 text-sm text-secondary-foreground lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-3">
+                    <span>共 {filteredData.length} 条</span>
+                    <div className="flex items-center gap-1">
+                        <span>每页</span>
+                        <div className="flex h-8 overflow-hidden rounded-md border border-border bg-muted/40">
+                            {pageSizeOptions.map((size) => (
+                                <Button
+                                    key={size}
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setPageSize(size)}
+                                    className={[
+                                        "inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-border px-2 text-xs last:border-r-0",
+                                        pageSize === size
+                                            ? "bg-blue-600 text-white"
+                                            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                                    ].join(" ")}
+                                >
+                                    {size}
+                                </Button>
+                            ))}
+                        </div>
+                        <span>条</span>
+                    </div>
+                </div>
+
+                <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
+                    <span className="min-w-[90px] text-center">
+                        第 {currentPage + 1} / {pageCount} 页
+                    </span>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPageIndex((value) => Math.max(value - 1, 0))}
+                        disabled={currentPage <= 0}
+                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-border px-3 text-secondary-foreground hover:bg-accent"
+                    >
+                        上一页
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPageIndex((value) => Math.min(value + 1, pageCount - 1))}
+                        disabled={currentPage >= pageCount - 1}
+                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-border px-3 text-secondary-foreground hover:bg-accent"
+                    >
+                        下一页
+                    </Button>
+                    <div className="flex items-center gap-2 pl-1">
+                        <span>前往</span>
+                        <Input
+                            inputMode="numeric"
+                            value={String(currentPage + 1)}
+                            onChange={(event) => {
+                                const page = Number(event.target.value);
+                                if (!Number.isFinite(page)) return;
+                                setPageIndex(Math.min(Math.max(page - 1, 0), pageCount - 1));
+                            }}
+                            className="h-8 w-16 rounded-md text-center text-sm"
+                        />
+                        <span>页</span>
+                    </div>
+                </div>
+            </div>
+
+            <Table variant="secondary" className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
                 <Table.ScrollContainer
                     data-testid="analytics-records-viewport"
                     className={cn(
-                        "dark-scrollbar min-h-[420px] w-full max-w-full rounded-xl bg-[#18181b] lg:min-h-0 lg:flex-1",
+                        "dark-scrollbar min-h-[420px] w-full max-w-full rounded-xl lg:min-h-0 lg:flex-1",
                         hasRows ? "overflow-auto" : "overflow-x-auto overflow-y-hidden"
                     )}
                 >
                     <Table.Content
                         aria-label="营收记录明细"
-                        className="w-full min-w-[920px] table-fixed border-collapse bg-[#18181b] [&_tbody_tr]:h-12 [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-800/80 [&_tbody_tr:last-child]:border-b-0 [&_tbody_tr:hover]:bg-zinc-800/55 [&_td]:px-4 [&_td]:py-2 [&_th]:h-9 [&_th]:border-b [&_th]:border-zinc-800 [&_th]:bg-[#27272a] [&_th]:px-4 [&_th]:text-left [&_th]:text-sm [&_th]:font-semibold [&_th]:text-zinc-200"
+                        className={cn(tableChrome, "min-w-[920px]")}
                     >
                         <Table.Header>
                             <Table.Column id="ts" isRowHeader className="w-[210px]">
@@ -285,16 +349,16 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                             {hasRows ? (
                                 pageData.map((item) => (
                                     <Table.Row key={item.id} id={item.id}>
-                                        <Table.Cell className="whitespace-nowrap text-zinc-100">
+                                        <Table.Cell className="whitespace-nowrap text-foreground">
                                             {formatTime(item.ts)}
                                         </Table.Cell>
                                         <Table.Cell>
                                             <div className="flex min-w-[180px] items-center gap-2">
-                                                <Avatar size="sm" className="h-7 w-7 border border-zinc-700">
+                                                <Avatar size="sm" className="h-7 w-7 border border-border">
                                                     <Avatar.Image src={item.uface || undefined} referrerPolicy="no-referrer" />
                                                     <Avatar.Fallback>{item.uname?.[0] ?? "?"}</Avatar.Fallback>
                                                 </Avatar>
-                                                <span className="truncate font-medium text-zinc-100">{item.uname}</span>
+                                                <span className="truncate font-medium text-foreground">{item.uname}</span>
                                             </div>
                                         </Table.Cell>
                                         <Table.Cell>
@@ -303,18 +367,18 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                                             </Chip>
                                         </Table.Cell>
                                         <Table.Cell>
-                                            <div className="max-w-[520px] truncate font-medium text-zinc-100">
+                                            <div className="max-w-[520px] truncate font-medium text-foreground">
                                                 {item.content}
                                             </div>
                                         </Table.Cell>
-                                        <Table.Cell className="font-bold text-zinc-100">
+                                        <Table.Cell className="font-bold text-foreground">
                                             {formatCurrency(item.price)}
                                         </Table.Cell>
                                     </Table.Row>
                                 ))
                             ) : (
                                 <Table.Row id="empty">
-                                    <Table.Cell colSpan={5} className="h-[360px] text-center text-zinc-500">
+                                    <Table.Cell colSpan={5} className="h-[360px] text-center text-muted-foreground">
                                         暂无数据
                                     </Table.Cell>
                                 </Table.Row>
@@ -323,75 +387,6 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     </Table.Content>
                 </Table.ScrollContainer>
             </Table>
-
-            <div className="flex min-w-0 shrink-0 flex-col gap-3 py-1 text-sm text-zinc-300 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-wrap items-center gap-3">
-                    <span>共 {filteredData.length} 条</span>
-                    <div className="flex items-center gap-1">
-                        <span>每页</span>
-                        <div className="flex h-8 overflow-hidden rounded-md border border-zinc-800 bg-zinc-950">
-                            {pageSizeOptions.map((size) => (
-                                <Button
-                                    key={size}
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setPageSize(size)}
-                                    className={[
-                                        "inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-zinc-800 px-2 text-xs last:border-r-0",
-                                        pageSize === size
-                                            ? "bg-blue-600 text-white"
-                                            : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100",
-                                    ].join(" ")}
-                                >
-                                    {size}
-                                </Button>
-                            ))}
-                        </div>
-                        <span>条</span>
-                    </div>
-                </div>
-
-                <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
-                    <span className="min-w-[90px] text-center">
-                        第 {currentPage + 1} / {pageCount} 页
-                    </span>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPageIndex((value) => Math.max(value - 1, 0))}
-                        disabled={currentPage <= 0}
-                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-zinc-700 px-3 text-zinc-200 hover:bg-zinc-800"
-                    >
-                        上一页
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPageIndex((value) => Math.min(value + 1, pageCount - 1))}
-                        disabled={currentPage >= pageCount - 1}
-                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-zinc-700 px-3 text-zinc-200 hover:bg-zinc-800"
-                    >
-                        下一页
-                    </Button>
-                    <div className="flex items-center gap-2 pl-1">
-                        <span>前往</span>
-                        <Input
-                            inputMode="numeric"
-                            value={String(currentPage + 1)}
-                            onChange={(event) => {
-                                const page = Number(event.target.value);
-                                if (!Number.isFinite(page)) return;
-                                setPageIndex(Math.min(Math.max(page - 1, 0), pageCount - 1));
-                            }}
-                            className="h-8 w-16 rounded-md border border-zinc-700 bg-zinc-900 text-center text-sm text-zinc-100"
-                        />
-                        <span>页</span>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }

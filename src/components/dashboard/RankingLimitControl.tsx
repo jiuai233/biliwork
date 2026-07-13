@@ -30,8 +30,8 @@ export function RankingLimitControl({ value }: RankingLimitControlProps) {
 
     return (
         <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-slate-400">显示数量</span>
-            <div className="flex h-10 overflow-hidden rounded-xl border border-white/10 bg-black/20">
+            <span className="text-sm text-muted-foreground">显示数量</span>
+            <div className="flex h-10 overflow-hidden rounded-xl border border-border bg-muted/40">
                 {quickOptions.map((option) => (
                     <Button
                         key={option}
@@ -39,7 +39,7 @@ export function RankingLimitControl({ value }: RankingLimitControlProps) {
                         size="sm"
                         variant={value === option ? "default" : "ghost"}
                         onClick={() => applyLimit(option)}
-                        className="inline-flex h-10 items-center justify-center rounded-none border-r border-white/10 px-3 text-sm last:border-r-0"
+                        className="inline-flex h-10 items-center justify-center rounded-none border-r border-border px-3 text-sm last:border-r-0"
                     >
                         {option}
                     </Button>
@@ -52,14 +52,14 @@ export function RankingLimitControl({ value }: RankingLimitControlProps) {
                 onKeyDown={(event) => {
                     if (event.key === "Enter") applyLimit(Number(input || value));
                 }}
-                className="h-10 w-20 rounded-xl border border-white/10 bg-white/[0.04] text-center text-sm text-white hover:bg-white/[0.06]"
+                className="h-10 w-20 rounded-xl text-center text-sm"
             />
             <Button
                 type="button"
                 size="sm"
                 variant="secondary"
                 onClick={() => applyLimit(Number(input || value))}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 px-4 text-sm text-slate-200 hover:bg-white/[0.06]"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm text-secondary-foreground hover:bg-accent"
             >
                 应用
             </Button>

@@ -62,17 +62,20 @@ test.describe('dashboard local layout', () => {
             }
 
             if (route === '/dashboard/blindbox' && viewport && viewport.width >= 1024) {
-                const distributionWidth = await dashboardPage.getByTestId('blindbox-distribution-grid').evaluate((element) => {
-                    return Math.round(element.getBoundingClientRect().width);
-                });
-
-                expect(distributionWidth, 'blindbox distribution should be a full-width summary grid').toBeGreaterThan(600);
+                await expect(dashboardPage.getByTestId('blindbox-distribution-grid')).toHaveCount(0);
 
                 const recordsHeight = await dashboardPage.getByTestId('blindbox-records-viewport').evaluate((element) => {
                     return Math.round(element.getBoundingClientRect().height);
                 });
 
-                expect(recordsHeight, 'blindbox records viewport should keep a useful default height').toBeGreaterThan(280);
+                expect(recordsHeight, 'collapsed distribution should leave useful room for records').toBeGreaterThan(360);
+
+                await dashboardPage.getByRole('button', { name: /种有产出.*展开/ }).click();
+                const distributionWidth = await dashboardPage.getByTestId('blindbox-distribution-grid').evaluate((element) => {
+                    return Math.round(element.getBoundingClientRect().width);
+                });
+
+                expect(distributionWidth, 'expanded blindbox distribution should remain full width').toBeGreaterThan(600);
 
                 const emptyState = dashboardPage.getByText('暂无开盒记录');
                 if (await emptyState.isVisible().catch(() => false)) {
