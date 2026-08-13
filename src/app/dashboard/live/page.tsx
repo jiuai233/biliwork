@@ -15,7 +15,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { RefreshIconButton } from "@/components/shared/RefreshIconButton";
 import { StatCard } from "@/components/shared/StatCard";
 import { tableChrome } from "@/components/shared/table";
-import { formatDateTime, formatDuration } from "@/lib/format";
+import { formatCurrency, formatDateTime, formatDuration } from "@/lib/format";
 
 interface LiveSession {
     id: number;
@@ -97,10 +97,10 @@ export default function LiveRecordsPage() {
             <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-6">
                 <StatCard label="开播次数" value={totalSessions} icon={<Radio className="h-4 w-4" />} tone="emerald" className="min-h-0 p-3" />
                 <StatCard label="总时长" value={formatDuration(totalDuration, "0m")} icon={<Clock className="h-4 w-4" />} tone="blue" className="min-h-0 p-3" />
-                <StatCard label="总收入" value={`${totalIncome.toFixed(1)} ¥`} icon={<Coins className="h-4 w-4" />} tone="amber" className="min-h-0 p-3" />
-                <StatCard label="礼物" value={`${totalGift.toFixed(1)} ¥`} icon={<Gift className="h-4 w-4" />} tone="pink" className="min-h-0 p-3" />
-                <StatCard label="舰长" value={`${totalGuard.toFixed(1)} ¥`} icon={<Shield className="h-4 w-4" />} tone="blue" className="min-h-0 p-3" />
-                <StatCard label="SC" value={`${totalSC.toFixed(1)} ¥`} icon={<MessageSquare className="h-4 w-4" />} tone="yellow" className="min-h-0 p-3" />
+                <StatCard label="总收入" value={formatCurrency(totalIncome)} icon={<Coins className="h-4 w-4" />} tone="amber" className="min-h-0 p-3" />
+                <StatCard label="礼物" value={formatCurrency(totalGift)} icon={<Gift className="h-4 w-4" />} tone="pink" className="min-h-0 p-3" />
+                <StatCard label="舰长" value={formatCurrency(totalGuard)} icon={<Shield className="h-4 w-4" />} tone="blue" className="min-h-0 p-3" />
+                <StatCard label="SC" value={formatCurrency(totalSC)} icon={<MessageSquare className="h-4 w-4" />} tone="yellow" className="min-h-0 p-3" />
             </div>
 
             <div className="min-h-[420px] w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-card lg:min-h-0 lg:flex-1">
@@ -137,17 +137,17 @@ export default function LiveRecordsPage() {
                                         <Table.Cell className="text-muted-foreground">
                                             {session.areaName || '-'}
                                         </Table.Cell>
-                                        <Table.Cell className="text-right text-pink-400">
-                                            {session.giftIncome.toFixed(1)} ¥
+                                        <Table.Cell className="text-right text-secondary-foreground">
+                                            {formatCurrency(session.giftIncome)}
                                         </Table.Cell>
-                                        <Table.Cell className="text-right text-blue-400">
-                                            {session.guardIncome.toFixed(1)} ¥
+                                        <Table.Cell className="text-right text-secondary-foreground">
+                                            {formatCurrency(session.guardIncome)}
                                         </Table.Cell>
-                                        <Table.Cell className="text-right text-yellow-400">
-                                            {session.scIncome.toFixed(1)} ¥
+                                        <Table.Cell className="text-right text-secondary-foreground">
+                                            {formatCurrency(session.scIncome)}
                                         </Table.Cell>
-                                        <Table.Cell className="text-right font-bold text-amber-400">
-                                            {session.totalIncome.toFixed(1)} ¥
+                                        <Table.Cell className="text-right font-bold text-money">
+                                            {formatCurrency(session.totalIncome)}
                                         </Table.Cell>
                                         <Table.Cell className="text-center">
                                             <Button
@@ -160,7 +160,7 @@ export default function LiveRecordsPage() {
                                                     });
                                                     router.push(`/dashboard/live/detail?${params}`);
                                                 }}
-                                                className="h-8 bg-blue-600/80 px-3 text-xs text-white hover:bg-blue-500"
+                                                className="h-8 bg-primary px-3 text-xs text-white hover:bg-primary/90"
                                             >
                                                 详情
                                             </Button>

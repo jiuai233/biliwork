@@ -5,6 +5,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Avatar } from "@/components/ui/avatar";
 import { Transaction } from "@/lib/data";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 
@@ -30,14 +31,12 @@ export function DraggableTransactionCard({
 
     const getCardStyle = (type: string) => {
         switch (type) {
-            case "gift":
-                return "border-pink-500/30 bg-pink-500/5 hover:bg-pink-500/10";
             case "guard":
-                return "border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10";
+                return "border-border border-l-2 border-l-indigo-400/50 bg-card hover:bg-accent";
             case "super_chat":
-                return "border-red-500/30 bg-red-500/5 hover:bg-red-500/10";
+                return "border-border border-l-2 border-l-amber-400/50 bg-card hover:bg-accent";
             default:
-                return "border-border bg-card";
+                return "border-border bg-card hover:bg-accent";
         }
     };
 
@@ -57,7 +56,7 @@ export function DraggableTransactionCard({
             <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 items-center justify-between">
                     <span className="truncate pr-2 text-sm font-bold text-foreground">{transaction.uname}</span>
-                    <span className="shrink-0 font-mono text-xs text-muted-foreground">¥{transaction.price}</span>
+                    <span className="shrink-0 font-mono text-xs text-muted-foreground">{formatCurrency(transaction.price)}</span>
                 </div>
                 <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
                     {transaction.icon && (

@@ -29,7 +29,7 @@ export default function Error({
                         <Button variant="outline" className="border-border text-secondary-foreground" onClick={() => window.location.reload()}>
                             刷新页面
                         </Button>
-                        <Button className="bg-blue-600 text-white hover:bg-blue-500" onClick={() => reset()}>
+                        <Button className="bg-primary text-white hover:bg-primary/90" onClick={() => reset()}>
                             重试
                         </Button>
                     </div>

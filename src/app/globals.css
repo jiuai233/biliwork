@@ -25,6 +25,9 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-money: var(--money);
+  --color-profit: var(--profit);
+  --color-loss: var(--loss);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -49,6 +52,8 @@
 /* Light theme (default when html lacks .dark). */
 :root {
   --radius: 0.625rem;
+  --font-geist-sans: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-geist-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
   --background: #f4f4f6;
   --foreground: #18181b;
   --card: #ffffff;
@@ -67,10 +72,13 @@
   --border: rgba(24, 24, 27, 0.1);
   --input: rgba(24, 24, 27, 0.16);
   --ring: #7c3aed;
-  --chart-1: #2563eb;
-  --chart-2: #16a34a;
-  --chart-3: #d97706;
-  --chart-4: #9333ea;
+  --money: #b45309;
+  --profit: #059669;
+  --loss: #dc2626;
+  --chart-1: #7c3aed;
+  --chart-2: #0891b2;
+  --chart-3: #059669;
+  --chart-4: #b45309;
   --chart-5: #dc2626;
   --sidebar: #ffffff;
   --sidebar-foreground: #18181b;
@@ -101,11 +109,14 @@
   --border: rgba(255, 255, 255, 0.08);
   --input: rgba(255, 255, 255, 0.12);
   --ring: #8b5cf6;
-  --chart-1: #3b82f6;
-  --chart-2: #22c55e;
-  --chart-3: #f59e0b;
-  --chart-4: #a855f7;
-  --chart-5: #ef4444;
+  --money: #fbbf24;
+  --profit: #34d399;
+  --loss: #f87171;
+  --chart-1: #8b5cf6;
+  --chart-2: #22d3ee;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #f87171;
   --sidebar: #101014;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #8b5cf6;

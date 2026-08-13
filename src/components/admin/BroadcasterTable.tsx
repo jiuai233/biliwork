@@ -173,7 +173,7 @@ export function BroadcasterTable({
                                                 <Button
                                                     type="button"
                                                     size="sm"
-                                                    className="inline-flex h-9 min-w-[72px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-blue-600 px-3 text-white hover:bg-blue-500"
+                                                    className="inline-flex h-9 min-w-[72px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 text-white hover:bg-primary/90"
                                                     disabled={openingDashboardId === broadcaster.id}
                                                     onClick={() => onOpenDashboard(broadcaster.id)}
                                                 >

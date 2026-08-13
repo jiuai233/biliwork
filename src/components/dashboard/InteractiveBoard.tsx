@@ -32,6 +32,7 @@ import {
 } from "@/lib/board-merge";
 import { ChevronDown, Clock, Download, Loader2, Monitor, Radio, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { getBoardTransactionsForSession, getRecentBoardTransactions } from "@/app/dashboard/board/actions";
 
@@ -490,7 +491,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                     className={cn(
                                         "w-full rounded-md px-3 py-2 text-left transition",
                                         selectedSessionId === "recent"
-                                            ? "bg-purple-500/15 text-foreground"
+                                            ? "bg-primary/15 text-foreground"
                                             : "text-muted-foreground hover:bg-accent"
                                     )}
                                 >
@@ -536,7 +537,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                             className={cn(
                                                 "w-full rounded-md px-3 py-2 text-left transition",
                                                 selected
-                                                    ? "bg-blue-500/15 text-foreground"
+                                                    ? "bg-primary/15 text-foreground"
                                                     : "text-muted-foreground hover:bg-accent"
                                             )}
                                         >
@@ -556,7 +557,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                                     <Clock className="h-3 w-3 shrink-0" />
                                                     <span className="truncate">{formatSessionTime(session.startTs)}</span>
                                                 </span>
-                                                <span className="shrink-0 text-amber-300">¥{session.totalIncome.toFixed(1)}</span>
+                                                <span className="shrink-0 text-money">{formatCurrency(session.totalIncome)}</span>
                                             </div>
                                         </button>
                                     );

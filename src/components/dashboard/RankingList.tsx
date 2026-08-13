@@ -10,21 +10,13 @@ export interface RankingItem {
     label: string;
 }
 
-function rankClass(index: number) {
-    if (index === 0) return "border-amber-500/30 bg-amber-500/10";
-    if (index === 1) return "border-sky-400/25 bg-sky-400/10";
-    if (index === 2) return "border-fuchsia-400/25 bg-fuchsia-400/10";
-    return "border-border bg-accent/30";
-}
-
 interface RankingListProps {
     items: RankingItem[];
-    barClass: string;
     totalLabel?: string;
     className?: string;
 }
 
-export function RankingList({ items, barClass, totalLabel, className }: RankingListProps) {
+export function RankingList({ items, totalLabel, className }: RankingListProps) {
     const maxValue = Math.max(...items.map((item) => item.value), 1);
 
     return (
@@ -33,7 +25,7 @@ export function RankingList({ items, barClass, totalLabel, className }: RankingL
                 {items.map((item, index) => {
                     const percent = Math.max(4, Math.round((item.value / maxValue) * 100));
                     return (
-                        <div key={`${item.uname}-${index}`} className={cn("rounded-lg border px-2.5 py-1.5", rankClass(index))}>
+                        <div key={`${item.uname}-${index}`} className="rounded-lg border border-border bg-accent/30 px-2.5 py-1.5">
                             <div className="flex items-center gap-2.5">
                                 <span className="w-7 shrink-0 text-center text-[11px] font-black text-muted-foreground tabular-nums">
                                     #{index + 1}
@@ -45,7 +37,7 @@ export function RankingList({ items, barClass, totalLabel, className }: RankingL
                                         <div className="shrink-0 text-xs font-bold text-foreground tabular-nums">{item.label}</div>
                                     </div>
                                     <div className="mt-1 h-1 overflow-hidden rounded-full bg-background/40">
-                                        <div className={cn("h-full rounded-full", barClass)} style={{ width: `${percent}%` }} />
+                                        <div className={cn("h-full rounded-full", index === 0 ? "bg-primary" : "bg-foreground/15")} style={{ width: `${percent}%` }} />
                                     </div>
                                 </div>
                             </div>

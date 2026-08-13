@@ -187,7 +187,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                             className={[
                                 "inline-flex h-9 min-w-0 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-border px-3 text-xs last:border-r-0 sm:min-w-14",
                                 typeFilter === option.value
-                                    ? "bg-blue-600 text-white"
+                                    ? "bg-primary text-white"
                                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
                             ].join(" ")}
                         >
@@ -251,7 +251,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                                     className={[
                                         "inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-border px-2 text-xs last:border-r-0",
                                         pageSize === size
-                                            ? "bg-blue-600 text-white"
+                                            ? "bg-primary text-white"
                                             : "text-muted-foreground hover:bg-accent hover:text-foreground",
                                     ].join(" ")}
                                 >

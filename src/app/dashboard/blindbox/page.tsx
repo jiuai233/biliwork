@@ -24,7 +24,7 @@ import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { tableChrome } from "@/components/shared/table";
-import { formatDateTime } from "@/lib/format";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 import { BLINDBOX_COST, BlindboxStats, Broadcaster, GiftDistribution } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -114,11 +114,11 @@ export default function BlindboxPage() {
             {stats && (
                 <div className="grid shrink-0 grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4">
                     <CompactMetric label="开盒次数" value={stats.totalBoxes.toLocaleString()} sub="盒" icon={<Box className="h-4 w-4" />} />
-                    <CompactMetric label="总投入" value={`${(stats.totalCost / 10).toFixed(1)} ¥`} sub={`${stats.totalCost.toLocaleString()} 电池`} icon={<Coins className="h-4 w-4" />} />
-                    <CompactMetric label="总产出" value={`${(stats.totalOutput / 10).toFixed(1)} ¥`} sub={`${stats.totalOutput.toLocaleString()} 电池`} icon={<Gift className="h-4 w-4" />} />
+                    <CompactMetric label="总投入" value={formatCurrency(stats.totalCost / 10)} sub={`${stats.totalCost.toLocaleString()} 电池`} icon={<Coins className="h-4 w-4" />} />
+                    <CompactMetric label="总产出" value={formatCurrency(stats.totalOutput / 10)} sub={`${stats.totalOutput.toLocaleString()} 电池`} icon={<Gift className="h-4 w-4" />} />
                     <CompactMetric
                         label="净盈亏"
-                        value={`${isProfit ? "+" : ""}${(stats.netProfit / 10).toFixed(1)} ¥`}
+                        value={`${isProfit ? "+" : "-"}${formatCurrency(Math.abs(stats.netProfit / 10))}`}
                         sub={`${isProfit ? "+" : ""}${stats.profitRate.toFixed(2)}%`}
                         icon={isProfit ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                         valueClass={isProfit ? "text-emerald-400" : "text-red-400"}
@@ -187,7 +187,7 @@ export default function BlindboxPage() {
                                 type="button"
                                 size="sm"
                                 onClick={handleSearch}
-                                className="h-9 rounded-lg bg-orange-600 px-4 text-sm font-bold text-white hover:bg-orange-500"
+                                className="h-9 rounded-lg bg-primary px-4 text-sm font-bold text-white hover:bg-primary/90"
                             >
                                 搜索
                             </Button>
@@ -233,15 +233,15 @@ export default function BlindboxPage() {
                                                 <Table.Cell className="py-1.5 text-sm text-muted-foreground">{formatDateTime(record.ts)}</Table.Cell>
                                                 <Table.Cell className="py-1.5">
                                                     <div className="flex items-center gap-2">
-                                                        <Avatar className="h-7 w-7 border border-orange-400/30">
+                                                        <Avatar className="h-7 w-7 border border-border">
                                                             <Avatar.Image src={record.uface ?? undefined} referrerPolicy="no-referrer" />
                                                             <Avatar.Fallback className="text-xs">{record.uname?.[0] ?? "?"}</Avatar.Fallback>
                                                         </Avatar>
-                                                        <span className="font-semibold text-orange-200">{record.uname}</span>
+                                                        <span className="font-semibold text-foreground">{record.uname}</span>
                                                     </div>
                                                 </Table.Cell>
                                                 <Table.Cell className="py-1.5 font-medium text-foreground">
-                                                    {record.gift_name} <span className="font-bold text-orange-300">×{record.gift_num}</span>
+                                                    {record.gift_name} <span className="font-bold text-muted-foreground">×{record.gift_num}</span>
                                                 </Table.Cell>
                                                 <Table.Cell className="py-1.5 text-right text-secondary-foreground">{record.gift_value} 电池</Table.Cell>
                                                 <Table.Cell className="py-1.5 text-right">
@@ -290,7 +290,7 @@ function CompactMetric({
 }) {
     return (
         <div className="flex min-w-0 items-center gap-3 border-b border-r border-border px-3 py-2.5 last:border-r-0 lg:border-b-0">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500/12 text-orange-300">{icon}</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-muted-foreground">{icon}</span>
             <div className="min-w-0">
                 <div className="flex items-baseline gap-2">
                     <span className="text-xs font-semibold text-muted-foreground">{label}</span>
@@ -323,7 +323,7 @@ function GiftDistributionCard({ item, totalBoxes }: { item: GiftDistribution; to
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
-                    className={cn("h-full rounded-full", valuable ? "bg-gradient-to-r from-emerald-400 to-cyan-300" : "bg-gradient-to-r from-red-400 to-orange-300")}
+                    className={cn("h-full rounded-full", valuable ? "bg-emerald-400" : "bg-red-400")}
                     style={{ width: `${Math.max(8, Math.min(percentage, 100))}%` }}
                 />
             </div>

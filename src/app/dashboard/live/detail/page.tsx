@@ -13,7 +13,7 @@ import { SectionCard } from "@/components/shared/SectionCard";
 import { StatCard, type StatTone } from "@/components/shared/StatCard";
 import { tableChrome } from "@/components/shared/table";
 import { Tabs, Tab, TabList, TabPanel } from "@/components/shared/tabs";
-import { formatDuration } from "@/lib/format";
+import { formatCurrency, formatDuration } from "@/lib/format";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -85,17 +85,25 @@ function SessionDetailContent() {
     const duration = endTs ? Math.round((endTs - startTs) / 60000) : 0;
     const maxUserValue = Math.max(...data.giftUsers.map((user) => user.totalValue), 1);
 
+    // Land on the tab with the most records so the panel rarely opens onto an empty list.
+    const tabCounts: [string, number][] = [
+        ['sc', data.superChats.length],
+        ['guards', data.guards.length],
+        ['danmaku-rank', data.topDanmaku.length],
+    ];
+    const defaultTab = tabCounts.reduce((best, cur) => (cur[1] > best[1] ? cur : best))[0];
+
     const statItems: { icon: React.ReactNode; label: string; value: string; tone: StatTone }[] = [
         { icon: <MessageSquare className="h-4 w-4" />, label: "弹幕", value: data.danmakuCount.toString(), tone: "blue" },
-        { icon: <Gift className="h-4 w-4" />, label: "礼物收入", value: `${data.stats.totalIncome.toFixed(1)} ¥`, tone: "amber" },
+        { icon: <Gift className="h-4 w-4" />, label: "礼物收入", value: formatCurrency(data.stats.totalIncome), tone: "amber" },
         { icon: <Gift className="h-4 w-4" />, label: "礼物", value: data.stats.giftCount.toString(), tone: "pink" },
         { icon: <Shield className="h-4 w-4" />, label: "上舰", value: data.stats.guardCount.toString(), tone: "indigo" },
         { icon: <Sparkles className="h-4 w-4" />, label: "SC", value: data.stats.scCount.toString(), tone: "yellow" },
     ];
 
     return (
-        <div className="space-y-4">
-            <div className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3 md:flex-row md:items-center">
+        <div className="flex flex-col gap-4 xl:min-h-0 xl:flex-1">
+            <div className="flex shrink-0 flex-col justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3 md:flex-row md:items-center">
                 <div className="flex items-center gap-4">
                     <Button
                         variant="outline"
@@ -120,17 +128,17 @@ function SessionDetailContent() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-5">
                 {statItems.map((item) => (
                     <StatCard key={item.label} label={item.label} value={item.value} icon={item.icon} tone={item.tone} className="min-h-0 p-3" />
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)]">
+            <div className="grid grid-cols-1 items-stretch gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)] xl:grid-rows-1">
                 <SectionCard
                     title="礼物明细（按用户）"
                     accent="bg-pink-500"
-                    className="flex min-h-[620px] flex-col xl:h-[720px]"
+                    className="flex min-h-[620px] flex-col xl:min-h-0"
                     bodyClassName="min-h-0 flex-1 p-3"
                 >
                     <div className="dark-scrollbar h-full min-h-0 overflow-auto rounded-lg">
@@ -156,10 +164,10 @@ function SessionDetailContent() {
                                                 <GiftCell gifts={user.gifts} />
                                             </Table.Cell>
                                             <Table.Cell className="text-right">
-                                                <span className="font-bold text-amber-400 tabular-nums">{user.totalValue.toFixed(1)} ¥</span>
+                                                <span className="font-bold text-money tabular-nums">{formatCurrency(user.totalValue)}</span>
                                                 <div className="mt-1 ml-auto h-1 w-full max-w-[96px] overflow-hidden rounded-full bg-muted">
                                                     <div
-                                                        className="h-full rounded-full bg-amber-400/70"
+                                                        className="h-full rounded-full bg-money/70"
                                                         style={{ width: `${Math.max(4, Math.round((user.totalValue / maxUserValue) * 100))}%` }}
                                                     />
                                                 </div>
@@ -179,7 +187,7 @@ function SessionDetailContent() {
                     </div>
                 </SectionCard>
 
-                <Tabs defaultSelectedKey="sc" className="flex min-h-[620px] min-w-0 flex-col xl:h-[720px]">
+                <Tabs defaultSelectedKey={defaultTab} className="flex min-h-[620px] min-w-0 flex-col xl:min-h-0">
                     <SectionCard
                         className="flex min-h-0 flex-1 flex-col overflow-hidden"
                         bodyClassName="flex min-h-0 flex-1 flex-col"
@@ -211,7 +219,7 @@ function SessionDetailContent() {
                                                     <Avatar src={sc.uface} name={sc.uname} className="h-6 w-6" />
                                                     <span className="truncate text-sm text-secondary-foreground">{sc.uname}</span>
                                                 </div>
-                                                <span className="shrink-0 text-sm font-bold text-yellow-400 tabular-nums">¥{sc.rmb}</span>
+                                                <span className="shrink-0 text-sm font-bold text-money tabular-nums">{formatCurrency(sc.rmb)}</span>
                                             </div>
                                             <p className="break-all text-xs leading-5 text-foreground/80">{sc.message || '(无内容)'}</p>
                                         </div>
@@ -233,7 +241,7 @@ function SessionDetailContent() {
                                                     {guardLevelName(guard.guardLevel)}
                                                 </span>
                                             </div>
-                                            <span className="shrink-0 text-sm font-bold text-blue-400 tabular-nums">¥{guard.price.toFixed(0)}</span>
+                                            <span className="shrink-0 text-sm font-bold text-money tabular-nums">{formatCurrency(guard.price)}</span>
                                         </div>
                                     ))}
                                     {data.guards.length === 0 && <PanelEmpty>本场无上舰</PanelEmpty>}
@@ -250,7 +258,6 @@ function SessionDetailContent() {
                                         value: user.count,
                                         label: `${user.count} 条`,
                                     }))}
-                                    barClass="bg-blue-400"
                                 />
                             ) : (
                                 <PanelEmpty>本场无弹幕</PanelEmpty>
@@ -310,7 +317,7 @@ function GiftPill({ gift }: { gift: GiftEntry }) {
             )}
             <span className="max-w-[160px] truncate">{gift.name}</span>
             <span className="text-muted-foreground">x{gift.count}</span>
-            <span className="font-medium text-amber-400">{gift.value.toFixed(1)}¥</span>
+            <span className="font-medium text-money">{formatCurrency(gift.value)}</span>
         </span>
     );
 }

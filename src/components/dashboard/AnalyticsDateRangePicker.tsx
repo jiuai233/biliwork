@@ -307,8 +307,8 @@ export function AnalyticsDateRangePicker({ date, setDate, onApply, pending = fal
                                     "h-8 rounded-md text-sm transition-colors",
                                     outside ? "text-muted-foreground/40" : "text-secondary-foreground",
                                     future && "cursor-not-allowed opacity-25",
-                                    range && !selectedStart && !selectedEnd && "bg-blue-500/15 text-blue-100",
-                                    (selectedStart || selectedEnd) ? "bg-blue-600 font-semibold text-white" : !future && "hover:bg-accent",
+                                    range && !selectedStart && !selectedEnd && "bg-primary/15 text-primary",
+                                    (selectedStart || selectedEnd) ? "bg-primary font-semibold text-white" : !future && "hover:bg-accent",
                                 )}
                             >
                                 {day.getDate()}
@@ -348,7 +348,7 @@ export function AnalyticsDateRangePicker({ date, setDate, onApply, pending = fal
                         }}
                         className={cn(
                             "rounded-md px-3 py-2 text-left text-sm font-medium transition hover:bg-accent",
-                            customMode ? "bg-blue-500/15 text-blue-300" : "text-secondary-foreground",
+                            customMode ? "bg-primary/15 text-primary" : "text-secondary-foreground",
                         )}
                     >
                         {customMode ? "返回快捷选择" : "自定义"}
@@ -406,7 +406,7 @@ export function AnalyticsDateRangePicker({ date, setDate, onApply, pending = fal
                         </span>
                         <div className="flex gap-2">
                             <Button type="button" size="sm" variant="ghost" className="h-8 px-3" onClick={() => closePicker()}>取消</Button>
-                            <Button type="button" size="sm" disabled={!validDraft || selectingEnd || pending} className="h-8 min-w-[68px] bg-blue-600 px-3 text-white hover:bg-blue-500" onClick={applyDraft}>
+                            <Button type="button" size="sm" disabled={!validDraft || selectingEnd || pending} className="h-8 min-w-[68px] bg-primary px-3 text-white hover:bg-primary/90" onClick={applyDraft}>
                                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "应用"}
                             </Button>
                         </div>

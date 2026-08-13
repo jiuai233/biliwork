@@ -5,6 +5,7 @@ import { Pin, PinOff, Sparkles } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Gift, Guard, SuperChat } from "@/lib/types";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /** Gifts at or above this CNY value are surfaced as highlights. */
@@ -92,7 +93,7 @@ function HighlightRow({
                 </span>
                 <Avatar src={item.uface} name={item.uname} className="h-5 w-5" />
                 <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-foreground">{item.uname}</span>
-                <span className="shrink-0 text-[13px] font-bold text-amber-300 tabular-nums">¥{item.amount.toFixed(1)}</span>
+                <span className="shrink-0 text-[13px] font-bold text-money tabular-nums">{formatCurrency(item.amount)}</span>
                 <span className="w-12 shrink-0 text-right text-[11px] text-muted-foreground tabular-nums">
                     {item.ts ? new Date(item.ts).toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit" }) : "-"}
                 </span>
