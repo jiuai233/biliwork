@@ -119,13 +119,12 @@ B站内容卡片（SC/上舰/礼物）是唯一的彩虹区。面板长期挂机
 
 ## 10. 迁移清单（现状差距，逐项消除）
 
-- [ ] `globals.css`：修复字体栈；新增 `money/profit/loss/chart` 令牌；`chart-*` 换青/紫主导
-- [ ] `AnalyticsTable.tsx:190,254`、`AnalyticsDateRangePicker.tsx:311,409`：`bg-blue-600` 选中态 → primary
-- [ ] `live/page.tsx:163`（`bg-blue-600/80` 按钮）、`blindbox/page.tsx:190`（`bg-orange-600` 按钮）→ 统一 Button 组件 primary/ghost
-- [ ] `RankingList.tsx:40`（`bg-white/20`）、`DraggableTransactionCard.tsx:35-39`（`border-white/5`）→ 语义令牌
-- [ ] `HighlightsList.tsx` / `GiftPanel.tsx` / `live/*` 金额 → `money` 令牌
-- [ ] `ui/card.tsx`、`ui/dialog.tsx`（shadcn 模板 `p-6`）→ 收敛进 shared 体系或对齐圆角/间距
-- [ ] `LoginClient.tsx:92` 紫蓝渐变按钮 → `bg-primary`；登录页光晕对齐 globals.css 顶部径向光
-- [ ] `Sidebar.tsx:31` 导航图标去重（数据分析/数据排行）
-- [ ] 各面板魔法高度（`h-[420px]`、`min-h-[520px]`）→ 布局链
-- [ ] `StatsCharts.tsx`：确认命名（无图表）或补趋势图（chart 令牌已就位）
+- [x] `globals.css`：修复字体栈；新增 `money/profit/loss/chart` 令牌；`chart-*` 换青/紫主导
+- [x] `AnalyticsTable`、`AnalyticsDateRangePicker`、`live/page`、`blindbox`、`admin/*`：`bg-blue-600`/`bg-orange-600` 选中态与按钮 → primary
+- [x] `RankingList`（`bg-white/20`）、`DraggableTransactionCard`（`border-white/5`）→ 语义令牌
+- [x] `HighlightsList` / `GiftPanel` / `live/*` / `InteractiveBoard` 金额 → `money` 令牌
+- [x] `ui/card.tsx`、`ui/dialog.tsx`：圆角对齐 `rounded-xl`
+- [x] `LoginClient`：渐变按钮 → `bg-primary`；光晕去动画对齐 globals.css
+- [x] `Sidebar`：导航图标去重（数据分析 → BarChart3）
+- [ ] 各面板魔法高度（`h-[420px]`、`min-h-[520px]`）→ 布局链（待验收后）
+- [ ] `StatsCharts.tsx`：确认命名（无图表）或补趋势图（chart 令牌已就位，待决策）

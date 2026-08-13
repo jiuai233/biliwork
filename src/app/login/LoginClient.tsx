@@ -42,8 +42,8 @@ export function LoginClient() {
     return (
         <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-500/20 blur-[120px] rounded-full mix-blend-screen animate-pulse" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-500/20 blur-[120px] rounded-full mix-blend-screen animate-pulse delay-1000" />
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-500/20 blur-[120px] rounded-full mix-blend-screen" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-500/20 blur-[120px] rounded-full mix-blend-screen" />
             </div>
 
             <motion.div
@@ -89,7 +89,7 @@ export function LoginClient() {
                             </div>
                             <Button
                                 type="submit"
-                                className="h-11 w-full rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-base font-semibold text-white shadow-lg shadow-purple-900/25 hover:from-purple-500 hover:to-blue-500"
+                                className="h-11 w-full rounded-lg bg-primary text-base font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary/90"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (
