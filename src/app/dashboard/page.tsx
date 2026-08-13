@@ -145,6 +145,20 @@ export default function DashboardPage() {
                 }
             />
 
+            {!isConnected && (
+                <div className="flex shrink-0 items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-300">
+                    <WifiOff className="h-4 w-4 shrink-0" />
+                    <span>实时连接已断开，当前数据可能不是最新</span>
+                    <button
+                        type="button"
+                        onClick={reconnect}
+                        className="ml-auto shrink-0 font-semibold underline-offset-2 hover:underline"
+                    >
+                        重连
+                    </button>
+                </div>
+            )}
+
             {data.stats && <StatsPanel stats={data.stats} previousStats={data.previousStats} />}
 
             <section className="grid min-w-0 grid-cols-1 gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_390px]">

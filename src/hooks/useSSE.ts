@@ -20,6 +20,7 @@ export function useSSE<T>(
     const [error, setError] = useState<string | null>(null);
     const eventSourceRef = useRef<EventSource | null>(null);
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const retryDelayRef = useRef(0);
     const connectRef = useRef<() => void>(() => undefined);
     const optionsRef = useRef(options);
 
@@ -41,6 +42,7 @@ export function useSSE<T>(
         es.onopen = () => {
             setIsConnected(true);
             setError(null);
+            retryDelayRef.current = 0;
         };
 
         es.onmessage = (event) => {
@@ -62,11 +64,14 @@ export function useSSE<T>(
             es.close();
             optionsRef.current?.onError?.(event);
 
-            // 自动重连
-            const retryMs = optionsRef.current?.retryInterval ?? 5000;
+            // 指数退避自动重连：5s → 10s → 20s → 40s → 60s 封顶
+            const base = optionsRef.current?.retryInterval ?? 5000;
+            retryDelayRef.current = retryDelayRef.current === 0
+                ? base
+                : Math.min(retryDelayRef.current * 2, 60_000);
             retryTimeoutRef.current = setTimeout(() => {
                 connectRef.current();
-            }, retryMs);
+            }, retryDelayRef.current);
         };
     }, [url]);
 
@@ -87,11 +92,12 @@ export function useSSE<T>(
         };
     }, [connect]);
 
-    // 手动重连
+    // 手动重连：立即尝试并重置退避（失败则重新从基础间隔开始）
     const reconnect = useCallback(() => {
         if (retryTimeoutRef.current) {
             clearTimeout(retryTimeoutRef.current);
         }
+        retryDelayRef.current = 0;
         connect();
     }, [connect]);
 
