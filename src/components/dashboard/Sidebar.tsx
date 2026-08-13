@@ -16,7 +16,6 @@ import {
     Radio,
     ChevronUp,
     Clapperboard,
-    TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -31,7 +30,6 @@ const navItems = [
     { name: "盲盒分析", href: "/dashboard/blindbox", icon: Box },
     { name: "开播记录", href: "/dashboard/live", icon: Radio },
     { name: "数据分析", href: "/dashboard/analytics", icon: BarChart3 },
-    { name: "数据趋势", href: "/dashboard/trends", icon: TrendingUp },
     { name: "周报", href: "/dashboard/report", icon: CalendarRange },
     { name: "数据排行", href: "/dashboard/ranking", icon: BarChart2 },
     { name: "切片制作", href: "/dashboard/board", icon: Clapperboard },
