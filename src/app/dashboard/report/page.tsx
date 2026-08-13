@@ -66,7 +66,6 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     const maxDay = Math.max(...report.daily.map((d) => d.income), 1);
 
     const prevUrl = `/dashboard/report?week=${formatWeekParam(addWeeks(weekStart, -1))}`;
-    const nextUrl = `/dashboard/report?week=${formatWeekParam(addWeeks(weekStart, 1))}`;
     const currentUrl = `/dashboard/report`;
 
     return (
@@ -87,9 +86,6 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                         </Link>
                         <Link href={currentUrl}>
                             <Button type="button" size="sm" variant="outline" className="h-9">本周</Button>
-                        </Link>
-                        <Link href={nextUrl}>
-                            <Button type="button" size="sm" variant="outline" className="h-9">下一周</Button>
                         </Link>
                     </div>
                 }
