@@ -21,7 +21,10 @@ function toBroadcaster(b: PrismaBroadcaster): Broadcaster {
         active: b.active,
         password_hash: b.passwordHash,
         created_at: Number(b.createdAt),
-        updated_at: Number(b.updatedAt)
+        updated_at: Number(b.updatedAt),
+        // last_login_at 列由 add-last-login.sql 添加；client 未重新生成前
+        // 运行时 findMany 已返回该列，这里仅做类型收窄。
+        last_login_at: (b as unknown as { lastLoginAt?: bigint | null }).lastLoginAt ? Number((b as unknown as { lastLoginAt: bigint }).lastLoginAt) : null,
     };
 }
 

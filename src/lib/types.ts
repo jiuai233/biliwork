@@ -12,6 +12,7 @@ export interface Broadcaster {
     password_hash?: string | null;
     created_at: number;
     updated_at: number;
+    last_login_at: number | null;
 }
 
 export interface Danmaku {

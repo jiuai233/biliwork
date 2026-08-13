@@ -24,6 +24,7 @@ model Broadcaster {
   passwordHash String?  @map("password_hash")
   createdAt    BigInt   @map("created_at")
   updatedAt    BigInt   @map("updated_at")
+  lastLoginAt  BigInt?  @map("last_login_at")
 
   @@index([active])
   @@index([uid])

@@ -65,6 +65,7 @@ export function BroadcasterTable({
                         <Table.Column id="room" className="w-[180px]">身份码 / 房间号</Table.Column>
                         <Table.Column id="stats" className="w-[150px]">今日流水</Table.Column>
                         <Table.Column id="updated" className="w-[190px]">最后更新</Table.Column>
+                        <Table.Column id="lastLogin" className="w-[190px]">最后登录</Table.Column>
                         <Table.Column id="actions" className="w-[340px] text-right">操作</Table.Column>
                     </Table.Header>
                     <Table.Body>
@@ -166,6 +167,11 @@ export function BroadcasterTable({
                                     </Table.Cell>
                                     <Table.Cell className="text-muted-foreground">
                                         {new Date(broadcaster.updated_at).toLocaleString('zh-CN')}
+                                    </Table.Cell>
+                                    <Table.Cell className="text-muted-foreground">
+                                        {broadcaster.last_login_at
+                                            ? new Date(broadcaster.last_login_at).toLocaleString('zh-CN', { hour12: false })
+                                            : <span className="text-muted-foreground/70">从未登录</span>}
                                     </Table.Cell>
                                     <Table.Cell>
                                         <div className="flex min-w-[308px] items-center justify-end gap-2 whitespace-nowrap">

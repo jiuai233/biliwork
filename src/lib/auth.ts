@@ -4,6 +4,7 @@
 // 替代旧版裸 UID Cookie 存储
 
 import { getBroadcasterByUidAndCode, getBroadcasterByUidForLogin } from './data';
+import { prisma } from './db';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getIronSession } from 'iron-session';
@@ -42,6 +43,16 @@ export async function login(uid: number, password: string) {
 
     if (user && user.uid) {
         if (!isValid) return false;
+
+        // 记录最后登录时间（不阻断登录流程）
+        try {
+            await prisma.$executeRawUnsafe(
+                'UPDATE broadcasters SET last_login_at = $1 WHERE id = $2',
+                BigInt(Date.now()), user.id,
+            );
+        } catch (error) {
+            console.error('Failed to record last login:', error);
+        }
 
         const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
         session.uid = Number(user.uid);
