@@ -2,8 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Danmaku } from "@/lib/types";
-import { useEffect, useRef } from "react";
-import { MessageSquareText } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDownToLine, MessageSquareText } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { cn } from "@/lib/utils";
@@ -15,17 +15,44 @@ interface DanmakuPanelProps {
 
 const guardNames: Record<number, string> = { 1: "总督", 2: "提督", 3: "舰长" };
 
+/** 距底部多少像素内视为"在底部"，新数据自动吸底。 */
+const NEAR_BOTTOM_PX = 40;
+
 export function DanmakuPanel({ data, className }: DanmakuPanelProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [nearBottom, setNearBottom] = useState(true);
+    const [pinned, setPinned] = useState(false);
 
+    const handleScroll = () => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
+        setNearBottom(atBottom);
+        setPinned(!atBottom);
+    };
+
+    const jumpToBottom = () => {
+        const el = scrollRef.current;
+        if (!el) return;
+        el.scrollTop = el.scrollHeight;
+        setNearBottom(true);
+        setPinned(false);
+    };
+
+    // 用户上翻查看历史时（nearBottom=false）不再被新数据拉回底部。
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        const el = scrollRef.current;
+        if (el && nearBottom) {
+            el.scrollTop = el.scrollHeight;
         }
-    }, [data]);
+    }, [data, nearBottom]);
 
     return (
-        <div ref={scrollRef} className={cn("dark-scrollbar h-[420px] w-full overflow-y-auto", className)}>
+        <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className={cn("dark-scrollbar relative h-[420px] w-full overflow-y-auto", className)}
+        >
             <AnimatePresence initial={false}>
                 {data.slice().reverse().map((item) => (
                     <motion.div
@@ -63,6 +90,18 @@ export function DanmakuPanel({ data, className }: DanmakuPanelProps) {
                     description="等待观众发送弹幕..."
                     className="h-[340px]"
                 />
+            )}
+
+            {pinned && (
+                <button
+                    type="button"
+                    aria-label="回到底部"
+                    title="回到底部"
+                    onClick={jumpToBottom}
+                    className="absolute bottom-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-lg transition-colors hover:bg-accent hover:text-foreground"
+                >
+                    <ArrowDownToLine className="h-4 w-4" />
+                </button>
             )}
         </div>
     );

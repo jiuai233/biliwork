@@ -718,7 +718,10 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                 type="button"
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => setBoardItems([])}
+                                onClick={() => {
+                                    if (!window.confirm("确认清空组合看板？将同步清空 OBS 叠加层显示。")) return;
+                                    setBoardItems([]);
+                                }}
                                 disabled={boardItems.length === 0}
                                 className="inline-flex h-9 items-center justify-center rounded-lg px-3 text-secondary-foreground hover:bg-accent"
                             >

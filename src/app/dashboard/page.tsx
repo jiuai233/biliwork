@@ -60,6 +60,7 @@ const feedTabs = [
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [data, setData] = useState<DashboardData>(defaultData);
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: new Date(),
@@ -83,6 +84,7 @@ export default function DashboardPage() {
     }, [sseData]);
 
     const fetchData = useCallback(async (showError = false) => {
+        setRefreshing(true);
         try {
             if (!dateRange?.from) return;
             const start = startOfDay(dateRange.from).getTime();
@@ -94,6 +96,7 @@ export default function DashboardPage() {
             if (showError) toast.error("获取数据失败");
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     }, [dateRange]);
 
@@ -121,7 +124,7 @@ export default function DashboardPage() {
                 }
                 actions={
                     <>
-                        <AnalyticsDateRangePicker date={dateRange} setDate={setDateRange} />
+                        <AnalyticsDateRangePicker date={dateRange} setDate={setDateRange} pending={refreshing} />
                         <div className={cn(
                             "flex h-10 items-center gap-2 rounded-xl border px-4",
                             isConnected ? "border-emerald-500/20 bg-emerald-500/10" : "border-red-500/20 bg-red-500/10",
