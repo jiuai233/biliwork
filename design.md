@@ -32,15 +32,20 @@ B站内容卡片（SC/上舰/礼物）是唯一的彩虹区。面板长期挂机
 - 金额一律 `money` 令牌，禁止 `amber-300/400/500` 混用。
 - 深色下免投影，用 `border` + 背景亮度分层；仅弹层/浮层用 `shadow-xl`。
 
-### 2.2 字体（MUST，修复现有空壳）
+### 2.2 字体（MUST，已落地）
 
-现有 `--font-geist-sans: var(--font-geist-sans)` 自引用空壳（`globals.css:9`，从未加载 next/font）。
-落地为系统栈（自部署、离线可用，不引网络字体）：
+**Maple Mono 数字/拉丁子集优先**（`public/fonts/maple-mono-latin.woff2` 36KB + `-bold.woff2` 38KB，
+由系统 `MapleMono-NF-CN` 用 pyftsubset 切出，`unicode-range` 限定：
+`U+0020-007E, U+00A0-00FF, U+2013-2014, U+2018-2019, U+201C-201D, U+2026, U+FF10-FF19`），
+中文与其余字符自动回退系统栈：
 
 ```css
---font-geist-sans: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+--font-geist-sans: "Maple Mono", -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
 --font-geist-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
 ```
+
+- 重新切子集：`python -m fontTools.subset <MapleMono-NF-CN-Regular.ttf> --unicodes="U+0020-007E,U+00A0-00FF,U+2013-2014,U+2018-2019,U+201C-201D,U+2026,U+FF10-FF19" --flavor=woff2 --output-file=<out>`
+- 源 TTF 在系统字体目录（`%LOCALAPPDATA%\Microsoft\Windows\Fonts`），不入库。
 
 ### 2.3 形状与空间（MUST）
 

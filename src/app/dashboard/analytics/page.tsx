@@ -3,8 +3,10 @@ import { BarChart3 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { getBroadcasterByUid, getUnifiedTransactions } from "@/lib/data";
 import { parseDateParam, resolveDateRangeParams } from "@/lib/date-params";
+import { getTrend } from "@/lib/services/analytics";
 import { AnalyticsDateFilter } from "@/components/dashboard/AnalyticsDateFilter";
 import { AnalyticsTable } from "@/components/dashboard/AnalyticsTable";
+import { TrendChart } from "@/components/dashboard/TrendChart";
 import { PageHeader } from "@/components/shared/PageHeader";
 
 export const dynamic = 'force-dynamic';
@@ -28,10 +30,13 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
         return <div className="p-8">未找到主播信息</div>;
     }
 
-    const transactions = await getUnifiedTransactions(broadcaster.room_id, {
-        startTime,
-        endTime,
-    });
+    const [transactions, trend] = await Promise.all([
+        getUnifiedTransactions(broadcaster.room_id, {
+            startTime,
+            endTime,
+        }),
+        getTrend(broadcaster.room_id, startTime, endTime),
+    ]);
 
     return (
         <div className="min-w-0 space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-4 lg:overflow-hidden">
@@ -46,6 +51,10 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
                 }
                 actions={<AnalyticsDateFilter from={from} to={to} />}
             />
+
+            <div className="shrink-0">
+                <TrendChart points={trend} />
+            </div>
 
             <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
                 <AnalyticsTable data={transactions} />

@@ -1,6 +1,26 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/*
+ * Maple Mono 数字/拉丁子集（~36KB）：等宽数字优先用于金额/计数/时间，
+ * 中文与其余字符自动回退系统字体栈。由 MapleMono-NF-CN 用 pyftsubset 切出。
+ */
+@font-face {
+  font-family: "Maple Mono";
+  src: url("/fonts/maple-mono-latin.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+2013-2014, U+2018-2019, U+201C-201D, U+2026, U+FF10-FF19;
+}
+
+@font-face {
+  font-family: "Maple Mono";
+  src: url("/fonts/maple-mono-latin-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+2013-2014, U+2018-2019, U+201C-201D, U+2026, U+FF10-FF19;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -52,7 +72,7 @@
 /* Light theme (default when html lacks .dark). */
 :root {
   --radius: 0.625rem;
-  --font-geist-sans: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-geist-sans: "Maple Mono", -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
   --font-geist-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
   --background: #f4f4f6;
   --foreground: #18181b;
