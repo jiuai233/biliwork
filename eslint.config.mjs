@@ -17,6 +17,7 @@ const eslintConfig = defineConfig([
     "test-results/**",
     "tests/**",
     "collector-node/**",
+    "scripts/**",
     "next-env.d.ts",
   ]),
 ]);
