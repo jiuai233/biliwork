@@ -3,6 +3,7 @@
 import { DashboardStats } from "@/lib/types";
 import { MessageSquare, Gift, Shield, MessageSquareHeart, CreditCard } from "lucide-react";
 import { StatCard, type StatTone } from "@/components/shared/StatCard";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface StatsPanelProps {
@@ -17,7 +18,7 @@ function Delta({ current, previous, isCurrency }: { current: number; previous: n
     if (delta === 0) return <span>较昨日 持平</span>;
 
     const up = delta > 0;
-    const abs = isCurrency ? `¥${Math.abs(delta).toFixed(1)}` : Math.abs(delta).toLocaleString();
+    const abs = isCurrency ? formatCurrency(Math.abs(delta)) : Math.abs(delta).toLocaleString();
     const percent = previous > 0 ? ` (${up ? "+" : "-"}${Math.abs((delta / previous) * 100).toFixed(0)}%)` : "";
 
     return (
@@ -74,7 +75,7 @@ export function StatsPanel({ stats, previousStats }: StatsPanelProps) {
         },
         {
             label: "预计营收",
-            value: `¥${stats.totalIncome.toLocaleString()}`,
+            value: formatCurrency(stats.totalIncome),
             current: stats.totalIncome,
             previous: previousStats?.totalIncome,
             isCurrency: true,

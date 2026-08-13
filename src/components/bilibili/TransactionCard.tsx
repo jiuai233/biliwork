@@ -14,7 +14,7 @@ import {
     type BiliCardSize,
     type BiliTransactionCardData,
 } from "@/lib/bilibili-cards";
-import { parseCountContent } from "@/lib/format";
+import { formatCurrency, parseCountContent } from "@/lib/format";
 
 interface TransactionCardProps {
     transaction: BiliTransactionCardData;
@@ -355,7 +355,7 @@ export function TransactionCard({
                         letterSpacing: "-0.01em",
                     }}
                 >
-                    ¥{transaction.price}
+                    {formatCurrency(transaction.price)}
                 </div>
             </div>
         </div>

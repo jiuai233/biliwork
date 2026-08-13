@@ -20,12 +20,10 @@ export function formatDuration(minutes: number, fallback = "进行中"): string 
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-export function formatCurrency(amount: number, maximumFractionDigits?: number): string {
-    return new Intl.NumberFormat("zh-CN", {
-        style: "currency",
-        currency: "CNY",
-        ...(maximumFractionDigits !== undefined && { maximumFractionDigits }),
-    }).format(amount);
+/** CNY display: ¥ prefix, thousands separator, up to 1 decimal (trailing .0 trimmed). */
+export function formatCurrency(amount: number): string {
+    const rounded = Math.round(amount * 10) / 10;
+    return `¥${rounded.toLocaleString("zh-CN", { maximumFractionDigits: 1 })}`;
 }
 
 export type ParsedCountContent = {

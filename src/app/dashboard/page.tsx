@@ -204,13 +204,11 @@ export default function DashboardPage() {
                         <TabPanel id="danmaku-rank" className="flex h-[420px] min-h-0 flex-col xl:h-auto xl:flex-1">
                             <RankingList
                                 items={data.topDanmaku.map((item) => ({ uname: item.uname, uface: item.uface, value: item.count, label: `${item.count} 条` }))}
-                                barClass="bg-blue-400"
                             />
                         </TabPanel>
                         <TabPanel id="gift-rank" className="flex h-[420px] min-h-0 flex-col xl:h-auto xl:flex-1">
                             <RankingList
-                                items={data.topGifts.map((item) => ({ uname: item.uname, uface: item.uface, value: item.total, label: formatCurrency(item.total, 1) }))}
-                                barClass="bg-pink-400"
+                                items={data.topGifts.map((item) => ({ uname: item.uname, uface: item.uface, value: item.total, label: formatCurrency(item.total) }))}
                             />
                         </TabPanel>
                     </SectionCard>

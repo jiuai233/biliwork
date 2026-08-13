@@ -32,7 +32,7 @@ export function StatCard({ label, value, icon, tone = "neutral", sub, delta, cla
         <section className={cn("rounded-xl border border-border bg-card px-3.5 py-3", className)}>
             <div className="flex items-center justify-between gap-2">
                 <p className={cn("truncate text-xs font-semibold", styles.label)}>{label}</p>
-                {icon && <div className={cn("rounded-md p-1", styles.icon)}>{icon}</div>}
+                {icon && <div className="shrink-0 text-zinc-500">{icon}</div>}
             </div>
             <div className="mt-1.5 text-xl font-bold tracking-tight text-foreground tabular-nums md:text-2xl">{value}</div>
             {(delta || sub) && (

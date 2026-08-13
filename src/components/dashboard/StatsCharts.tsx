@@ -25,7 +25,7 @@ export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps
         uname: item.uname,
         uface: item.uface,
         value: item.total,
-        label: formatCurrency(item.total, 1),
+        label: formatCurrency(item.total),
     }));
     const danmakuTotal = danmakuItems.reduce((sum, item) => sum + item.value, 0);
     const giftTotal = giftItems.reduce((sum, item) => sum + item.value, 0);
@@ -69,10 +69,10 @@ export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps
                 }
             >
                 <TabPanel id="danmaku" className="flex min-h-0 flex-1 flex-col">
-                    <RankingList items={danmakuItems} barClass="bg-blue-400" totalLabel={`累计 ${danmakuTotal} 条弹幕`} />
+                    <RankingList items={danmakuItems} totalLabel={`累计 ${danmakuTotal} 条弹幕`} />
                 </TabPanel>
                 <TabPanel id="gift" className="flex min-h-0 flex-1 flex-col">
-                    <RankingList items={giftItems} barClass="bg-pink-400" totalLabel={`累计 ${formatCurrency(giftTotal, 1)}`} />
+                    <RankingList items={giftItems} totalLabel={`累计 ${formatCurrency(giftTotal)}`} />
                 </TabPanel>
             </SectionCard>
         </Tabs>
