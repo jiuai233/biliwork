@@ -208,7 +208,7 @@ export default function DashboardPage() {
                                 <Tab id="danmaku-rank">弹幕榜</Tab>
                                 <Tab id="gift-rank">礼物榜</Tab>
                             </TabList>
-                            <span className="hidden text-[11px] text-muted-foreground 2xl:block">SC / 上舰 / ¥{BIG_GIFT_CNY}+ 礼物</span>
+                            <span className="hidden shrink-0 text-[11px] text-muted-foreground 2xl:block">SC/上舰/¥{BIG_GIFT_CNY}+</span>
                         </div>
                         <TabPanel id="highlights" className="flex h-[420px] min-h-0 flex-col xl:h-auto xl:flex-1">
                             <HighlightsList

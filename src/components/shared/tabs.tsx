@@ -19,7 +19,7 @@ interface TabListProps {
 export function TabList({ children, className, ...props }: TabListProps) {
     return (
         <HeroTabs.ListContainer className={cn("rounded-lg border border-border bg-muted/40 p-0.5", className)}>
-            <HeroTabs.List {...props} className="flex items-center gap-0.5">
+            <HeroTabs.List {...props} className="flex items-center gap-0.5 whitespace-nowrap">
                 {children}
             </HeroTabs.List>
         </HeroTabs.ListContainer>
@@ -39,7 +39,7 @@ export function Tab({ id, children, className, ...props }: TabProps) {
             id={id}
             {...props}
             className={cn(
-                "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-3 text-[13px] font-semibold text-muted-foreground outline-none transition-colors",
+                "inline-flex h-8 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-[13px] font-semibold text-muted-foreground outline-none transition-colors",
                 "hover:bg-accent hover:text-foreground",
                 "focus-visible:ring-2 focus-visible:ring-primary/40",
                 "data-[selected]:bg-primary/15 data-[selected]:text-primary",
