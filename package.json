@@ -11,7 +11,8 @@
     "test:e2e": "playwright test",
     "test:e2e:desktop": "playwright test --project=chromium-desktop --workers=1",
     "test:e2e:smoke": "playwright test tests/e2e/dashboard-interactions.spec.ts --project=chromium-desktop --grep \"feedback|dashboard feed\" --workers=1",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "db:sync": "prisma generate && prisma migrate deploy"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
