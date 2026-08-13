@@ -56,7 +56,8 @@ export function TrendChart({ points }: TrendChartProps) {
     );
 
     function ChartBody() {
-        if (points.length === 0) {
+        const hasData = values.some((v) => v > 0);
+        if (points.length === 0 || !hasData) {
             return <div className="flex h-[140px] items-center justify-center text-sm text-muted-foreground">所选范围内暂无数据</div>;
         }
         return (

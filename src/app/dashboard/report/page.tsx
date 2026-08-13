@@ -13,7 +13,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { StatCard } from "@/components/shared/StatCard";
 import { tableChrome } from "@/components/shared/table";
-import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDateTime, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -81,11 +80,17 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                 }
                 actions={
                     <div className="flex items-center gap-2">
-                        <Link href={prevUrl}>
-                            <Button type="button" size="sm" variant="outline" className="h-9">上一周</Button>
+                        <Link
+                            href={prevUrl}
+                            className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+                        >
+                            上一周
                         </Link>
-                        <Link href={currentUrl}>
-                            <Button type="button" size="sm" variant="outline" className="h-9">本周</Button>
+                        <Link
+                            href={currentUrl}
+                            className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+                        >
+                            本周
                         </Link>
                     </div>
                 }
