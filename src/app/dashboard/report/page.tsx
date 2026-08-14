@@ -9,14 +9,16 @@ import { parseDateParam } from "@/lib/date-params";
 import { getWeeklyReport } from "@/lib/services/report";
 import { Avatar } from "@/components/ui/avatar";
 import { RankingList } from "@/components/dashboard/RankingList";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { StatCard } from "@/components/shared/StatCard";
+import { Tab, TabList, TabPanel, Tabs } from "@/components/shared/tabs";
 import { tableChrome } from "@/components/shared/table";
 import { formatCurrency, formatDateTime, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 type ReportPageProps = {
     searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -38,7 +40,7 @@ function Delta({ cur, prev }: { cur: number; prev: number | undefined }) {
     return (
         <span>
             较上周{" "}
-            <span className={cn("font-semibold", pct > 0 ? "text-emerald-400" : "text-red-400")}>
+            <span className={cn("font-semibold", pct > 0 ? "text-profit" : "text-loss")}>
                 {pct > 0 ? "↑" : "↓"} {Math.abs(pct)}%
             </span>
         </span>
@@ -111,7 +113,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                     <div className="flex h-[130px] items-end gap-2 px-4 pt-2">
                         {report.daily.map((d, i) => (
                             <div key={d.ts} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                                <span className="h-4 text-[10px] text-muted-foreground tabular-nums">
+                                <span className="h-4 text-[11px] text-muted-foreground tabular-nums">
                                     {d.income > 0 ? formatCurrency(d.income) : ""}
                                 </span>
                                 <div
@@ -119,7 +121,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                                     style={{ height: `${Math.max((d.income / maxDay) * 70, d.income > 0 ? 3 : 0)}px` }}
                                     title={formatCurrency(d.income)}
                                 />
-                                <span className="text-[10px] text-muted-foreground">周{weekDays[i]}</span>
+                                <span className="text-[11px] text-muted-foreground">周{weekDays[i]}</span>
                             </div>
                         ))}
                     </div>
@@ -139,75 +141,87 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                 </SectionCard>
             </div>
 
-            <SectionCard
-                title={`高光时刻（${report.highlights.length}）`}
-                icon={<Sparkles className="h-5 w-5 text-primary" />}
-                bodyClassName="dark-scrollbar max-h-[260px] overflow-y-auto"
-            >
-                {report.highlights.length === 0 ? (
-                    <div className="py-8 text-center text-sm text-muted-foreground">本周暂无高光时刻</div>
-                ) : (
-                    report.highlights.map((t) => {
-                        const tone =
-                            t.type === "super_chat"
-                                ? "border-red-500/40 bg-red-500/10 text-red-300"
-                                : t.type === "guard"
-                                    ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-300"
-                                    : "border-pink-500/40 bg-pink-500/10 text-pink-300";
-                        const label = t.type === "super_chat" ? "SC" : t.type === "guard" ? "上舰" : "礼物";
-                        return (
-                            <div key={t.id} className="flex items-center gap-2.5 border-b border-border/60 px-4 py-2 last:border-b-0">
-                                <span className={cn("shrink-0 rounded border px-1.5 py-px text-[10px] font-bold", tone)}>{label}</span>
-                                <Avatar src={t.uface} name={t.uname} className="h-5 w-5" />
-                                <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-foreground">{t.uname || "匿名用户"}</span>
-                                <span className="hidden max-w-[240px] truncate text-xs text-muted-foreground sm:block">{t.content}</span>
-                                <span className="shrink-0 text-[13px] font-bold text-money tabular-nums">{formatCurrency(t.price)}</span>
-                                <span className="w-14 shrink-0 text-right text-[11px] text-muted-foreground tabular-nums">
-                                    {new Date(t.ts).toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })}
-                                </span>
-                            </div>
-                        );
-                    })
-                )}
-            </SectionCard>
-
-            <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+            <Tabs defaultSelectedKey="sessions" className="flex min-h-[420px] min-w-0 flex-1 flex-col lg:min-h-0">
                 <SectionCard
-                    title={`场次明细（${report.sessions.length}）`}
-                    bodyClassName="dark-scrollbar min-h-0 flex-1 overflow-auto"
+                    className="flex min-h-0 flex-1 flex-col"
+                    bodyClassName="flex min-h-0 flex-1 flex-col"
                 >
-                    <Table variant="secondary" className="min-w-[680px]">
-                        <Table.Content aria-label="本周场次" className={tableChrome}>
-                            <Table.Header>
-                                <Table.Column id="start" isRowHeader className="w-[170px]">开播时间</Table.Column>
-                                <Table.Column id="title">标题</Table.Column>
-                                <Table.Column id="duration" className="w-[90px]">时长</Table.Column>
-                                <Table.Column id="income" className="w-[120px] text-right">营收</Table.Column>
-                            </Table.Header>
-                            <Table.Body>
-                                {report.sessions.map((s) => (
-                                    <Table.Row key={s.id} id={s.id}>
-                                        <Table.Cell className="font-medium text-emerald-400">
-                                            {formatDateTime(s.startTs)}
-                                            {!s.endTs && <span className="ml-2 text-xs">直播中</span>}
-                                        </Table.Cell>
-                                        <Table.Cell className="max-w-[260px] truncate text-foreground">{s.title || "-"}</Table.Cell>
-                                        <Table.Cell className="text-secondary-foreground">{formatDuration(s.duration)}</Table.Cell>
-                                        <Table.Cell className="text-right font-bold text-money tabular-nums">{formatCurrency(s.totalIncome)}</Table.Cell>
-                                    </Table.Row>
-                                ))}
-                                {report.sessions.length === 0 && (
-                                    <Table.Row id="empty">
-                                        <Table.Cell colSpan={4} className="py-10 text-center text-muted-foreground">
-                                            本周暂无开播记录
-                                        </Table.Cell>
-                                    </Table.Row>
-                                )}
-                            </Table.Body>
-                        </Table.Content>
-                    </Table>
+                    <div className="shrink-0 border-b border-border px-3 py-2">
+                        <TabList aria-label="周报明细切换">
+                            <Tab id="sessions">
+                                <Radio className="h-3.5 w-3.5" />
+                                场次明细 {report.sessions.length}
+                            </Tab>
+                            <Tab id="highlights">
+                                <Sparkles className="h-3.5 w-3.5" />
+                                高光时刻 {report.highlights.length}
+                            </Tab>
+                        </TabList>
+                    </div>
+
+                    <TabPanel id="sessions" className="flex min-h-0 flex-1 flex-col">
+                        {report.sessions.length === 0 ? (
+                            <EmptyState title="本周暂无开播记录" />
+                        ) : (
+                            <div data-testid="report-sessions-viewport" className="dark-scrollbar min-h-0 flex-1 overflow-auto">
+                                <Table variant="secondary" className="min-w-[680px]">
+                                    <Table.Content aria-label="本周场次" className={tableChrome}>
+                                        <Table.Header>
+                                            <Table.Column id="start" isRowHeader className="w-[170px]">开播时间</Table.Column>
+                                            <Table.Column id="title">标题</Table.Column>
+                                            <Table.Column id="duration" className="w-[90px]">时长</Table.Column>
+                                            <Table.Column id="income" className="w-[120px] text-right">营收</Table.Column>
+                                        </Table.Header>
+                                        <Table.Body>
+                                            {report.sessions.map((s) => (
+                                                <Table.Row key={s.id} id={s.id}>
+                                                    <Table.Cell className="font-medium text-emerald-400">
+                                                        {formatDateTime(s.startTs)}
+                                                        {!s.endTs && <span className="ml-2 text-xs">直播中</span>}
+                                                    </Table.Cell>
+                                                    <Table.Cell className="max-w-[260px] truncate text-foreground">{s.title || "-"}</Table.Cell>
+                                                    <Table.Cell className="text-secondary-foreground">{formatDuration(s.duration)}</Table.Cell>
+                                                    <Table.Cell className="text-right font-bold text-money tabular-nums">{formatCurrency(s.totalIncome)}</Table.Cell>
+                                                </Table.Row>
+                                            ))}
+                                        </Table.Body>
+                                    </Table.Content>
+                                </Table>
+                            </div>
+                        )}
+                    </TabPanel>
+
+                    <TabPanel id="highlights" className="flex min-h-0 flex-1 flex-col">
+                        {report.highlights.length === 0 ? (
+                            <EmptyState title="本周暂无高光时刻" />
+                        ) : (
+                            <div data-testid="report-highlights-viewport" className="dark-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                {report.highlights.map((t) => {
+                                    const tone =
+                                        t.type === "super_chat"
+                                            ? "border-red-500/40 bg-red-500/10 text-red-300"
+                                            : t.type === "guard"
+                                                ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-300"
+                                                : "border-pink-500/40 bg-pink-500/10 text-pink-300";
+                                    const label = t.type === "super_chat" ? "SC" : t.type === "guard" ? "上舰" : "礼物";
+                                    return (
+                                        <div key={t.id} className="flex items-center gap-2.5 border-b border-border/60 px-4 py-2 last:border-b-0">
+                                            <span className={cn("shrink-0 rounded-md border px-1.5 py-px text-[11px] font-bold", tone)}>{label}</span>
+                                            <Avatar src={t.uface} name={t.uname} className="h-5 w-5" />
+                                            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-foreground">{t.uname || "匿名用户"}</span>
+                                            <span className="hidden max-w-[240px] truncate text-xs text-muted-foreground sm:block">{t.content}</span>
+                                            <span className="shrink-0 text-[13px] font-bold text-money tabular-nums">{formatCurrency(t.price)}</span>
+                                            <span className="w-14 shrink-0 text-right text-[11px] text-muted-foreground tabular-nums">
+                                                {new Date(t.ts).toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </TabPanel>
                 </SectionCard>
-            </div>
+            </Tabs>
         </div>
     );
 }

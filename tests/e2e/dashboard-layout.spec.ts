@@ -11,6 +11,7 @@ const dashboardRoutes = [
     '/dashboard/blindbox',
     '/dashboard/live',
     '/dashboard/analytics',
+    '/dashboard/report',
     '/dashboard/ranking',
     '/dashboard/board',
 ];
@@ -42,6 +43,19 @@ test.describe('dashboard local layout', () => {
                 });
 
                 expect(leftGap, `dashboard content starts ${leftGap}px after sidebar`).toBeLessThanOrEqual(48);
+            }
+
+            if (route === '/dashboard/report' && viewport && viewport.width >= 1024) {
+                const sessionsHeight = await dashboardPage.getByTestId('report-sessions-viewport').evaluate((element) => {
+                    return Math.round(element.getBoundingClientRect().height);
+                }).catch(() => 0);
+                const emptyState = dashboardPage.getByText('本周暂无开播记录');
+                const hasEmpty = await emptyState.isVisible().catch(() => false);
+
+                expect(
+                    hasEmpty || sessionsHeight > 240,
+                    `weekly report sessions viewport should keep a useful height, got ${sessionsHeight}px`,
+                ).toBeTruthy();
             }
 
             if (route === '/dashboard/analytics') {
