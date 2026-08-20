@@ -24,6 +24,7 @@ jest.mock('bcryptjs', () => ({
 const mockSession: any = {
     uid: undefined,
     isLoggedIn: false,
+    pwdv: undefined,
     save: jest.fn(),
     destroy: jest.fn(),
 };
@@ -37,6 +38,7 @@ describe('Auth (iron-session)', () => {
         jest.clearAllMocks();
         mockSession.uid = undefined;
         mockSession.isLoggedIn = false;
+        mockSession.pwdv = undefined;
         mockSession.save = jest.fn();
         mockSession.destroy = jest.fn();
         (cookies as jest.Mock).mockResolvedValue({});
@@ -52,6 +54,7 @@ describe('Auth (iron-session)', () => {
             expect(bcrypt.compare).toHaveBeenCalledWith('valid-password', 'hash');
             expect(mockSession.uid).toBe(123);
             expect(mockSession.isLoggedIn).toBe(true);
+            expect(mockSession.pwdv).toBe('hash');
             expect(mockSession.save).toHaveBeenCalled();
             expect(result).toBe(true);
         });
@@ -73,6 +76,7 @@ describe('Auth (iron-session)', () => {
             const result = await login(123, 'auth-code');
 
             expect(getBroadcasterByUidAndCode).toHaveBeenCalledWith(123, 'auth-code');
+            expect(mockSession.pwdv).toBe('');
             expect(mockSession.save).toHaveBeenCalled();
             expect(result).toBe(true);
         });
@@ -98,11 +102,22 @@ describe('Auth (iron-session)', () => {
     });
 
     describe('getSession', () => {
-        it('returns uid if session is logged in', async () => {
+        it('returns uid if session stamp matches current password', async () => {
             mockSession.isLoggedIn = true;
             mockSession.uid = 123;
+            mockSession.pwdv = 'hash';
+            (getBroadcasterByUidForLogin as jest.Mock).mockResolvedValue({ uid: 123, password_hash: 'hash' });
 
             expect(await getSession()).toBe(123);
+        });
+
+        it('returns null after password change', async () => {
+            mockSession.isLoggedIn = true;
+            mockSession.uid = 123;
+            mockSession.pwdv = 'old-password-hash';
+            (getBroadcasterByUidForLogin as jest.Mock).mockResolvedValue({ uid: 123, password_hash: 'new-password-hash' });
+
+            expect(await getSession()).toBeNull();
         });
 
         it('returns null if session is not logged in', async () => {
@@ -116,6 +131,8 @@ describe('Auth (iron-session)', () => {
         it('returns uid if session exists', async () => {
             mockSession.isLoggedIn = true;
             mockSession.uid = 123;
+            mockSession.pwdv = 'hash';
+            (getBroadcasterByUidForLogin as jest.Mock).mockResolvedValue({ uid: 123, password_hash: 'hash' });
 
             expect(await requireAuth()).toBe(123);
         });

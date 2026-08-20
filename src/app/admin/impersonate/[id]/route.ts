@@ -3,22 +3,11 @@ import { cookies } from 'next/headers';
 import { getIronSession } from 'iron-session';
 import { getAdminSession } from '@/app/admin/actions';
 import { getBroadcasterById } from '@/lib/data';
-
-interface BroadcasterSessionData {
-    uid: number;
-    isLoggedIn: boolean;
-}
-
-const broadcasterSessionOptions = {
-    password: process.env.SESSION_SECRET || 'default_dev_secret_at_least_32_chars_long!!',
-    cookieName: 'auth_session',
-    cookieOptions: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        sameSite: 'lax' as const,
-        maxAge: 7 * 24 * 60 * 60,
-    },
-};
+import {
+    broadcasterSessionOptions,
+    passwordStamp,
+    type BroadcasterSessionData,
+} from '@/lib/session';
 
 function getRedirectUrl(request: NextRequest, path: string) {
     const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || process.env.SITE_URL;
@@ -69,9 +58,10 @@ export async function GET(
         return NextResponse.redirect(getRedirectUrl(request, '/admin'));
     }
 
-    const session = await getIronSession<BroadcasterSessionData>(await cookies(), broadcasterSessionOptions);
+    const session = await getIronSession<BroadcasterSessionData>(await cookies(), broadcasterSessionOptions());
     session.uid = broadcaster.uid;
     session.isLoggedIn = true;
+    session.pwdv = passwordStamp(broadcaster.password_hash);
     await session.save();
 
     if (wantsJson) {

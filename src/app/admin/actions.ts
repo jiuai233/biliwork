@@ -13,6 +13,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
 import { getIronSession } from 'iron-session';
+import { cookieSecure } from '@/lib/session';
 
 // ==================== Admin Session 配置 ====================
 
@@ -25,7 +26,7 @@ const adminSessionOptions = {
     password: process.env.SESSION_SECRET || 'default_dev_secret_at_least_32_chars_long!!',
     cookieName: 'admin_session',
     cookieOptions: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: cookieSecure(),
         httpOnly: true,
         sameSite: 'lax' as const,
         maxAge: 24 * 60 * 60, // 1天
