@@ -58,7 +58,6 @@ model Danmaku {
   ts             BigInt?
   createdAt      DateTime @default(now()) @map("created_at")
 
-  @@index([roomId])
   @@index([ts])
   @@index([roomId, ts])
   @@map("danmaku")
@@ -151,8 +150,6 @@ model LiveStatus {
   ts        BigInt?
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([roomId])
-  @@index([ts])
   @@index([roomId, ts])
   @@map("live_status")
 }
