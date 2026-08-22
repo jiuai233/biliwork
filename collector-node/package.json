@@ -7,6 +7,8 @@
     "dev": "tsx src/main.ts",
     "build": "tsc",
     "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/startPolicy.test.ts",
     "reconcile:live-status": "node dist/scripts/reconcile-live-status.js",
     "reconcile:live-status:dev": "tsx src/scripts/reconcile-live-status.ts"
   },

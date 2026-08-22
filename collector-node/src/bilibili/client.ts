@@ -21,6 +21,7 @@ const HEARTBEAT_URL = 'https://live-open.biliapi.com/v2/app/heartbeat';
 const HEARTBEAT_INTERVAL_MS = 20_000;
 const GAME_HEARTBEAT_FAILURE_LIMIT = 5;
 const REQUEST_TIMEOUT_MS = 15_000;
+const WS_CONNECT_TIMEOUT_MS = 10_000;
 
 const OP_HEARTBEAT = 2;
 const OP_MESSAGE = 5;
@@ -70,6 +71,37 @@ export interface ClientUnhealthyInfo {
 
 function asRecord(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object' ? value as Record<string, unknown> : {};
+}
+
+function connectWebSocket(url: string, timeoutMs: number): Promise<WebSocket> {
+    return new Promise((resolve, reject) => {
+        const ws = new WebSocket(url);
+        let settled = false;
+
+        const finish = (error?: Error) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            ws.removeListener('open', onOpen);
+            ws.removeListener('error', onError);
+            if (error) {
+                ws.terminate();
+                reject(error);
+                return;
+            }
+            resolve(ws);
+        };
+
+        const timer = setTimeout(() => {
+            finish(new Error(`WS connect timeout after ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        const onOpen = () => finish();
+        const onError = (error: Error) => finish(error);
+
+        ws.once('open', onOpen);
+        ws.once('error', onError);
+    });
 }
 
 export class BilibiliClient {
@@ -150,11 +182,7 @@ export class BilibiliClient {
 
         for (const url of this.wssLinks) {
             try {
-                this.ws = await new Promise<WebSocket>((resolve, reject) => {
-                    const ws = new WebSocket(url);
-                    ws.once('open', () => resolve(ws));
-                    ws.once('error', reject);
-                });
+                this.ws = await connectWebSocket(url, WS_CONNECT_TIMEOUT_MS);
                 break;
             } catch (error) {
                 lastError = error;
