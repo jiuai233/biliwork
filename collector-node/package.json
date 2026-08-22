@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/main.ts",
+    "dev": "bun src/main.ts",
     "build": "tsc",
-    "start": "node dist/main.js",
+    "start": "bun src/main.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test src/startPolicy.test.ts",
-    "reconcile:live-status": "node dist/scripts/reconcile-live-status.js",
-    "reconcile:live-status:dev": "tsx src/scripts/reconcile-live-status.ts"
+    "reconcile:live-status": "bun src/scripts/reconcile-live-status.ts",
+    "reconcile:live-status:dev": "bun src/scripts/reconcile-live-status.ts"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
