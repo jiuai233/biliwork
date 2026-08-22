@@ -1,3 +1,5 @@
+const path = require("node:path");
+
 function resolveBun() {
   const fs = require("node:fs");
   const candidates = [
@@ -19,9 +21,9 @@ module.exports = {
   apps: [
     {
       name: "bili_next",
-      cwd: __dirname,
+      cwd: path.join(__dirname, ".next/standalone"),
       script: bun,
-      args: "--bun next start",
+      args: "server.js",
       interpreter: "none",
       instances: 1,
       exec_mode: "fork",
