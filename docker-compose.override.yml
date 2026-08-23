@@ -1,0 +1,45 @@
+# Development overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.override.yml up
+#
+# This file is automatically loaded by `docker compose up` if present.
+# It extends the production config with development-friendly settings.
+
+services:
+  postgres:
+    # Expose DB port for local development tools (DBeaver, pgAdmin, etc.)
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+      # Override: also expose on default network for local access
+      - default
+
+  adminer:
+    # Keep adminer available in dev
+    profiles: []
+
+  collector:
+    # Dev: mount source for hot-reload (if supported)
+    volumes:
+      - ./exports:/app/exports
+    # Remove resource limits in dev
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+
+  web:
+    # Dev: use local dev server instead of built image
+    # Override: just expose and relax limits
+    ports:
+      - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+
+networks:
+  default:
+    driver: bridge

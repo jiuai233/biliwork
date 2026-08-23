@@ -1,46 +1,35 @@
-# Build dependencies
-FROM node:22-alpine AS deps
+FROM oven/bun:1.3.14 AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile
 
-# Build application
-FROM node:22-alpine AS builder
+FROM oven/bun:1.3.14 AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Generate Prisma client
-RUN npx prisma generate
-
-# Build Next.js
+RUN bunx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN bun --bun next build
 
-# Production runtime
-FROM node:22-alpine AS runner
+FROM oven/bun:1.3.14 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# Non-root user (docker-expert skill: security hardening)
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001 -G nodejs
+RUN groupadd -g 1001 nodejs \
+    && useradd -u 1001 -g nodejs -M -s /usr/sbin/nologin nextjs
 
-# Copy only necessary artifacts from builder
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER 1001
-
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD bun -e "fetch('http://127.0.0.1:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-CMD ["node", "server.js"]
+CMD ["bun", "--bun", "server.js"]
