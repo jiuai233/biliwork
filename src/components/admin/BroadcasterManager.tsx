@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { Card } from '@heroui/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { KeyRound, LogOut, Plus } from 'lucide-react';
+import { Box, KeyRound, LogOut, Plus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     createBroadcasterAction,
@@ -16,6 +16,8 @@ import {
     adminLogout,
     revealBroadcasterAuthCodeAction,
 } from '@/app/admin/actions';
+import { Tab, TabList, TabPanel, Tabs } from '@/components/shared/tabs';
+import { AdminBlindboxPanel } from './AdminBlindboxPanel';
 import { AdminModal } from './AdminModal';
 import { BroadcasterTable, type BroadcasterWithStats } from './BroadcasterTable';
 import { PasswordDialog } from './PasswordDialog';
@@ -35,6 +37,7 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
     const [adminPassword, setAdminPassword] = useState('');
     const [authCodeError, setAuthCodeError] = useState('');
     const [revealedAuthCodes, setRevealedAuthCodes] = useState<Record<number, string>>({});
+    const [tab, setTab] = useState('broadcasters');
 
     const handleCopyAuthCode = async (authCode: string) => {
         try {
@@ -255,55 +258,78 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                     </div>
                 </header>
 
-                <Card variant="secondary" className="rounded-2xl border border-border bg-card">
-                    <Card.Content className="p-4">
-                        <form onSubmit={handleAdd} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="min-w-0 flex-1 space-y-2 lg:max-w-[520px]">
-                                <label htmlFor="authCode" className="block text-sm font-medium text-secondary-foreground">添加新主播</label>
-                                <Input
-                                    id="authCode"
-                                    name="authCode"
-                                    value={newAuthCode}
-                                    onChange={(event) => setNewAuthCode(event.target.value)}
-                                    placeholder="输入身份码添加监控..."
-                                    className="h-11 w-full rounded-xl"
-                                />
-                            </div>
-                            <Button
-                                type="submit"
-                                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90"
-                                disabled={isPending || !newAuthCode.trim()}
-                            >
-                                <Plus className="h-4 w-4" />
-                                初始化监控
-                            </Button>
-                        </form>
-                    </Card.Content>
-                </Card>
+                <Tabs
+                    selectedKey={tab}
+                    onSelectionChange={(key) => setTab(String(key))}
+                    className="space-y-6"
+                >
+                    <TabList aria-label="管理端功能">
+                        <Tab id="broadcasters" data-testid="admin-tab-broadcasters">
+                            <Users className="h-3.5 w-3.5" />
+                            主播管理
+                        </Tab>
+                        <Tab id="blindbox" data-testid="admin-tab-blindbox">
+                            <Box className="h-3.5 w-3.5" />
+                            盲盒汇总
+                        </Tab>
+                    </TabList>
 
-                <Card variant="secondary" className="overflow-hidden border border-border bg-card">
-                    <BroadcasterTable
-                        broadcasters={broadcasters}
-                        revealedAuthCodes={revealedAuthCodes}
-                        isPending={isPending}
-                        openingDashboardId={openingDashboardId}
-                        onCopyAuthCode={(code) => void handleCopyAuthCode(code)}
-                        onRequestReveal={(id) => {
-                            setAuthCodeDialogId(id);
-                            setAdminPassword('');
-                            setAuthCodeError('');
-                        }}
-                        onOpenDashboard={handleOpenDashboard}
-                        onOpenBroadcasterPage={handleOpenBroadcasterPage}
-                        onEditAuthCode={handleOpenAuthCodeEdit}
-                        onEditPassword={(id) => {
-                            setSelectedBroadcasterId(id);
-                            setPwdDialogOpen(true);
-                        }}
-                        onToggle={handleToggle}
-                        onDelete={handleDelete}
-                    />
-                </Card>
+                    <TabPanel id="broadcasters" className="space-y-6">
+                        <Card variant="secondary" className="rounded-2xl border border-border bg-card">
+                            <Card.Content className="p-4">
+                                <form onSubmit={handleAdd} className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <div className="min-w-0 flex-1 space-y-2 lg:max-w-[520px]">
+                                        <label htmlFor="authCode" className="block text-sm font-medium text-secondary-foreground">添加新主播</label>
+                                        <Input
+                                            id="authCode"
+                                            name="authCode"
+                                            value={newAuthCode}
+                                            onChange={(event) => setNewAuthCode(event.target.value)}
+                                            placeholder="输入身份码添加监控..."
+                                            className="h-11 w-full rounded-xl"
+                                        />
+                                    </div>
+                                    <Button
+                                        type="submit"
+                                        className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90"
+                                        disabled={isPending || !newAuthCode.trim()}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        初始化监控
+                                    </Button>
+                                </form>
+                            </Card.Content>
+                        </Card>
+
+                        <Card variant="secondary" className="overflow-hidden border border-border bg-card">
+                            <BroadcasterTable
+                                broadcasters={broadcasters}
+                                revealedAuthCodes={revealedAuthCodes}
+                                isPending={isPending}
+                                openingDashboardId={openingDashboardId}
+                                onCopyAuthCode={(code) => void handleCopyAuthCode(code)}
+                                onRequestReveal={(id) => {
+                                    setAuthCodeDialogId(id);
+                                    setAdminPassword('');
+                                    setAuthCodeError('');
+                                }}
+                                onOpenDashboard={handleOpenDashboard}
+                                onOpenBroadcasterPage={handleOpenBroadcasterPage}
+                                onEditAuthCode={handleOpenAuthCodeEdit}
+                                onEditPassword={(id) => {
+                                    setSelectedBroadcasterId(id);
+                                    setPwdDialogOpen(true);
+                                }}
+                                onToggle={handleToggle}
+                                onDelete={handleDelete}
+                            />
+                        </Card>
+                    </TabPanel>
+
+                    <TabPanel id="blindbox">
+                        {tab === 'blindbox' && <AdminBlindboxPanel broadcasters={broadcasters} />}
+                    </TabPanel>
+                </Tabs>
 
                 <PasswordDialog
                     open={pwdDialogOpen}

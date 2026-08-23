@@ -104,6 +104,7 @@ export const BLINDBOX_COST = 150;
 export interface BlindboxRecord {
     id: number;
     row_key: string;
+    room_id: number;
     uname: string | null;
     uface: string | null;
     gift_name: string | null;
@@ -132,6 +133,18 @@ export interface BlindboxStats {
     profitRate: number;
     distribution: GiftDistribution[];
     records: BlindboxRecord[];
+}
+
+// 管理端按主播拆分的盲盒汇总
+export interface BlindboxStreamerSummary {
+    roomId: number;
+    uname: string | null;
+    uface: string | null;
+    totalBoxes: number;
+    totalCost: number;
+    totalOutput: number;
+    netProfit: number;
+    profitRate: number;
 }
 
 // 开播记录

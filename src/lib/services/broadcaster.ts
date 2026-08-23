@@ -180,6 +180,24 @@ export async function getAllBroadcasters(): Promise<BroadcasterAdminRow[]> {
     }));
 }
 
+export async function listBroadcastersWithRooms(): Promise<{
+    roomId: number;
+    uname: string | null;
+    uface: string | null;
+}[]> {
+    const rows = await prisma.broadcaster.findMany({
+        where: { roomId: { not: null } },
+        orderBy: { createdAt: 'desc' },
+        select: { roomId: true, uname: true, uface: true },
+    });
+
+    return rows.flatMap((row) => (
+        row.roomId == null
+            ? []
+            : [{ roomId: row.roomId, uname: row.uname, uface: row.uface }]
+    ));
+}
+
 export type CreateBroadcasterResult = {
     success: boolean;
     message?: string;

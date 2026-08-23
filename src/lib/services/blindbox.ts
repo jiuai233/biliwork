@@ -1,7 +1,7 @@
 import 'server-only';
 import type { LiveStatus as PrismaLiveStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
-import type { BlindboxRecord, GiftDistribution, BlindboxStats, LiveStatusRecord } from '@/lib/types';
+import type { BlindboxRecord, BlindboxStats, BlindboxStreamerSummary, GiftDistribution, LiveStatusRecord } from '@/lib/types';
 
 // 盲盒成本（电池）
 export const BLINDBOX_COST = 150;
@@ -20,20 +20,22 @@ export const BLINDBOX_GIFTS: Record<string, number> = {
 // 所有盲盒礼物名称列表
 export const BLINDBOX_GIFT_NAMES = Object.keys(BLINDBOX_GIFTS);
 
+type GiftCountRow = { giftName: string | null; count: number };
 
-/**
- * 获取盲盒统计数据
- */
-export async function getBlindboxStats(
-    roomId: number,
-    startTime?: number,
-    endTime?: number,
-    limit = 200,
-    username?: string
-): Promise<BlindboxStats> {
+type GiftRecordRow = {
+    id: bigint | number;
+    roomId: number;
+    msgId: string | null;
+    uname: string | null;
+    uface: string | null;
+    giftName: string | null;
+    giftNum: number;
+    ts: bigint | number | null;
+};
+
+function buildGiftWhere(startTime?: number, endTime?: number, username?: string): Prisma.GiftWhereInput {
     const where: Prisma.GiftWhereInput = {
-        roomId,
-        giftName: { in: BLINDBOX_GIFT_NAMES }
+        giftName: { in: BLINDBOX_GIFT_NAMES },
     };
 
     if (startTime || endTime) {
@@ -42,10 +44,105 @@ export async function getBlindboxStats(
         if (endTime) where.ts.lte = BigInt(endTime);
     }
 
-    // 用户名搜索
     if (username && username.trim()) {
         where.uname = { contains: username.trim() };
     }
+
+    return where;
+}
+
+function roomIdFilter(roomId: number | number[]): number | { in: number[] } | null {
+    const roomIds = Array.isArray(roomId) ? roomId : [roomId];
+    if (roomIds.length === 0) return null;
+    return roomIds.length === 1 ? roomIds[0] : { in: roomIds };
+}
+
+export function mapGiftRowsToBlindboxRecords(rows: GiftRecordRow[]): BlindboxRecord[] {
+    return rows.map((row) => {
+        const giftValue = BLINDBOX_GIFTS[row.giftName || ''] || 0;
+        const cost = BLINDBOX_COST * row.giftNum;
+        const sourceId = row.id.toString();
+
+        return {
+            id: Number(row.id),
+            row_key: row.msgId ? `msg:${row.msgId}` : `gift:${sourceId}`,
+            room_id: row.roomId,
+            uname: row.uname,
+            uface: row.uface,
+            gift_name: row.giftName,
+            gift_num: row.giftNum,
+            gift_value: giftValue * row.giftNum,
+            cost,
+            profit: (giftValue * row.giftNum) - cost,
+            ts: row.ts ? Number(row.ts) : null,
+        };
+    });
+}
+
+export function buildBlindboxStatsFromGiftCounts(
+    giftCounts: Iterable<GiftCountRow>,
+    records: BlindboxRecord[] = [],
+): BlindboxStats {
+    const countByName = new Map<string, number>();
+    for (const name of Object.keys(BLINDBOX_GIFTS)) {
+        countByName.set(name, 0);
+    }
+
+    for (const row of giftCounts) {
+        if (!row.giftName || !countByName.has(row.giftName)) continue;
+        countByName.set(row.giftName, (countByName.get(row.giftName) ?? 0) + row.count);
+    }
+
+    const distribution: GiftDistribution[] = [];
+    for (const [name, count] of countByName) {
+        const value = BLINDBOX_GIFTS[name];
+        distribution.push({
+            name,
+            count,
+            value,
+            totalValue: count * value,
+            isProfitable: value >= BLINDBOX_COST,
+        });
+    }
+
+    distribution.sort((a, b) => b.value - a.value);
+
+    const totalBoxes = distribution.reduce((sum, item) => sum + item.count, 0);
+    const totalCost = totalBoxes * BLINDBOX_COST;
+    const totalOutput = distribution.reduce((sum, item) => sum + item.totalValue, 0);
+    const netProfit = totalOutput - totalCost;
+    const profitRate = totalCost > 0 ? ((netProfit / totalCost) * 100) : 0;
+
+    return {
+        totalBoxes,
+        totalCost,
+        totalOutput,
+        netProfit,
+        profitRate,
+        distribution,
+        records,
+    };
+}
+
+/**
+ * 获取盲盒统计数据。`roomId` 可以是单个房间，或当前收纳的多个房间。
+ */
+export async function getBlindboxStats(
+    roomId: number | number[],
+    startTime?: number,
+    endTime?: number,
+    limit = 200,
+    username?: string
+): Promise<BlindboxStats> {
+    const roomFilter = roomIdFilter(roomId);
+    if (roomFilter === null) {
+        return buildBlindboxStatsFromGiftCounts([]);
+    }
+
+    const where: Prisma.GiftWhereInput = {
+        ...buildGiftWhere(startTime, endTime, username),
+        roomId: roomFilter,
+    };
 
     const [rows, distributionRows] = await Promise.all([
         prisma.gift.findMany({
@@ -60,77 +157,55 @@ export async function getBlindboxStats(
         })
     ]);
 
-    // 计算每条记录的盈亏
-    const records: BlindboxRecord[] = rows.map(r => {
-        const giftValue = BLINDBOX_GIFTS[r.giftName || ''] || 0;
-        const cost = BLINDBOX_COST * r.giftNum;
-        const sourceId = r.id.toString();
+    return buildBlindboxStatsFromGiftCounts(
+        distributionRows.map((row) => ({ giftName: row.giftName, count: row._sum.giftNum ?? 0 })),
+        mapGiftRowsToBlindboxRecords(rows),
+    );
+}
 
-        return {
-            id: Number(r.id),
-            row_key: r.msgId ? `msg:${r.msgId}` : `gift:${sourceId}`,
-            uname: r.uname,
-            uface: r.uface,
-            gift_name: r.giftName,
-            gift_num: r.giftNum,
-            gift_value: giftValue * r.giftNum,
-            cost,
-            profit: (giftValue * r.giftNum) - cost,
-            ts: r.ts ? Number(r.ts) : null
-        };
+export async function getBlindboxStreamerSummaries(
+    rooms: { roomId: number; uname: string | null; uface: string | null }[],
+    startTime?: number,
+    endTime?: number,
+    username?: string,
+): Promise<BlindboxStreamerSummary[]> {
+    if (rooms.length === 0) return [];
+
+    const roomIds = rooms.map((room) => room.roomId);
+    const roomFilter = roomIdFilter(roomIds);
+    if (roomFilter === null) return [];
+
+    const rows = await prisma.gift.groupBy({
+        by: ['roomId', 'giftName'],
+        where: {
+            ...buildGiftWhere(startTime, endTime, username),
+            roomId: roomFilter,
+        },
+        _sum: { giftNum: true },
     });
 
-    // 礼物分布统计
-    const distributionMap = new Map<string, { count: number; totalValue: number }>();
-
-    // 初始化所有礼物类型
-    for (const name of Object.keys(BLINDBOX_GIFTS)) {
-        distributionMap.set(name, { count: 0, totalValue: 0 });
+    const countsByRoom = new Map<number, GiftCountRow[]>();
+    for (const row of rows) {
+        const list = countsByRoom.get(row.roomId) ?? [];
+        list.push({ giftName: row.giftName, count: row._sum.giftNum ?? 0 });
+        countsByRoom.set(row.roomId, list);
     }
 
-    // 统计每种礼物。列表只展示最近 limit 条，但汇总应覆盖完整筛选范围。
-    for (const row of distributionRows) {
-        if (row.giftName) {
-            const existing = distributionMap.get(row.giftName);
-            const count = row._sum.giftNum ?? 0;
-            if (existing) {
-                existing.count = count;
-                existing.totalValue = count * (BLINDBOX_GIFTS[row.giftName] || 0);
-            }
-        }
-    }
-
-    // 计算总开盒次数（一条记录可能开了多个盒）
-    const totalBoxes = Array.from(distributionMap.values()).reduce((sum, item) => sum + item.count, 0);
-    const totalCost = totalBoxes * BLINDBOX_COST;
-    const totalOutput = Array.from(distributionMap.values()).reduce((sum, item) => sum + item.totalValue, 0);
-    const netProfit = totalOutput - totalCost;
-    const profitRate = totalCost > 0 ? ((netProfit / totalCost) * 100) : 0;
-
-    const distribution: GiftDistribution[] = [];
-    for (const [name, data] of distributionMap) {
-        const value = BLINDBOX_GIFTS[name];
-        distribution.push({
-            name,
-            count: data.count,
-            value,
-            totalValue: data.totalValue,
-            isProfitable: value >= BLINDBOX_COST
-        });
-    }
-
-    // 按价值降序排列
-    distribution.sort((a, b) => b.value - a.value);
-
-    return {
-        totalBoxes,
-        totalCost,
-        totalOutput,
-        netProfit,
-        profitRate,
-        distribution,
-        records
-    };
+    return rooms
+        .map((room) => {
+            const stats = buildBlindboxStatsFromGiftCounts(countsByRoom.get(room.roomId) ?? []);
+            return {
+                roomId: room.roomId,
+                uname: room.uname,
+                uface: room.uface,
+                totalBoxes: stats.totalBoxes,
+                totalCost: stats.totalCost,
+                totalOutput: stats.totalOutput,
+                netProfit: stats.netProfit,
+                profitRate: stats.profitRate,
+            };
+        })
+        .sort((a, b) => b.totalBoxes - a.totalBoxes || b.netProfit - a.netProfit);
 }
 
 

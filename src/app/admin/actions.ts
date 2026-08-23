@@ -7,7 +7,10 @@ import {
     updateBroadcasterPassword,
     updateBroadcasterAuthCode,
     updateAdminPassword,
-    getBroadcasterById
+    getBroadcasterById,
+    getBlindboxStats,
+    getBlindboxStreamerSummaries,
+    listBroadcastersWithRooms,
 } from '@/lib/data';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -204,4 +207,30 @@ export async function deleteBroadcasterAction(id: number) {
     await requireAdmin();
     const success = await deleteBroadcaster(id);
     return { success };
+}
+
+export async function getAdminBlindboxData(
+    startTime?: number,
+    endTime?: number,
+    roomId?: number | null,
+    username?: string,
+) {
+    await requireAdmin();
+
+    const start = startTime || new Date().setHours(0, 0, 0, 0);
+    const end = endTime || Date.now();
+
+    const rooms = await listBroadcastersWithRooms();
+
+    const selectedRooms = roomId != null
+        ? rooms.filter((room) => room.roomId === roomId)
+        : rooms;
+    const roomIds = selectedRooms.map((room) => room.roomId);
+
+    const [stats, streamers] = await Promise.all([
+        getBlindboxStats(roomIds, start, end, 200, username),
+        getBlindboxStreamerSummaries(selectedRooms, start, end, username),
+    ]);
+
+    return { stats, streamers };
 }
