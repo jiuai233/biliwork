@@ -233,3 +233,19 @@ model ReceivedGift {
   @@index([broadcasterId, giftId])
   @@map("received_gift")
 }
+
+// ==================== 公开收礼页邀请码 ====================
+model GiftInvite {
+  id        Int     @id @default(autoincrement())
+  code      String  @unique
+  maxUses   Int     @map("max_uses")
+  usedCount Int     @default(0) @map("used_count")
+  expiresAt BigInt  @map("expires_at")
+  note      String?
+  disabled  Int     @default(0)
+  createdAt BigInt  @map("created_at")
+  createdBy String? @map("created_by")
+
+  @@index([expiresAt])
+  @@map("gift_invites")
+}

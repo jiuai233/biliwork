@@ -6,7 +6,8 @@ import { dropQrSession, rememberQrSession, takeQrSession } from '@/lib/bili-qr-s
 import { getBroadcasterByUid } from '@/lib/data';
 import {
     getGiftStreamStatus,
-    listReceivedGifts,
+    getReceivedGiftBlindboxStats,
+    listReceivedGiftsPage,
     enqueueGiftStreamSync,
     saveBiliCookie,
     startGiftStreamSync,
@@ -21,20 +22,44 @@ async function requireBroadcaster() {
     return broadcaster;
 }
 
-export async function getGiftStreamData() {
+export async function getGiftStreamData(input?: {
+    page?: number;
+    pageSize?: number;
+    startTime?: number;
+    endTime?: number;
+}) {
     const broadcaster = await requireBroadcaster();
-    const [status, items] = await Promise.all([
+    const startTime = input?.startTime;
+    const endTime = input?.endTime;
+    const [status, paged, blindbox] = await Promise.all([
         getGiftStreamStatus(broadcaster.id),
-        listReceivedGifts(broadcaster.id, 200),
+        listReceivedGiftsPage(broadcaster.id, {
+            page: input?.page,
+            pageSize: input?.pageSize,
+            startTime,
+            endTime,
+        }),
+        getReceivedGiftBlindboxStats(broadcaster.id, startTime, endTime),
     ]);
+
     return {
         broadcaster: {
             id: broadcaster.id,
             uid: broadcaster.uid,
             uname: broadcaster.uname,
         },
-        status,
-        items,
+        status: {
+            ...status,
+            uniqueCount: paged.total,
+            hamsterTotal: paged.hamsterTotal,
+            batteryTotal: Math.round(paged.hamsterTotal / 50),
+        },
+        items: paged.items,
+        total: paged.total,
+        page: paged.page,
+        pageSize: paged.pageSize,
+        totalPages: paged.totalPages,
+        blindbox,
     };
 }
 

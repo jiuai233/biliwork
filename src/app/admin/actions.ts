@@ -12,6 +12,12 @@ import {
     getBlindboxStreamerSummaries,
     listBroadcastersWithRooms,
 } from '@/lib/data';
+import {
+    createGiftInvite,
+    disableGiftInvite,
+    listGiftInvites,
+} from '@/lib/services/gift-invite';
+import { getAdminGiftStreamOverview } from '@/lib/services/gift-stream';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
@@ -112,6 +118,7 @@ async function requireAdmin() {
     if (!username) {
         redirect('/admin/login');
     }
+    return username;
 }
 
 export async function fetchBroadcasters() {
@@ -233,4 +240,30 @@ export async function getAdminBlindboxData(
     ]);
 
     return { stats, streamers };
+}
+
+export async function getAdminGiftStreamOverviewAction(startTime?: number, endTime?: number) {
+    await requireAdmin();
+    return getAdminGiftStreamOverview(startTime, endTime);
+}
+
+export async function listGiftInvitesAction() {
+    await requireAdmin();
+    return listGiftInvites();
+}
+
+export async function createGiftInviteAction(input: {
+    code?: string;
+    maxUses: number;
+    expiresAt: number;
+    note?: string;
+}) {
+    const username = await requireAdmin();
+    return createGiftInvite({ ...input, createdBy: username });
+}
+
+export async function disableGiftInviteAction(id: number) {
+    await requireAdmin();
+    const ok = await disableGiftInvite(id);
+    return { ok, message: ok ? '已停用' : '邀请码不存在' };
 }

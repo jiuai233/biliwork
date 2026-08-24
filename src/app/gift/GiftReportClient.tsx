@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { BiliQrPanel } from '@/components/bilibili/BiliQrPanel';
 import { AnalyticsDateRangePicker, type DateRange } from '@/components/dashboard/AnalyticsDateRangePicker';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { SectionCard } from '@/components/shared/SectionCard';
 import { StatCard } from '@/components/shared/StatCard';
@@ -17,13 +18,15 @@ import { BLINDBOX_COST } from '@/lib/types';
 import {
     exportGiftReportCsvAction,
     generateGiftQrAction,
+    getGiftGateAction,
     getGiftReportAction,
     pollGiftQrAction,
+    redeemGiftInviteAction,
 } from './actions';
 
 type Report = Extract<Awaited<ReturnType<typeof getGiftReportAction>>, { ok: true }>;
 
-type Phase = 'boot' | 'qr' | 'waiting' | 'report';
+type Phase = 'boot' | 'invite' | 'qr' | 'waiting' | 'report';
 
 function formatYmd(value: string | null): string {
     if (!value || value.length !== 8) return '-';
@@ -63,10 +66,12 @@ function defaultDateRange(): DateRange {
     return { from: new Date(now.getFullYear(), 0, 1), to: now };
 }
 
-export function GiftReportClient() {
+export function GiftReportClient({ initialCode = '' }: { initialCode?: string }) {
     const [phase, setPhase] = useState<Phase>('boot');
     const [report, setReport] = useState<Report | null>(null);
     const [exporting, setExporting] = useState(false);
+    const [inviteCode, setInviteCode] = useState(initialCode);
+    const [inviteBusy, setInviteBusy] = useState(false);
     const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange);
 
     const rangeTimes = useMemo(() => {
@@ -85,24 +90,61 @@ export function GiftReportClient() {
         return result;
     }, [rangeTimes.startTime, rangeTimes.endTime]);
 
+    const submitInvite = useCallback(async (code: string) => {
+        const trimmed = code.trim();
+        if (!trimmed) {
+            toast.error('请输入访问码');
+            return false;
+        }
+        setInviteBusy(true);
+        try {
+            const result = await redeemGiftInviteAction(trimmed);
+            if (!result.ok) {
+                toast.error(result.message);
+                return false;
+            }
+            setPhase('qr');
+            return true;
+        } catch {
+            toast.error('访问码校验失败');
+            return false;
+        } finally {
+            setInviteBusy(false);
+        }
+    }, []);
+
     useEffect(() => {
         let cancelled = false;
         void (async () => {
-            const result = await loadReport();
+            const gate = await getGiftGateAction();
             if (cancelled) return;
-            if (result) setPhase('report');
-            else setPhase((current) => (current === 'report' || current === 'waiting' ? current : 'qr'));
+            if (gate.kind === 'session') {
+                const result = await loadReport();
+                if (cancelled) return;
+                setPhase(result ? 'report' : 'qr');
+                return;
+            }
+            if (gate.kind === 'invite') {
+                setPhase('qr');
+                return;
+            }
+            if (initialCode.trim()) {
+                const ok = await submitInvite(initialCode);
+                if (!cancelled && !ok) setPhase('invite');
+                return;
+            }
+            setPhase('invite');
         })();
         return () => {
             cancelled = true;
         };
-    }, [loadReport]);
+    }, [initialCode, loadReport, submitInvite]);
 
     const syncStatus = report?.status.syncStatus;
     const state = syncState(syncStatus);
 
     useEffect(() => {
-        if (phase === 'qr' || phase === 'boot') return;
+        if (phase === 'qr' || phase === 'boot' || phase === 'invite') return;
         let cancelled = false;
         let timer: ReturnType<typeof setInterval> | undefined;
 
@@ -124,20 +166,49 @@ export function GiftReportClient() {
     }, [phase, loadReport]);
 
     return (
-        <div className="relative min-h-screen bg-background px-4 py-6 sm:px-6">
+        <div className={phase === 'invite' || phase === 'boot'
+            ? 'relative flex min-h-screen items-center justify-center bg-background px-4'
+            : 'relative min-h-screen bg-background px-4 py-6 sm:px-6'}
+        >
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 <div className="absolute top-[-20%] left-[-10%] h-[50%] w-[50%] rounded-full bg-purple-500/20 blur-[120px] mix-blend-screen" />
                 <div className="absolute right-[-10%] bottom-[-20%] h-[50%] w-[50%] rounded-full bg-blue-500/20 blur-[120px] mix-blend-screen" />
             </div>
 
-            <div className="relative mx-auto w-full max-w-3xl space-y-4">
+            <div className={phase === 'invite' || phase === 'boot'
+                ? 'relative w-full max-w-sm'
+                : 'relative mx-auto w-full max-w-3xl space-y-4'}
+            >
                 {phase === 'boot' && (
-                    <SectionCard title="收礼报告" accent="bg-primary" bodyClassName="px-4 py-10">
-                        <EmptyState
-                            icon={<Loader2 className="h-6 w-6 animate-spin text-primary" />}
-                            title="正在恢复会话"
+                    <div className="flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                )}
+
+                {phase === 'invite' && (
+                    <form
+                        className="flex w-full max-w-sm flex-col items-center gap-4"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            void submitInvite(inviteCode);
+                        }}
+                    >
+                        <label htmlFor="gift-access-code" className="text-base font-medium text-foreground">
+                            请输入访问码
+                        </label>
+                        <Input
+                            id="gift-access-code"
+                            value={inviteCode}
+                            onChange={(event) => setInviteCode(event.target.value)}
+                            placeholder="访问码"
+                            className="h-11 w-full rounded-lg text-center tracking-[0.2em]"
+                            autoFocus
+                            required
                         />
-                    </SectionCard>
+                        <Button type="submit" className="h-11 w-full rounded-lg" disabled={inviteBusy}>
+                            {inviteBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : '进入'}
+                        </Button>
+                    </form>
                 )}
 
                 {phase === 'qr' && (

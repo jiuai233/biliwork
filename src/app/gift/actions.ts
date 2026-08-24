@@ -5,6 +5,7 @@ import { getSession, loginByUid } from '@/lib/auth';
 import { fetchBiliProfile, generateBiliQr, pollBiliQr } from '@/lib/bili-client';
 import { dropQrSession, rememberQrSession, takeQrSession } from '@/lib/bili-qr-sessions';
 import { ensureBroadcasterFromQr, getBroadcasterByUid } from '@/lib/data';
+import { getValidRedeemedInvite, redeemGiftInvite } from '@/lib/services/gift-invite';
 import {
     buildGiftStreamCsv,
     enqueueGiftStreamSync,
@@ -12,7 +13,26 @@ import {
     saveBiliCookie,
 } from '@/lib/services/gift-stream';
 
+async function requirePublicGiftAccess() {
+    if (await getSession()) return { ok: true as const };
+    if (await getValidRedeemedInvite()) return { ok: true as const };
+    return { ok: false as const, message: '请先填写访问码' };
+}
+
+export async function getGiftGateAction() {
+    if (await getSession()) return { kind: 'session' as const };
+    if (await getValidRedeemedInvite()) return { kind: 'invite' as const };
+    return { kind: 'none' as const };
+}
+
+export async function redeemGiftInviteAction(code: string) {
+    if (await getSession()) return { ok: true as const };
+    return redeemGiftInvite(code);
+}
+
 export async function generateGiftQrAction() {
+    const access = await requirePublicGiftAccess();
+    if (!access.ok) return { ok: false as const, message: access.message };
     try {
         const qr = await generateBiliQr();
         rememberQrSession(qr.qrcodeKey);
@@ -24,6 +44,10 @@ export async function generateGiftQrAction() {
 }
 
 export async function pollGiftQrAction(qrcodeKey: string) {
+    const access = await requirePublicGiftAccess();
+    if (!access.ok) {
+        return { phase: 'error' as const, message: access.message };
+    }
     if (!qrcodeKey) {
         return { phase: 'error' as const, message: '二维码无效' };
     }

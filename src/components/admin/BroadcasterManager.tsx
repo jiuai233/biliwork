@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { Card } from '@heroui/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Box, KeyRound, LogOut, Plus, Users } from 'lucide-react';
+import { Box, Gift, KeyRound, LogOut, Plus, Ticket, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     createBroadcasterAction,
@@ -18,6 +18,8 @@ import {
 } from '@/app/admin/actions';
 import { Tab, TabList, TabPanel, Tabs } from '@/components/shared/tabs';
 import { AdminBlindboxPanel } from './AdminBlindboxPanel';
+import { AdminGiftInvitePanel } from './AdminGiftInvitePanel';
+import { AdminGiftStreamPanel } from './AdminGiftStreamPanel';
 import { AdminModal } from './AdminModal';
 import { BroadcasterTable, type BroadcasterWithStats } from './BroadcasterTable';
 import { PasswordDialog } from './PasswordDialog';
@@ -272,6 +274,14 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                             <Box className="h-3.5 w-3.5" />
                             盲盒汇总
                         </Tab>
+                        <Tab id="gift-stream" data-testid="admin-tab-gift-stream">
+                            <Gift className="h-3.5 w-3.5" />
+                            礼物流水
+                        </Tab>
+                        <Tab id="gift-invites" data-testid="admin-tab-gift-invites">
+                            <Ticket className="h-3.5 w-3.5" />
+                            收礼邀请码
+                        </Tab>
                     </TabList>
 
                     <TabPanel id="broadcasters" className="space-y-6">
@@ -328,6 +338,14 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
 
                     <TabPanel id="blindbox">
                         {tab === 'blindbox' && <AdminBlindboxPanel broadcasters={broadcasters} />}
+                    </TabPanel>
+
+                    <TabPanel id="gift-stream">
+                        {tab === 'gift-stream' && <AdminGiftStreamPanel />}
+                    </TabPanel>
+
+                    <TabPanel id="gift-invites">
+                        {tab === 'gift-invites' && <AdminGiftInvitePanel />}
                     </TabPanel>
                 </Tabs>
 

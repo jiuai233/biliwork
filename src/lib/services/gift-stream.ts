@@ -227,15 +227,20 @@ export async function buildGiftStreamCsv(
     };
 }
 
+export const GIFT_STREAM_PAGE_SIZES = [20, 50, 100] as const;
+export type GiftStreamPageSize = (typeof GIFT_STREAM_PAGE_SIZES)[number];
+
 export async function listReceivedGifts(
     broadcasterId: number,
     take = 200,
     startTime?: number,
     endTime?: number,
+    skip = 0,
 ) {
     const rows = await prisma.receivedGift.findMany({
         where: receivedGiftRangeWhere(broadcasterId, startTime, endTime),
-        orderBy: { ts: 'desc' },
+        orderBy: [{ ts: 'desc' }, { id: 'desc' }],
+        skip,
         take,
     });
 
@@ -252,6 +257,46 @@ export async function listReceivedGifts(
         receiveTitle: row.receiveTitle,
         roomId: row.roomId,
     }));
+}
+
+export async function listReceivedGiftsPage(
+    broadcasterId: number,
+    options: {
+        page?: number;
+        pageSize?: number;
+        startTime?: number;
+        endTime?: number;
+    } = {},
+) {
+    const pageSize: GiftStreamPageSize = GIFT_STREAM_PAGE_SIZES.includes(options.pageSize as GiftStreamPageSize)
+        ? options.pageSize as GiftStreamPageSize
+        : 50;
+    const requestedPage = Math.max(1, Math.floor(options.page ?? 1));
+    const where = receivedGiftRangeWhere(broadcasterId, options.startTime, options.endTime);
+    const [total, hamsterRow] = await Promise.all([
+        prisma.receivedGift.count({ where }),
+        prisma.receivedGift.aggregate({
+            where,
+            _sum: { hamster: true },
+        }),
+    ]);
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const page = Math.min(requestedPage, totalPages);
+    const items = await listReceivedGifts(
+        broadcasterId,
+        pageSize,
+        options.startTime,
+        options.endTime,
+        (page - 1) * pageSize,
+    );
+    return {
+        items,
+        total,
+        hamsterTotal: hamsterRow._sum.hamster ?? 0,
+        page,
+        pageSize,
+        totalPages,
+    };
 }
 
 export async function saveBiliCookie(broadcasterId: number, cookie: string, cookieUid: number): Promise<void> {
@@ -307,4 +352,90 @@ export async function enqueueGiftStreamSync(broadcasterId: number): Promise<{ ok
 
 export async function startGiftStreamSync(broadcasterId: number): Promise<{ ok: boolean; message: string }> {
     return enqueueGiftStreamSync(broadcasterId);
+}
+
+export type AdminGiftStreamRow = {
+    broadcasterId: number;
+    uid: number | null;
+    uname: string | null;
+    uface: string | null;
+    uniqueCount: number;
+    hamster: number;
+    battery: number;
+    syncStatus: GiftSyncStatus;
+};
+
+export type AdminGiftStreamOverview = {
+    streamerCount: number;
+    uniqueCount: number;
+    hamsterTotal: number;
+    batteryTotal: number;
+    rows: AdminGiftStreamRow[];
+};
+
+export async function getAdminGiftStreamOverview(
+    startTime?: number,
+    endTime?: number,
+): Promise<AdminGiftStreamOverview> {
+    const rangeWhere = {
+        ...(startTime || endTime
+            ? {
+                ts: {
+                    ...(startTime ? { gte: BigInt(startTime) } : {}),
+                    ...(endTime ? { lte: BigInt(endTime) } : {}),
+                },
+            }
+            : {}),
+    };
+
+    const [grouped, broadcasters, sessions] = await Promise.all([
+        prisma.receivedGift.groupBy({
+            by: ['broadcasterId'],
+            where: rangeWhere,
+            _count: { _all: true },
+            _sum: { hamster: true },
+        }),
+        prisma.broadcaster.findMany({
+            select: { id: true, uid: true, uname: true, uface: true },
+        }),
+        prisma.broadcasterBiliSession.findMany({
+            select: { broadcasterId: true, syncStatus: true },
+        }),
+    ]);
+
+    const byId = new Map(broadcasters.map((row) => [row.id, row]));
+    const syncById = new Map(sessions.map((row) => [row.broadcasterId, asStatus(row.syncStatus)]));
+    const giftById = new Map(grouped.map((row) => [row.broadcasterId, row]));
+
+    const ids = new Set<number>([
+        ...grouped.map((row) => row.broadcasterId),
+        ...sessions.map((row) => row.broadcasterId),
+    ]);
+
+    const rows: AdminGiftStreamRow[] = [...ids].map((id) => {
+        const broadcaster = byId.get(id);
+        const gift = giftById.get(id);
+        const hamster = gift?._sum.hamster ?? 0;
+        return {
+            broadcasterId: id,
+            uid: broadcaster?.uid ? Number(broadcaster.uid) : null,
+            uname: broadcaster?.uname ?? null,
+            uface: broadcaster?.uface ?? null,
+            uniqueCount: gift?._count._all ?? 0,
+            hamster,
+            battery: Math.round(hamster / 50),
+            syncStatus: syncById.get(id) ?? 'idle',
+        };
+    }).sort((a, b) => b.hamster - a.hamster);
+
+    const uniqueCount = rows.reduce((sum, row) => sum + row.uniqueCount, 0);
+    const hamsterTotal = rows.reduce((sum, row) => sum + row.hamster, 0);
+
+    return {
+        streamerCount: rows.length,
+        uniqueCount,
+        hamsterTotal,
+        batteryTotal: Math.round(hamsterTotal / 50),
+        rows,
+    };
 }

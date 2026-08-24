@@ -14,6 +14,7 @@ import {
     X,
     Box,
     Radio,
+    ChevronDown,
     ChevronUp,
     Clapperboard,
     Gift,
@@ -26,16 +27,54 @@ import { logout } from "@/lib/auth";
 import type { Broadcaster } from "@/lib/types";
 import { DashboardNoticeDialog } from "./DashboardNoticeDialog";
 
-const navItems = [
-    { name: "监控看板", href: "/dashboard", icon: LayoutDashboard },
-    { name: "礼物流水", href: "/dashboard/gift-stream", icon: Gift },
-    { name: "盲盒分析", href: "/dashboard/blindbox", icon: Box },
-    { name: "开播记录", href: "/dashboard/live", icon: Radio },
-    { name: "数据分析", href: "/dashboard/analytics", icon: BarChart3 },
-    { name: "周报", href: "/dashboard/report", icon: CalendarRange },
-    { name: "数据排行", href: "/dashboard/ranking", icon: BarChart2 },
-    { name: "切片制作", href: "/dashboard/board", icon: Clapperboard },
+type NavItem = {
+    name: string;
+    href: string;
+    icon: typeof LayoutDashboard;
+};
+
+type NavGroup = {
+    id: string;
+    label?: string;
+    items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
+    {
+        id: "overview",
+        items: [{ name: "监控看板", href: "/dashboard", icon: LayoutDashboard }],
+    },
+    {
+        id: "gifts",
+        label: "礼物收益",
+        items: [
+            { name: "礼物流水", href: "/dashboard/gift-stream", icon: Gift },
+            { name: "盲盒分析", href: "/dashboard/blindbox", icon: Box },
+        ],
+    },
+    {
+        id: "live",
+        label: "直播数据",
+        items: [
+            { name: "开播记录", href: "/dashboard/live", icon: Radio },
+            { name: "数据分析", href: "/dashboard/analytics", icon: BarChart3 },
+            { name: "数据排行", href: "/dashboard/ranking", icon: BarChart2 },
+        ],
+    },
+    {
+        id: "tools",
+        label: "报告工具",
+        items: [
+            { name: "周报", href: "/dashboard/report", icon: CalendarRange },
+            { name: "切片制作", href: "/dashboard/board", icon: Clapperboard },
+        ],
+    },
 ];
+
+function isNavActive(pathname: string, href: string) {
+    if (href === "/dashboard") return pathname === "/dashboard";
+    return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 function SidebarUserMenu({ broadcaster, mobile = false }: { broadcaster: Broadcaster | null; mobile?: boolean }) {
     const [open, setOpen] = useState(false);
@@ -121,7 +160,7 @@ function FeedbackSidebarButton({ onClick }: { onClick: () => void }) {
     );
 }
 
-function NavLink({ item, active, onNavigate }: { item: (typeof navItems)[0]; active: boolean; onNavigate?: () => void }) {
+function NavLink({ item, active, onNavigate, nested = false }: { item: NavItem; active: boolean; onNavigate?: () => void; nested?: boolean }) {
     const Icon = item.icon;
     return (
         <Link
@@ -129,14 +168,92 @@ function NavLink({ item, active, onNavigate }: { item: (typeof navItems)[0]; act
             onClick={onNavigate}
             className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                nested && "py-2",
                 active
                     ? "border border-primary/25 bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
         >
-            <Icon className="h-5 w-5 shrink-0" />
+            <Icon className={cn("shrink-0", nested ? "h-4 w-4" : "h-5 w-5")} />
             {item.name}
         </Link>
+    );
+}
+
+function NavGroups({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+    const activeGroupId = navGroups.find((group) => group.items.some((item) => isNavActive(pathname, item.href)))?.id;
+    const [openIds, setOpenIds] = useState<Set<string>>(() => {
+        const ids = new Set<string>(["gifts"]);
+        if (activeGroupId) ids.add(activeGroupId);
+        return ids;
+    });
+
+    useEffect(() => {
+        if (!activeGroupId) return;
+        setOpenIds((current) => {
+            if (current.has(activeGroupId)) return current;
+            const next = new Set(current);
+            next.add(activeGroupId);
+            return next;
+        });
+    }, [activeGroupId]);
+
+    const toggle = (id: string) => {
+        setOpenIds((current) => {
+            const next = new Set(current);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    return (
+        <>
+            {navGroups.map((group) => {
+                if (!group.label) {
+                    return group.items.map((item) => (
+                        <NavLink
+                            key={item.href}
+                            item={item}
+                            active={isNavActive(pathname, item.href)}
+                            onNavigate={onNavigate}
+                        />
+                    ));
+                }
+
+                const open = openIds.has(group.id);
+                const groupActive = group.items.some((item) => isNavActive(pathname, item.href));
+                return (
+                    <div key={group.id} className="space-y-1">
+                        <button
+                            type="button"
+                            aria-expanded={open}
+                            onClick={() => toggle(group.id)}
+                            className={cn(
+                                "flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold tracking-wide",
+                                groupActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                            )}
+                        >
+                            {group.label}
+                            <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+                        </button>
+                        {open && (
+                            <div className="ml-2 space-y-1 border-l border-border pl-2">
+                                {group.items.map((item) => (
+                                    <NavLink
+                                        key={item.href}
+                                        item={item}
+                                        nested
+                                        active={isNavActive(pathname, item.href)}
+                                        onNavigate={onNavigate}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </>
     );
 }
 
@@ -178,10 +295,8 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
                         <Button type="button" variant="ghost" size="sm" className="absolute right-4 top-5 h-8 w-8 p-0" onClick={() => setIsSidebarOpen(false)}>
                             <X className="h-4 w-4" />
                         </Button>
-                        <nav className="flex-1 space-y-1 p-4">
-                            {navItems.map((item) => (
-                                <NavLink key={item.href} item={item} active={pathname === item.href} onNavigate={() => setIsSidebarOpen(false)} />
-                            ))}
+                        <nav className="flex-1 space-y-2 overflow-y-auto p-4">
+                            <NavGroups pathname={pathname} onNavigate={() => setIsSidebarOpen(false)} />
                             <div className="pt-3">
                                 <FeedbackSidebarButton onClick={() => { setNoticeOpen(true); setIsSidebarOpen(false); }} />
                             </div>
@@ -201,10 +316,8 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
                     {brand}
                     <ThemeToggle />
                 </div>
-                <nav className="flex-1 space-y-1 p-4">
-                    {navItems.map((item) => (
-                        <NavLink key={item.href} item={item} active={pathname === item.href} />
-                    ))}
+                <nav className="flex-1 space-y-2 overflow-y-auto p-4">
+                    <NavGroups pathname={pathname} />
                 </nav>
                 <div className="space-y-3 border-t border-border p-4">
                     <FeedbackSidebarButton onClick={() => setNoticeOpen(true)} />
