@@ -235,75 +235,6 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                 </div>
             </div>
 
-            <div className="flex min-w-0 shrink-0 flex-col gap-2 text-sm text-secondary-foreground lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-wrap items-center gap-3">
-                    <span>共 {filteredData.length} 条</span>
-                    <div className="flex items-center gap-1">
-                        <span>每页</span>
-                        <div className="flex h-8 overflow-hidden rounded-md border border-border bg-muted/40">
-                            {pageSizeOptions.map((size) => (
-                                <Button
-                                    key={size}
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setPageSize(size)}
-                                    className={[
-                                        "inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-border px-2 text-xs last:border-r-0",
-                                        pageSize === size
-                                            ? "bg-primary text-white"
-                                            : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                                    ].join(" ")}
-                                >
-                                    {size}
-                                </Button>
-                            ))}
-                        </div>
-                        <span>条</span>
-                    </div>
-                </div>
-
-                <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
-                    <span className="min-w-[90px] text-center">
-                        第 {currentPage + 1} / {pageCount} 页
-                    </span>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPageIndex((value) => Math.max(value - 1, 0))}
-                        disabled={currentPage <= 0}
-                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-border px-3 text-secondary-foreground hover:bg-accent"
-                    >
-                        上一页
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPageIndex((value) => Math.min(value + 1, pageCount - 1))}
-                        disabled={currentPage >= pageCount - 1}
-                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-border px-3 text-secondary-foreground hover:bg-accent"
-                    >
-                        下一页
-                    </Button>
-                    <div className="flex items-center gap-2 pl-1">
-                        <span>前往</span>
-                        <Input
-                            inputMode="numeric"
-                            value={String(currentPage + 1)}
-                            onChange={(event) => {
-                                const page = Number(event.target.value);
-                                if (!Number.isFinite(page)) return;
-                                setPageIndex(Math.min(Math.max(page - 1, 0), pageCount - 1));
-                            }}
-                            className="h-8 w-16 rounded-md text-center text-sm"
-                        />
-                        <span>页</span>
-                    </div>
-                </div>
-            </div>
-
             <Table variant="secondary" className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
                 <Table.ScrollContainer
                     data-testid="analytics-records-viewport"
@@ -387,6 +318,75 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     </Table.Content>
                 </Table.ScrollContainer>
             </Table>
+
+            <div className="flex min-w-0 shrink-0 flex-col gap-2 text-sm text-secondary-foreground lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-3">
+                    <span>共 {filteredData.length} 条</span>
+                    <div className="flex items-center gap-1">
+                        <span>每页</span>
+                        <div className="flex h-8 overflow-hidden rounded-md border border-border bg-muted/40">
+                            {pageSizeOptions.map((size) => (
+                                <Button
+                                    key={size}
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setPageSize(size)}
+                                    className={[
+                                        "inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-border px-2 text-xs last:border-r-0",
+                                        pageSize === size
+                                            ? "bg-primary text-white"
+                                            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                                    ].join(" ")}
+                                >
+                                    {size}
+                                </Button>
+                            ))}
+                        </div>
+                        <span>条</span>
+                    </div>
+                </div>
+
+                <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
+                    <span className="min-w-[90px] text-center">
+                        第 {currentPage + 1} / {pageCount} 页
+                    </span>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPageIndex((value) => Math.max(value - 1, 0))}
+                        disabled={currentPage <= 0}
+                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-border px-3 text-secondary-foreground hover:bg-accent"
+                    >
+                        上一页
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPageIndex((value) => Math.min(value + 1, pageCount - 1))}
+                        disabled={currentPage >= pageCount - 1}
+                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-border px-3 text-secondary-foreground hover:bg-accent"
+                    >
+                        下一页
+                    </Button>
+                    <div className="flex items-center gap-2 pl-1">
+                        <span>前往</span>
+                        <Input
+                            inputMode="numeric"
+                            value={String(currentPage + 1)}
+                            onChange={(event) => {
+                                const page = Number(event.target.value);
+                                if (!Number.isFinite(page)) return;
+                                setPageIndex(Math.min(Math.max(page - 1, 0), pageCount - 1));
+                            }}
+                            className="h-8 w-16 rounded-md text-center text-sm"
+                        />
+                        <span>页</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

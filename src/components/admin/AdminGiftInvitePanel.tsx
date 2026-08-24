@@ -87,7 +87,7 @@ export function AdminGiftInvitePanel() {
         <div className="space-y-4">
             <SectionCard title="生成邀请码" accent="bg-primary" bodyClassName="px-4 py-4">
                 <p className="mb-4 text-sm text-muted-foreground">
-                    给外部打开 `/gift` 的人用。平台账号登录后跳转过去不需要邀请码。访问次数在第一次填对时扣 1，同一浏览器刷新不再扣。
+                    生成后发给外部用户，平台登录不需要。
                 </p>
                 <form onSubmit={handleCreate} className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                     <label className="space-y-1 text-sm">

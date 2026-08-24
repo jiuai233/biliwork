@@ -45,7 +45,7 @@ export function DashboardNoticeDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="border-border bg-popover text-foreground shadow-2xl shadow-black/70 sm:max-w-md">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-xl text-foreground">
                         <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-300">

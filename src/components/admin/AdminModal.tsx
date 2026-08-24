@@ -47,7 +47,7 @@ export function AdminModal({
                 onPointerDownOutside={(event) => {
                     if (isPending) event.preventDefault();
                 }}
-                className="max-w-md rounded-2xl border-border bg-popover p-5 shadow-2xl shadow-black/50"
+                className="max-w-md rounded-2xl border-border bg-popover p-5"
             >
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-foreground">{title}</DialogTitle>
@@ -60,10 +60,10 @@ export function AdminModal({
                 )}
                 {children}
                 <DialogFooter>
-                    <Button type="button" variant="outline" onClick={onClose} disabled={isPending} className="h-10 rounded-xl border-border px-4 text-secondary-foreground hover:bg-accent">
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isPending} className="h-10 rounded-lg border-border px-4 text-secondary-foreground hover:bg-accent">
                         取消
                     </Button>
-                    <Button type="button" onClick={onConfirm} disabled={isPending || confirmDisabled} className="h-10 rounded-xl bg-primary px-4 text-primary-foreground hover:bg-primary/90">
+                    <Button type="button" onClick={onConfirm} disabled={isPending || confirmDisabled} className="h-10 rounded-lg bg-primary px-4 text-primary-foreground hover:bg-primary/90">
                         {isPending ? pendingLabel : confirmLabel}
                     </Button>
                 </DialogFooter>
