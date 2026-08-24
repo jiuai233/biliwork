@@ -111,8 +111,8 @@ export default function GiftStreamPage() {
         return (
             <EmptyState
                 icon={<Gift className="h-6 w-6" />}
-                title="礼物流水暂不可用"
-                description="请确认已执行 prisma/add_gift_stream.sql，然后刷新页面。"
+                title="礼物流水加载失败"
+                description="请刷新页面重试。"
             />
         );
     }

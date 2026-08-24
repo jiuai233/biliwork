@@ -15,26 +15,18 @@ function createPrismaClient() {
   });
 }
 
-function hasGiftInvite(client: PrismaClient) {
-  return typeof (client as PrismaClient & { giftInvite?: unknown }).giftInvite !== 'undefined';
-}
-
-function getPrisma(): PrismaClient {
-  const current = globalForPrisma.prisma;
-  if (current && hasGiftInvite(current)) return current;
-  if (current) void current.$disconnect();
+function resolvePrisma(): PrismaClient {
+  const existing = globalForPrisma.prisma;
+  if (existing && typeof existing.giftInvite !== 'undefined') {
+    return existing;
+  }
+  if (existing) void existing.$disconnect();
   const client = createPrismaClient();
-  if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = client;
+  globalForPrisma.prisma = client;
   return client;
 }
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop, _receiver) {
-    const client = getPrisma();
-    const value = Reflect.get(client, prop, client) as unknown;
-    return typeof value === 'function' ? value.bind(client) : value;
-  },
-});
+export const prisma = resolvePrisma();
 
 // Legacy support - getDb() returns prisma for backwards compatibility
 // This allows gradual migration
