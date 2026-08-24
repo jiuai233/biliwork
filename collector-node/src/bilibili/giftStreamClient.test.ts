@@ -53,4 +53,35 @@ describe('fetchGiftStreamMonth', () => {
         assert.equal(result.rawCount, 4);
         assert.deepEqual(result.unique.map((item) => item.uid), [1, 2, 3]);
     });
+
+    test('retries zero total_count before accepting an empty month', async () => {
+        let calls = 0;
+        const fetchImpl = (async () => {
+            calls += 1;
+            const empty = calls < 3;
+            return {
+                status: 200,
+                json: async () => ({
+                    code: 0,
+                    data: {
+                        total_page: empty ? 0 : 1,
+                        total_count: empty ? 0 : 1,
+                        list: empty ? [] : [gift(1)],
+                    },
+                }),
+            };
+        }) as unknown as typeof fetch;
+
+        const result = await fetchGiftStreamMonth({
+            cookie: 'SESSDATA=x; bili_jct=token',
+            begin: '20260701',
+            end: '20260731',
+            fetchImpl,
+            delayMs: 1,
+        });
+
+        assert.equal(result.totalCount, 1);
+        assert.equal(result.unique.length, 1);
+        assert.equal(calls, 3);
+    });
 });

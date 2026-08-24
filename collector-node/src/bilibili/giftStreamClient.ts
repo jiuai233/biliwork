@@ -117,9 +117,13 @@ export async function fetchGiftStreamMonth(options: {
 }): Promise<FetchedGiftMonth> {
     const delayMs = options.delayMs ?? 300;
     let probe = await postGiftStreamPage({ ...options, page: 0 });
+    // 整月偶发 total_count=0，不能当成没数据。
     if (probe.total_count === 0 && delayMs > 0) {
-        await sleep(1500);
-        probe = await postGiftStreamPage({ ...options, page: 0 });
+        const emptyRetryDelay = delayMs >= 300 ? 1500 : delayMs;
+        for (let attempt = 1; attempt <= 3 && probe.total_count === 0; attempt++) {
+            await sleep(emptyRetryDelay * attempt);
+            probe = await postGiftStreamPage({ ...options, page: 0 });
+        }
     }
 
     const collected: GiftStreamItem[] = [...probe.list];

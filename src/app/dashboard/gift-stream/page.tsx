@@ -111,10 +111,16 @@ export default function GiftStreamPage() {
                             disabled={!status.bound || isSyncing(status.syncStatus) || refreshing}
                             onClick={async () => {
                                 setRefreshing(true);
-                                const result = await startGiftStreamSyncAction();
-                                if (!result.ok) toast.error(result.message);
-                                else toast.success(result.message);
-                                await load();
+                                try {
+                                    const result = await startGiftStreamSyncAction();
+                                    if (!result.ok) toast.error(result.message);
+                                    else toast.success(result.message);
+                                    await load();
+                                } catch {
+                                    toast.error('同步请求失败，请稍后重试');
+                                } finally {
+                                    setRefreshing(false);
+                                }
                             }}
                         >
                             {isSyncing(status.syncStatus) ? (
@@ -122,7 +128,11 @@ export default function GiftStreamPage() {
                             ) : (
                                 <RefreshCw className="h-4 w-4" />
                             )}
-                            同步流水
+                            {status.syncStatus === 'queued'
+                                ? '排队中'
+                                : status.syncStatus === 'running'
+                                    ? '同步中'
+                                    : '同步流水'}
                         </Button>
                     </div>
                 }
@@ -152,9 +162,17 @@ export default function GiftStreamPage() {
                 <StatCard
                     label="同步"
                     value={syncLabel(status.syncStatus)}
-                    sub={status.syncFrom && status.syncTo
-                        ? `${formatYmd(status.syncFrom)} ~ ${formatYmd(status.syncTo)}`
-                        : '接口只保留近 180 天'}
+                    sub={
+                        status.syncStatus === 'queued'
+                            ? (status.queueAhead > 0
+                                ? `前面还有 ${status.queueAhead} 个任务，采集端一次只跑一个`
+                                : '采集端空闲后开始拉取，请保持页面打开')
+                            : status.syncStatus === 'running' && status.syncCursor
+                                ? `已拉到 ${formatYmd(status.syncCursor)}`
+                            : status.syncFrom && status.syncTo
+                                ? `${formatYmd(status.syncFrom)} ~ ${formatYmd(status.syncTo)}`
+                                : '接口只保留近 180 天'
+                    }
                     tone={status.syncStatus === 'error' ? 'orange' : status.syncStatus === 'done' ? 'emerald' : isSyncing(status.syncStatus) ? 'purple' : 'neutral'}
                 />
                 <StatCard
@@ -186,7 +204,13 @@ export default function GiftStreamPage() {
                         icon={<Gift className="h-6 w-6" />}
                         title={status.bound ? '还没有礼物流水' : '请先扫码绑定'}
                         description={status.bound
-                            ? '点「同步流水」拉取今年 1 月 1 日到昨天的数据。更早于 180 天的月份接口会返回空。'
+                            ? (status.syncStatus === 'queued'
+                                ? '已加入采集队列。采集端一次只拉一个主播，排队时按钮会停用，不是卡住。'
+                                : status.syncStatus === 'running'
+                                    ? '正在按月翻页拉取，通常需要几分钟。'
+                                    : status.syncStatus === 'done' && status.uniqueCount === 0
+                                        ? '同步完成，但创作者中心礼物流水是空的。可重新扫码后再同步。'
+                                        : '点「同步流水」拉取今年 1 月 1 日到昨天的数据。更早于 180 天的月份接口会返回空。')
                             : '扫码时选择「在公共环境登录，如网吧等」。'}
                     />
                 ) : (

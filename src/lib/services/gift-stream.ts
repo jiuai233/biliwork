@@ -21,6 +21,8 @@ export type GiftStreamStatusView = {
     syncAt: number | null;
     syncFrom: string | null;
     syncTo: string | null;
+    syncCursor: string | null;
+    queueAhead: number;
     rawCount: number;
     uniqueCount: number;
     hamsterTotal: number;
@@ -45,16 +47,30 @@ export async function getGiftStreamStatus(broadcasterId: number): Promise<GiftSt
 
     const hamsterTotal = hamsterRow._sum.hamster ?? 0;
     const uniqueCount = hamsterRow._count._all;
+    const syncStatus = asStatus(session?.syncStatus);
+    let queueAhead = 0;
+    if (session && syncStatus === 'queued') {
+        queueAhead = await prisma.broadcasterBiliSession.count({
+            where: {
+                OR: [
+                    { syncStatus: 'running' },
+                    { syncStatus: 'queued', updatedAt: { lt: session.updatedAt } },
+                ],
+            },
+        });
+    }
 
     return {
         bound: Boolean(session),
         boundUid: session ? Number(session.cookieUid) : null,
         boundAt: session ? Number(session.boundAt) : null,
-        syncStatus: asStatus(session?.syncStatus),
+        syncStatus,
         syncError: session?.syncError ?? null,
         syncAt: session?.syncAt ? Number(session.syncAt) : null,
         syncFrom: session?.syncFrom ?? null,
         syncTo: session?.syncTo ?? null,
+        syncCursor: session?.syncCursor ?? null,
+        queueAhead,
         rawCount: session?.syncRawCount ?? 0,
         uniqueCount,
         hamsterTotal,

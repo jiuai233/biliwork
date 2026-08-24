@@ -117,36 +117,55 @@ async function runJob(row: SessionRow): Promise<void> {
     }
 
     const range = defaultGiftStreamRange();
-    const begin = resumeBegin(row.sync_from || range.begin, row.sync_cursor);
     const end = row.sync_to && row.sync_to <= range.end ? row.sync_to : range.end;
-    const months = splitMonthRanges(begin, end);
-    let rawCount = row.sync_raw_count || 0;
+    let begin = resumeBegin(row.sync_from || range.begin, row.sync_cursor);
+    let rawCount = 0;
 
-    logger.info({
-        broadcasterId: row.broadcaster_id,
-        begin,
-        end,
-        months: months.length,
-        cursor: row.sync_cursor,
-    }, 'Gift stream job started');
-
-    for (const month of months) {
+    for (let attempt = 0; attempt < 2; attempt++) {
         if (stopped) return;
-        const fetched = await fetchGiftStreamMonth({ cookie, begin: month.begin, end: month.end });
-        rawCount += fetched.rawCount;
-        await insertGifts(row.broadcaster_id, fetched.unique);
-        await pool.query(
-            `UPDATE broadcaster_bili_sessions
-             SET sync_cursor = $1, sync_raw_count = $2, updated_at = $3
-             WHERE id = $4 AND sync_status = 'running'`,
-            [month.end, rawCount, Date.now(), row.id],
-        );
+        if (attempt === 1) {
+            begin = row.sync_from || range.begin;
+            rawCount = 0;
+            logger.warn({ broadcasterId: row.broadcaster_id }, 'Gift stream job empty, retrying full range');
+        }
+
+        const months = splitMonthRanges(begin, end);
+        rawCount = attempt === 0 ? (row.sync_raw_count || 0) : 0;
+
         logger.info({
             broadcasterId: row.broadcaster_id,
-            month: `${month.begin}-${month.end}`,
-            unique: fetched.unique.length,
-            raw: fetched.rawCount,
-        }, 'Gift stream month done');
+            begin,
+            end,
+            months: months.length,
+            cursor: attempt === 0 ? row.sync_cursor : null,
+            attempt,
+        }, 'Gift stream job started');
+
+        for (const month of months) {
+            if (stopped) return;
+            const fetched = await fetchGiftStreamMonth({ cookie, begin: month.begin, end: month.end });
+            rawCount += fetched.rawCount;
+            await insertGifts(row.broadcaster_id, fetched.unique);
+            await pool.query(
+                `UPDATE broadcaster_bili_sessions
+                 SET sync_cursor = $1, sync_raw_count = $2, updated_at = $3
+                 WHERE id = $4 AND sync_status = 'running'`,
+                [month.end, rawCount, Date.now(), row.id],
+            );
+            logger.info({
+                broadcasterId: row.broadcaster_id,
+                month: `${month.begin}-${month.end}`,
+                totalCount: fetched.totalCount,
+                unique: fetched.unique.length,
+                raw: fetched.rawCount,
+            }, 'Gift stream month done');
+        }
+
+        if (rawCount > 0) break;
+    }
+
+    if (rawCount === 0) {
+        throw new Error('创作者中心礼物流水返回 0 条。账号已登录，但没有收礼记录。可稍后重试或重新扫码。');
     }
 
     const counted = await pool.query<{ count: string }>(
