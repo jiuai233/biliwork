@@ -26,6 +26,9 @@ model Broadcaster {
   updatedAt    BigInt   @map("updated_at")
   lastLoginAt  BigInt?  @map("last_login_at")
 
+  biliSession   BroadcasterBiliSession?
+  receivedGifts ReceivedGift[]
+
   @@index([active])
   @@index([uid])
   @@map("broadcasters")
@@ -152,4 +155,50 @@ model LiveStatus {
 
   @@index([roomId, ts])
   @@map("live_status")
+}
+
+// ==================== B站网页登录态（加密 Cookie） ====================
+model BroadcasterBiliSession {
+  id              Int         @id @default(autoincrement())
+  broadcasterId   Int         @unique @map("broadcaster_id")
+  cookieEnc       String      @map("cookie_enc")
+  cookieUid       BigInt      @map("cookie_uid")
+  boundAt         BigInt      @map("bound_at")
+  syncStatus      String      @default("idle") @map("sync_status")
+  syncError       String?     @map("sync_error")
+  syncAt          BigInt?     @map("sync_at")
+  syncFrom        String?     @map("sync_from")
+  syncTo          String?     @map("sync_to")
+  syncCursor      String?     @map("sync_cursor")
+  syncRawCount    Int         @default(0) @map("sync_raw_count")
+  syncUniqueCount Int         @default(0) @map("sync_unique_count")
+  createdAt       BigInt      @map("created_at")
+  updatedAt       BigInt      @map("updated_at")
+  broadcaster     Broadcaster @relation(fields: [broadcasterId], references: [id], onDelete: Cascade)
+
+  @@map("broadcaster_bili_sessions")
+}
+
+// ==================== 创作者中心礼物流水（getReceivedGiftStream） ====================
+model ReceivedGift {
+  id            BigInt      @id @default(autoincrement())
+  broadcasterId Int         @map("broadcaster_id")
+  roomId        Int         @map("room_id")
+  uid           BigInt
+  uname         String?
+  time          String
+  ts            BigInt?
+  goodsId       Int?        @map("goods_id")
+  giftId        Int         @map("gift_id")
+  name          String
+  num           Int         @default(1)
+  hamster       Int         @default(0)
+  receiveTitle  String?     @map("receive_title")
+  uniqueKey     String      @unique @map("unique_key")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  broadcaster   Broadcaster @relation(fields: [broadcasterId], references: [id], onDelete: Cascade)
+
+  @@index([broadcasterId, ts])
+  @@index([broadcasterId, giftId])
+  @@map("received_gift")
 }

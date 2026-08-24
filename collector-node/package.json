@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "bun src/main.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/startPolicy.test.ts",
+    "test": "bun test src/startPolicy.test.ts src/giftStreamRange.test.ts src/biliCookie.test.ts src/bilibili/giftStreamClient.test.ts",
     "reconcile:live-status": "bun src/scripts/reconcile-live-status.ts",
     "reconcile:live-status:dev": "bun src/scripts/reconcile-live-status.ts"
   },

@@ -8,6 +8,8 @@ const envSchema = z.object({
     BILI_ACCESS_KEY_ID: z.string().default(''),
     BILI_ACCESS_KEY_SECRET: z.string().default(''),
     BILI_APP_ID: z.coerce.number().int().default(0),
+    BILI_COOKIE_SECRET: z.string().default(''),
+    SESSION_SECRET: z.string().default(''),
 });
 
 export const env = envSchema.parse(process.env);

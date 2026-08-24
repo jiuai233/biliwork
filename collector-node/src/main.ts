@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { closeDb, connectDb } from './db.js';
 import { runArchive } from './jobs/archive.js';
+import { startGiftStreamLoop, stopGiftStreamLoop } from './jobs/giftStream.js';
 import { logger } from './logger.js';
 import { CollectorManager } from './manager.js';
 import { initSnowflake } from './snowflake.js';
@@ -25,10 +26,12 @@ async function main() {
     logger.info('Scheduled restart: every 3 days at 4:30 AM');
 
     manager.start();
+    startGiftStreamLoop();
     logger.info('Bi-Collector (Node) Started');
 
     const shutdown = async () => {
         logger.info('Shutting down');
+        stopGiftStreamLoop();
         manager.stop();
         await closeDb();
         process.exit(0);
