@@ -93,7 +93,7 @@ export default function DashboardPage() {
             setData(result);
         } catch (error) {
             console.error("Fetch Error:", error);
-            if (showError) toast.error("获取数据失败");
+            if (showError) toast.error("无法加载看板数据，请刷新后重试");
         } finally {
             setLoading(false);
             setRefreshing(false);

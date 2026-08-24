@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Danmaku } from "@/lib/types";
 import { useEffect, useRef, useState } from "react";
 import { ArrowDownToLine, MessageSquareText } from "lucide-react";
@@ -19,6 +19,7 @@ const guardNames: Record<number, string> = { 1: "总督", 2: "提督", 3: "舰�
 const NEAR_BOTTOM_PX = 40;
 
 export function DanmakuPanel({ data, className }: DanmakuPanelProps) {
+    const reduceMotion = useReducedMotion();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [nearBottom, setNearBottom] = useState(true);
     const [pinned, setPinned] = useState(false);
@@ -57,7 +58,7 @@ export function DanmakuPanel({ data, className }: DanmakuPanelProps) {
                 {data.slice().reverse().map((item) => (
                     <motion.div
                         key={item.msg_id || item.id}
-                        initial={{ opacity: 0, x: -10 }}
+                        initial={reduceMotion ? false : { opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="flex items-start gap-2.5 border-b border-border/60 px-4 py-1.5 text-[13px] last:border-b-0 hover:bg-accent/40"
                     >

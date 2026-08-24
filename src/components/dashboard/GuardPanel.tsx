@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Guard } from "@/lib/types";
 import { Anchor } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
@@ -24,6 +24,7 @@ function getGuardMeta(level?: number | null) {
 }
 
 export function GuardPanel({ data, className }: GuardPanelProps) {
+    const reduceMotion = useReducedMotion();
     return (
         <div className={cn("dark-scrollbar h-[290px] w-full overflow-y-auto", className)}>
             {data.map((item) => {
@@ -31,7 +32,7 @@ export function GuardPanel({ data, className }: GuardPanelProps) {
                 return (
                     <motion.div
                         key={item.msg_id || item.id}
-                        initial={{ opacity: 0, x: 10 }}
+                        initial={reduceMotion ? false : { opacity: 0, x: 10 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="flex h-12 items-center gap-2.5 border-b border-border/60 px-4 last:border-b-0 hover:bg-accent/40"
                     >

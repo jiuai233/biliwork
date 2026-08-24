@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Gift } from "@/lib/types";
 import { Gift as GiftIcon } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
@@ -32,6 +32,7 @@ function mergeCombos(data: Gift[]): GiftRow[] {
 }
 
 export function GiftPanel({ data, className }: GiftPanelProps) {
+    const reduceMotion = useReducedMotion();
     const rows = useMemo(() => mergeCombos(data), [data]);
 
     return (
@@ -42,7 +43,7 @@ export function GiftPanel({ data, className }: GiftPanelProps) {
                     return (
                         <motion.div
                             key={item.msg_id || item.id}
-                            initial={{ opacity: 0, y: 6 }}
+                            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             className={cn(
                                 "flex h-9 items-center gap-2.5 border-b border-border/60 px-4 last:border-b-0 hover:bg-accent/40",

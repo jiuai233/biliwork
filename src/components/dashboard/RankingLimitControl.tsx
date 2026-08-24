@@ -1,13 +1,13 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { SizeSegment } from "@/components/shared/ListPager";
 
 interface RankingLimitControlProps {
     value: number;
 }
 
-const quickOptions = [10, 20, 50, 100];
+const quickOptions = [10, 20, 50, 100] as const;
 
 export function RankingLimitControl({ value }: RankingLimitControlProps) {
     const router = useRouter();
@@ -22,27 +22,18 @@ export function RankingLimitControl({ value }: RankingLimitControlProps) {
     };
 
     return (
-        <div data-testid="ranking-limit-control" className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">显示</span>
-            <div className="flex h-9 overflow-hidden rounded-lg border border-border bg-muted/40">
-                {quickOptions.map((option) => (
-                    <Button
-                        key={option}
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => applyLimit(option)}
-                        className={[
-                            "inline-flex h-9 items-center rounded-none border-r border-border px-3 text-sm last:border-r-0",
-                            value === option
-                                ? "bg-primary text-white"
-                                : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                        ].join(" ")}
-                    >
-                        {option}
-                    </Button>
-                ))}
-            </div>
+        <div
+            data-testid="ranking-limit-control"
+            className="relative z-10 flex w-full shrink-0 justify-end border-t border-border bg-card px-4 py-3 text-sm text-secondary-foreground"
+        >
+            <SizeSegment
+                className="ms-auto"
+                value={value}
+                options={quickOptions}
+                onChange={applyLimit}
+                label="每页"
+                unit="位"
+            />
         </div>
     );
 }

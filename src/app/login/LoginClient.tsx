@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +19,7 @@ export function LoginClient() {
     const [uid, setUid] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const reduceMotion = useReducedMotion();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,10 +31,10 @@ export function LoginClient() {
                 toast.success('登录成功');
                 window.location.replace(result.next);
             } else {
-                toast.error('登录失败', { description: 'UID 或 密码错误' });
+                toast.error('无法登录', { description: 'UID 或密码不对，请重新输入' });
             }
         } catch {
-            toast.error('发生错误', { description: '请稍后重试' });
+            toast.error('无法登录', { description: '请检查网络后重试' });
         } finally {
             setIsLoading(false);
         }
@@ -47,7 +48,7 @@ export function LoginClient() {
             </div>
 
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 className="z-10 w-full max-w-md"
@@ -98,7 +99,7 @@ export function LoginClient() {
                                         登录中...
                                     </>
                                 ) : (
-                                    '登 录'
+                                    '登录'
                                 )}
                             </Button>
                         </form>

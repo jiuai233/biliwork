@@ -15,8 +15,9 @@ const toneClass = {
 
 export function LoadingScreen({ className, tone = "violet" }: LoadingScreenProps) {
     return (
-        <div className={cn("flex h-[50vh] items-center justify-center", className)}>
-            <Loader2 className={cn("h-8 w-8 animate-spin", toneClass[tone])} />
+        <div role="status" className={cn("flex h-[50vh] items-center justify-center", className)}>
+            <Loader2 className={cn("h-8 w-8 animate-spin", toneClass[tone])} aria-hidden="true" />
+            <span className="sr-only">加载中</span>
         </div>
     );
 }

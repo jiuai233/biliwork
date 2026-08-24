@@ -75,7 +75,7 @@ function BoardArea({ items, onRemove }: { items: BoardTransaction[], onRemove: (
                         <div className="p-4 rounded-full bg-muted/60 border border-border">
                             <Download className="w-8 h-8 opacity-30" />
                         </div>
-                        <p className="text-sm opacity-50">等待投喂...</p>
+                        <p className="text-sm opacity-50">从左侧把记录拖进来，或点「全部导入」</p>
                     </div>
                 )}
                 {items.map((item) => (
@@ -332,7 +332,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
     };
 
     if (!isMounted) {
-        return <div className="h-[calc(100vh-200px)] flex items-center justify-center text-muted-foreground">Loading Board...</div>;
+        return <div className="flex h-[calc(100vh-200px)] items-center justify-center text-muted-foreground">正在加载互动墙</div>;
     }
 
     const handleDragStart = (event: DragStartEvent) => {

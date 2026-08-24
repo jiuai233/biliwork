@@ -10,6 +10,7 @@ import { AnalyticsDateRangePicker, type DateRange } from '@/components/dashboard
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ListPager, useClientPager } from '@/components/shared/ListPager';
 import { SectionCard } from '@/components/shared/SectionCard';
 import { StatCard } from '@/components/shared/StatCard';
 import { tableChrome } from '@/components/shared/table';
@@ -79,6 +80,8 @@ export function GiftReportClient({ initialCode = '' }: { initialCode?: string })
         const to = dateRange.to ?? from;
         return { startTime: startOfDay(from).getTime(), endTime: endOfDay(to).getTime() };
     }, [dateRange]);
+    const giftPager = useClientPager(report?.gifts ?? [], 20);
+    const recentPager = useClientPager(report?.recent ?? [], 20);
 
     const generateQr = useCallback(() => generateGiftQrAction(), []);
     const pollQr = useCallback((qrcodeKey: string) => pollGiftQrAction(qrcodeKey), []);
@@ -180,8 +183,9 @@ export function GiftReportClient({ initialCode = '' }: { initialCode?: string })
                 : 'relative mx-auto w-full max-w-3xl space-y-4'}
             >
                 {phase === 'boot' && (
-                    <div className="flex justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <div className="flex justify-center" role="status">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
+                        <span className="sr-only">加载中</span>
                     </div>
                 )}
 
@@ -206,7 +210,7 @@ export function GiftReportClient({ initialCode = '' }: { initialCode?: string })
                             required
                         />
                         <Button type="submit" className="h-11 w-full rounded-lg" disabled={inviteBusy}>
-                            {inviteBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : '进入'}
+                            {inviteBusy ? <><Loader2 className="h-4 w-4 animate-spin" />校验中</> : '进入'}
                         </Button>
                     </form>
                 )}
@@ -283,7 +287,7 @@ export function GiftReportClient({ initialCode = '' }: { initialCode?: string })
                                     }}
                                 >
                                     {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                                    导出 Excel
+                                    导出 CSV
                                 </Button>
                                 </>
                             }
@@ -376,10 +380,12 @@ export function GiftReportClient({ initialCode = '' }: { initialCode?: string })
                             </SectionCard>
                         )}
 
-                        <SectionCard title="按礼物汇总" accent="bg-money" bodyClassName="overflow-auto">
+                        <SectionCard title="按礼物汇总" accent="bg-money">
                             {report.gifts.length === 0 ? (
-                                <EmptyState icon={<Gift className="h-6 w-6" />} title="这段时间没有收礼记录" />
+                                <EmptyState icon={<Gift className="h-6 w-6" />} title="这段时间没有收礼记录" description="换个日期范围再导出。" />
                             ) : (
+                                <>
+                                <div className="overflow-auto">
                                 <table className={tableChrome}>
                                     <thead>
                                         <tr>
@@ -390,7 +396,7 @@ export function GiftReportClient({ initialCode = '' }: { initialCode?: string })
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {report.gifts.map((gift) => (
+                                        {giftPager.slice.map((gift) => (
                                             <tr key={gift.giftId}>
                                                 <td className="text-sm">{gift.name}</td>
                                                 <td className="text-right tabular-nums text-sm">{gift.num}</td>
@@ -402,13 +408,25 @@ export function GiftReportClient({ initialCode = '' }: { initialCode?: string })
                                         ))}
                                     </tbody>
                                 </table>
+                                </div>
+                                <ListPager
+                                    total={giftPager.total}
+                                    page={giftPager.page}
+                                    pageCount={giftPager.pageCount}
+                                    pageSize={giftPager.pageSize}
+                                    onPageChange={giftPager.setPage}
+                                    onPageSizeChange={giftPager.setPageSize}
+                                />
+                                </>
                             )}
                         </SectionCard>
 
-                        <SectionCard title="最近记录" accent="bg-primary" bodyClassName="overflow-auto">
+                        <SectionCard title="最近记录" accent="bg-primary">
                             {report.recent.length === 0 ? (
-                                <EmptyState icon={<Gift className="h-6 w-6" />} title="暂无明细" />
+                                <EmptyState icon={<Gift className="h-6 w-6" />} title="暂无明细" description="流水拉完后会显示最近记录。" />
                             ) : (
+                                <>
+                                <div className="overflow-auto">
                                 <table className={tableChrome}>
                                     <thead>
                                         <tr>
@@ -420,10 +438,10 @@ export function GiftReportClient({ initialCode = '' }: { initialCode?: string })
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {report.recent.map((item) => (
+                                        {recentPager.slice.map((item) => (
                                             <tr key={item.id}>
                                                 <td className="tabular-nums text-sm">{item.time.slice(5)}</td>
-                                                <td className="truncate text-sm">{item.uname || item.uid}</td>
+                                                <td className="truncate text-sm" title={item.uname || String(item.uid)}>{item.uname || item.uid}</td>
                                                 <td className="text-sm">{item.name}</td>
                                                 <td className="text-right tabular-nums text-sm">{item.num}</td>
                                                 <td className="text-right tabular-nums text-sm text-money">
@@ -433,6 +451,16 @@ export function GiftReportClient({ initialCode = '' }: { initialCode?: string })
                                         ))}
                                     </tbody>
                                 </table>
+                                </div>
+                                <ListPager
+                                    total={recentPager.total}
+                                    page={recentPager.page}
+                                    pageCount={recentPager.pageCount}
+                                    pageSize={recentPager.pageSize}
+                                    onPageChange={recentPager.setPage}
+                                    onPageSizeChange={recentPager.setPageSize}
+                                />
+                                </>
                             )}
                         </SectionCard>
 

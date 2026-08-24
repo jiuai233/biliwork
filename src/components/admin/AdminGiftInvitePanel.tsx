@@ -177,6 +177,7 @@ export function AdminGiftInvitePanel() {
                                                         className="h-8"
                                                         disabled={invite.disabled === 1}
                                                         onClick={async () => {
+                                                            if (!window.confirm('停用后该邀请码立即失效，确认停用？')) return;
                                                             const result = await disableGiftInviteAction(invite.id);
                                                             if (result.ok) {
                                                                 toast.success('已停用');

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowDown, ArrowUp, RotateCcw, Search } from "lucide-react";
 
 import type { Transaction } from "@/lib/data";
+import { ListPager } from "@/components/shared/ListPager";
 import { tableChrome } from "@/components/shared/table";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -77,6 +78,7 @@ function SortButton({
         <button
             type="button"
             onClick={onClick}
+            aria-pressed={active}
             className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap text-left text-sm font-semibold text-foreground transition-colors hover:text-primary"
         >
             {children}
@@ -164,11 +166,13 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
         <div className="flex min-h-[520px] w-full min-w-0 max-w-full flex-col gap-3 overflow-hidden lg:min-h-0 lg:flex-1">
             <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
                 <div className="relative w-full min-w-0 sm:w-[260px]">
+                    <label htmlFor="analytics-search" className="sr-only">搜索用户、内容或金额</label>
                     <Search className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                     <Input
+                        id="analytics-search"
                         value={keyword}
                         onChange={(event) => setKeyword(event.target.value)}
-                        placeholder="搜索用户 / 内容 / 金额"
+                        placeholder="用户 / 内容 / 金额"
                         className="h-9 pl-8 text-sm"
                     />
                 </div>
@@ -283,7 +287,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                                     {hasRows ? (
                                         pageData.map((item) => (
                                             <Table.Row key={item.id} id={item.id}>
-                                                <Table.Cell className="whitespace-nowrap text-foreground">
+                                                <Table.Cell className="whitespace-nowrap tabular-nums text-foreground">
                                                     {formatTime(item.ts)}
                                                 </Table.Cell>
                                                 <Table.Cell>
@@ -292,7 +296,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                                                             <Avatar.Image src={item.uface || undefined} referrerPolicy="no-referrer" />
                                                             <Avatar.Fallback>{item.uname?.[0] ?? "?"}</Avatar.Fallback>
                                                         </Avatar>
-                                                        <span className="truncate font-medium text-foreground">{item.uname}</span>
+                                                        <span className="truncate font-medium text-foreground" title={item.uname}>{item.uname}</span>
                                                     </div>
                                                 </Table.Cell>
                                                 <Table.Cell>
@@ -301,11 +305,11 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                                                     </Chip>
                                                 </Table.Cell>
                                                 <Table.Cell>
-                                                    <div className="max-w-[520px] truncate font-medium text-foreground">
+                                                    <div className="max-w-[520px] truncate font-medium text-foreground" title={item.content}>
                                                         {item.content}
                                                     </div>
                                                 </Table.Cell>
-                                                <Table.Cell className="font-bold text-foreground">
+                                                <Table.Cell className="font-bold tabular-nums text-foreground">
                                                     {formatCurrency(item.price)}
                                                 </Table.Cell>
                                             </Table.Row>
@@ -313,7 +317,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                                     ) : (
                                         <Table.Row id="empty">
                                             <Table.Cell colSpan={5} className="h-[360px] text-center text-muted-foreground">
-                                                暂无数据
+                                                没有符合筛选的记录，试试清空筛选或换个日期。
                                             </Table.Cell>
                                         </Table.Row>
                                     )}
@@ -323,77 +327,16 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                     </Table>
                 </div>
 
-                <div
-                    data-testid="analytics-pagination"
-                    className="relative z-10 flex min-w-0 shrink-0 flex-col gap-2 border-t border-border bg-card px-4 py-3 text-sm text-secondary-foreground lg:flex-row lg:items-center lg:justify-between"
-                >
-                <div className="flex flex-wrap items-center gap-3">
-                    <span>共 {filteredData.length} 条</span>
-                    <div className="flex items-center gap-1">
-                        <span>每页</span>
-                        <div className="flex h-8 overflow-hidden rounded-md border border-border bg-muted/40">
-                            {pageSizeOptions.map((size) => (
-                                <Button
-                                    key={size}
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setPageSize(size)}
-                                    className={[
-                                        "inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-none border-r border-border px-2 text-xs last:border-r-0",
-                                        pageSize === size
-                                            ? "bg-primary text-white"
-                                            : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                                    ].join(" ")}
-                                >
-                                    {size}
-                                </Button>
-                            ))}
-                        </div>
-                        <span>条</span>
-                    </div>
-                </div>
-
-                <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
-                    <span className="min-w-[90px] text-center">
-                        第 {currentPage + 1} / {pageCount} 页
-                    </span>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPageIndex((value) => Math.max(value - 1, 0))}
-                        disabled={currentPage <= 0}
-                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-border px-3 text-secondary-foreground hover:bg-accent"
-                    >
-                        上一页
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPageIndex((value) => Math.min(value + 1, pageCount - 1))}
-                        disabled={currentPage >= pageCount - 1}
-                        className="inline-flex h-8 flex-row items-center justify-center whitespace-nowrap rounded-md border-border px-3 text-secondary-foreground hover:bg-accent"
-                    >
-                        下一页
-                    </Button>
-                    <div className="flex items-center gap-2 pl-1">
-                        <span>前往</span>
-                        <Input
-                            inputMode="numeric"
-                            value={String(currentPage + 1)}
-                            onChange={(event) => {
-                                const page = Number(event.target.value);
-                                if (!Number.isFinite(page)) return;
-                                setPageIndex(Math.min(Math.max(page - 1, 0), pageCount - 1));
-                            }}
-                            className="h-8 w-16 rounded-md text-center text-sm"
-                        />
-                        <span>页</span>
-                    </div>
-                </div>
-            </div>
+                <ListPager
+                    testId="analytics-pagination"
+                    total={filteredData.length}
+                    page={currentPage + 1}
+                    pageCount={pageCount}
+                    pageSize={pageSize}
+                    pageSizeOptions={pageSizeOptions}
+                    onPageChange={(next) => setPageIndex(next - 1)}
+                    onPageSizeChange={setPageSize}
+                />
             </div>
         </div>
     );

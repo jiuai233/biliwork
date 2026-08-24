@@ -43,18 +43,14 @@ export default async function RankingPage({ searchParams }: RankingPageProps) {
                 iconClass="bg-violet-500/15 text-violet-300"
                 title="数据排行"
                 description="查看弹幕榜和礼物榜的用户排行。"
-                actions={
-                    <div className="flex flex-wrap items-center gap-2">
-                        <RankingLimitControl value={limit} />
-                        <AnalyticsDateFilter from={from} to={to} />
-                    </div>
-                }
+                actions={<AnalyticsDateFilter from={from} to={to} />}
             />
 
             <StatsCharts
                 danmakuTop={topDanmaku}
                 giftTop={topGifts}
                 className="min-h-[520px] lg:min-h-0 lg:flex-1"
+                footer={<RankingLimitControl value={limit} />}
             />
         </div>
     );

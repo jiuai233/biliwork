@@ -40,7 +40,13 @@ export default async function DashboardLayout({
             {/* Main Content */}
             <div className="min-w-0 flex-1 lg:h-full lg:pl-64">
                 {/* overflow-y-auto: below the flex-fit breakpoints pages may exceed the viewport; scroll stays inside main. */}
-                <main className="min-h-screen w-full min-w-0 px-4 pb-6 pt-20 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:p-6 xl:p-8">
+                <a
+                    href="#dashboard-main"
+                    className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-sm focus:shadow"
+                >
+                    跳到内容
+                </a>
+                <main id="dashboard-main" className="min-h-screen w-full min-w-0 px-4 pb-6 pt-20 sm:px-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:p-6 xl:p-8">
                     {children}
                 </main>
             </div>

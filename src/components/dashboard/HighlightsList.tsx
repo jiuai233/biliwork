@@ -88,7 +88,7 @@ function HighlightRow({
             pinned && "bg-amber-500/5",
         )}>
             <div className="flex items-center gap-2.5">
-                <span className={cn("shrink-0 rounded border px-1.5 py-px text-[10px] font-bold", tone)}>
+                <span className={cn("inline-flex min-h-6 shrink-0 items-center rounded border px-1.5 text-[11px] font-bold", tone)}>
                     {meta.label}
                 </span>
                 <Avatar src={item.uface} name={item.uname} className="h-5 w-5" />
@@ -103,7 +103,7 @@ function HighlightRow({
                     aria-pressed={pinned}
                     onClick={() => onTogglePin(item)}
                     className={cn(
-                        "shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-amber-300",
+                        "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-amber-300",
                         pinned ? "text-amber-400" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
                     )}
                 >
@@ -207,9 +207,10 @@ export function HighlightsList({ superChats, guards, gifts, roomId, className }:
                         <button
                             key={option.value}
                             type="button"
+                            aria-pressed={settings.minAmount === option.value}
                             onClick={() => setSettings((prev) => ({ ...prev, minAmount: option.value }))}
                             className={cn(
-                                "border-r border-border px-2 py-0.5 text-[11px] font-semibold last:border-r-0",
+                                "inline-flex min-h-6 items-center border-r border-border px-2 text-[11px] font-semibold last:border-r-0",
                                 settings.minAmount === option.value
                                     ? "bg-primary/20 text-primary"
                                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -224,7 +225,7 @@ export function HighlightsList({ superChats, guards, gifts, roomId, className }:
             <div data-testid="dashboard-highlights" className="dark-scrollbar min-h-0 flex-1 overflow-y-auto">
                 {settings.pinned.length > 0 && (
                     <div className="border-b-2 border-amber-500/30">
-                        <div className="flex items-center gap-1 bg-amber-500/10 px-4 py-1 text-[10px] font-bold text-amber-300">
+                        <div className="flex items-center gap-1 bg-amber-500/10 px-4 py-1 text-[11px] font-bold text-amber-300">
                             <Pin className="h-3 w-3" />
                             已钉住 {settings.pinned.length}
                         </div>

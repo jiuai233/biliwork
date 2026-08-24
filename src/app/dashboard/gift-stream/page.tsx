@@ -6,10 +6,17 @@ import { Box, Gift, Loader2, RefreshCw, TrendingDown, TrendingUp } from 'lucide-
 import { toast } from 'sonner';
 import { Table } from '@heroui/react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { BiliQrPanel } from '@/components/bilibili/BiliQrPanel';
 import { AnalyticsDateRangePicker, type DateRange } from '@/components/dashboard/AnalyticsDateRangePicker';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ListPager } from '@/components/shared/ListPager';
 import { LoadingScreen } from '@/components/shared/LoadingScreen';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { SectionCard } from '@/components/shared/SectionCard';
@@ -60,7 +67,6 @@ export default function GiftStreamPage() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(50);
     const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange);
-    const [jumpPage, setJumpPage] = useState('1');
 
     const rangeTimes = useMemo(() => {
         const from = dateRange.from ?? new Date(new Date().getFullYear(), 0, 1);
@@ -79,10 +85,9 @@ export default function GiftStreamPage() {
             setData(result);
             setPage(result.page);
             setPageSize(result.pageSize as (typeof PAGE_SIZES)[number]);
-            setJumpPage(String(result.page));
         } catch (error) {
             console.error(error);
-            if (showError) toast.error('获取礼物流水失败');
+            if (showError) toast.error('无法加载礼物流水，请刷新后重试');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -142,7 +147,7 @@ export default function GiftStreamPage() {
                             type="button"
                             variant="outline"
                             className="h-9 rounded-lg"
-                            onClick={() => setShowQr((value) => !value)}
+                            onClick={() => setShowQr(true)}
                         >
                             {status.bound ? '重新扫码绑定' : '扫码绑定 B 站'}
                         </Button>
@@ -179,19 +184,28 @@ export default function GiftStreamPage() {
                 }
             />
 
-            {showQr && (
-                <SectionCard title="扫码绑定" accent="bg-primary" bodyClassName="px-4 py-4">
-                    <BiliQrPanel
-                        generate={generateQr}
-                        poll={pollQr}
-                        onSuccess={() => {
-                            toast.success('绑定成功，开始同步礼物流水');
-                            setShowQr(false);
-                            void load(false, 1, pageSize);
-                        }}
-                    />
-                </SectionCard>
-            )}
+            <Dialog open={showQr} onOpenChange={setShowQr}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>扫码绑定 B 站</DialogTitle>
+                        <DialogDescription>
+                            用哔哩哔哩 App 扫码。确认登录时选「在公共环境登录，如网吧等」。
+                        </DialogDescription>
+                    </DialogHeader>
+                    {showQr && (
+                        <BiliQrPanel
+                            autoStart
+                            generate={generateQr}
+                            poll={pollQr}
+                            onSuccess={() => {
+                                toast.success('绑定成功，开始同步礼物流水');
+                                setShowQr(false);
+                                void load(false, 1, pageSize);
+                            }}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
 
             <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
                 <StatCard
@@ -257,17 +271,24 @@ export default function GiftStreamPage() {
                         bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
                     >
                         {items.length === 0 ? (
-                            <EmptyState
-                                icon={<Gift className="h-6 w-6" />}
-                                title={status.bound ? '还没有礼物流水' : '请先扫码绑定'}
-                                description={status.bound
-                                    ? (status.syncStatus === 'queued'
-                                        ? '已加入采集队列，空闲后开始拉取。'
-                                        : status.syncStatus === 'running'
-                                            ? '正在按月翻页拉取。'
-                                            : '点「同步流水」拉取今年 1 月 1 日到昨天的数据。')
-                                    : '扫码时选择「在公共环境登录，如网吧等」。'}
-                            />
+                            <div className="flex flex-col items-center px-4 py-6">
+                                <EmptyState
+                                    icon={<Gift className="h-6 w-6" />}
+                                    title={status.bound ? '还没有礼物流水' : '请先扫码绑定'}
+                                    description={status.bound
+                                        ? (status.syncStatus === 'queued'
+                                            ? '已加入采集队列，空闲后开始拉取。'
+                                            : status.syncStatus === 'running'
+                                                ? '正在按月翻页拉取。'
+                                                : '点「同步流水」拉取今年 1 月 1 日到昨天的数据。')
+                                        : '扫码后加密保存 Cookie，再同步流水。'}
+                                />
+                                {!status.bound && (
+                                    <Button type="button" className="mt-2 h-9 rounded-lg" onClick={() => setShowQr(true)}>
+                                        扫码绑定 B 站
+                                    </Button>
+                                )}
+                            </div>
                         ) : (
                             <>
                                 <div className="dark-scrollbar min-h-0 flex-1 overflow-auto">
@@ -286,7 +307,7 @@ export default function GiftStreamPage() {
                                                 {items.map((item) => (
                                                     <Table.Row key={item.id} id={item.id}>
                                                         <Table.Cell className="tabular-nums text-sm">{item.time.slice(5)}</Table.Cell>
-                                                        <Table.Cell className="truncate text-sm">{item.uname || item.uid}</Table.Cell>
+                                                        <Table.Cell className="truncate text-sm"><span title={item.uname || String(item.uid)}>{item.uname || item.uid}</span></Table.Cell>
                                                         <Table.Cell className="text-sm">{item.name}</Table.Cell>
                                                         <Table.Cell className="text-right tabular-nums text-sm">{item.num}</Table.Cell>
                                                         <Table.Cell className="text-right tabular-nums text-sm">{item.hamster}</Table.Cell>
@@ -300,85 +321,23 @@ export default function GiftStreamPage() {
                                     </Table.ScrollContainer>
                                 </Table>
                                 </div>
-                                <div className="relative z-10 flex shrink-0 flex-col gap-2 border-t border-border bg-card px-4 py-3 text-sm text-secondary-foreground lg:flex-row lg:items-center lg:justify-between">
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <span>共 {total.toLocaleString('zh-CN')} 条</span>
-                                        <div className="flex items-center gap-1">
-                                            <span>每页</span>
-                                            <div className="flex h-8 overflow-hidden rounded-md border border-border bg-muted/40">
-                                                {PAGE_SIZES.map((size) => (
-                                                    <Button
-                                                        key={size}
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        onClick={() => {
-                                                            setPageSize(size);
-                                                            setPage(1);
-                                                            void load(false, 1, size);
-                                                        }}
-                                                        className={[
-                                                            'inline-flex h-8 items-center rounded-none border-r border-border px-2 text-xs last:border-r-0',
-                                                            pageSize === size
-                                                                ? 'bg-primary text-white'
-                                                                : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                                                        ].join(' ')}
-                                                    >
-                                                        {size}
-                                                    </Button>
-                                                ))}
-                                            </div>
-                                            <span>条</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
-                                        <span className="min-w-[90px] text-center">第 {page} / {totalPages} 页</span>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={page <= 1}
-                                            onClick={() => {
-                                                const next = Math.max(1, page - 1);
-                                                setPage(next);
-                                                void load(false, next, pageSize);
-                                            }}
-                                            className="h-8 rounded-md px-3"
-                                        >
-                                            上一页
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={page >= totalPages}
-                                            onClick={() => {
-                                                const next = Math.min(totalPages, page + 1);
-                                                setPage(next);
-                                                void load(false, next, pageSize);
-                                            }}
-                                            className="h-8 rounded-md px-3"
-                                        >
-                                            下一页
-                                        </Button>
-                                        <div className="flex items-center gap-2">
-                                            <span>前往</span>
-                                            <Input
-                                                inputMode="numeric"
-                                                value={jumpPage}
-                                                onChange={(event) => setJumpPage(event.target.value)}
-                                                onKeyDown={(event) => {
-                                                    if (event.key !== 'Enter') return;
-                                                    const next = Math.min(totalPages, Math.max(1, Number(jumpPage) || 1));
-                                                    setPage(next);
-                                                    void load(false, next, pageSize);
-                                                }}
-                                                className="h-8 w-16 text-center"
-                                            />
-                                            <span>页</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                <ListPager
+                                    total={total}
+                                    page={page}
+                                    pageCount={totalPages}
+                                    pageSize={pageSize}
+                                    pageSizeOptions={PAGE_SIZES}
+                                    onPageChange={(next) => {
+                                        setPage(next);
+                                        void load(false, next, pageSize);
+                                    }}
+                                    onPageSizeChange={(size) => {
+                                        const nextSize = size as (typeof PAGE_SIZES)[number];
+                                        setPageSize(nextSize);
+                                        setPage(1);
+                                        void load(false, 1, nextSize);
+                                    }}
+                                />
                             </>
                         )}
                     </SectionCard>

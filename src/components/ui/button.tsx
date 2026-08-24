@@ -41,7 +41,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 size={heroSize}
                 isDisabled={isDisabled ?? disabled}
                 className={cn(
-                    "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45 disabled:pointer-events-none disabled:opacity-50",
+                    "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-50",
                     size === "sm" && "min-h-9 px-3",
                     size === "lg" && "min-h-11 px-8 text-base",
                     size === "icon" && "h-10 min-h-10 w-10 px-0",

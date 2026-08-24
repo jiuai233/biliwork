@@ -21,7 +21,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-screen font-sans bg-background text-foreground">
+      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         {children}
         <ThemeAwareToaster />
       </body>

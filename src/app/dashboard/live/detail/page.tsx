@@ -7,6 +7,7 @@ import { ArrowLeft, MessageSquare, Gift, Shield, Sparkles, Clock } from "lucide-
 import { Table } from "@heroui/react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ListPager, useClientPager } from "@/components/shared/ListPager";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { RankingList } from "@/components/dashboard/RankingList";
 import { SectionCard } from "@/components/shared/SectionCard";
@@ -71,12 +72,16 @@ function SessionDetailContent() {
                 }
             })
             .catch(() => {
-                if (requestId === requestIdRef.current) toast.error('获取详情失败');
+                if (requestId === requestIdRef.current) toast.error('无法加载场次详情，请返回后重试');
             });
         return () => {
             if (requestId === requestIdRef.current) requestIdRef.current += 1;
         };
     }, [startTs, endTs, requestKey]);
+
+    const giftPager = useClientPager(data?.giftUsers ?? [], 20);
+    const scPager = useClientPager(data?.superChats ?? [], 20);
+    const guardPager = useClientPager(data?.guards ?? [], 20);
 
     if (!data || loadedKey !== requestKey) {
         return <LoadingScreen />;
@@ -102,7 +107,7 @@ function SessionDetailContent() {
     ];
 
     return (
-        <div className="flex flex-col gap-4 xl:min-h-0 xl:flex-1">
+        <div className="flex flex-col gap-6">
             <div className="flex shrink-0 flex-col justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3 md:flex-row md:items-center">
                 <div className="flex items-center gap-4">
                     <Button
@@ -128,20 +133,18 @@ function SessionDetailContent() {
                 </div>
             </div>
 
-            <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
                 {statItems.map((item) => (
-                    <StatCard key={item.label} label={item.label} value={item.value} icon={item.icon} tone={item.tone} className="min-h-0 p-3" />
+                    <StatCard key={item.label} label={item.label} value={item.value} icon={item.icon} tone={item.tone} />
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 items-stretch gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)] xl:grid-rows-1">
+            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)]">
                 <SectionCard
                     title="礼物明细（按用户）"
                     accent="bg-pink-500"
-                    className="flex min-h-[620px] flex-col xl:min-h-0"
-                    bodyClassName="min-h-0 flex-1 p-3"
                 >
-                    <div className="dark-scrollbar h-full min-h-0 overflow-auto rounded-lg">
+                    <div className="dark-scrollbar overflow-auto p-3">
                         <Table variant="secondary" className="min-w-[760px]">
                             <Table.Content aria-label="礼物明细" className={tableChrome}>
                                 <Table.Header>
@@ -151,9 +154,9 @@ function SessionDetailContent() {
                                     <Table.Column id="value" className="w-[130px] text-right">总价值</Table.Column>
                                 </Table.Header>
                                 <Table.Body>
-                                    {data.giftUsers.map((user, i) => (
+                                    {giftPager.slice.map((user, i) => (
                                         <Table.Row key={user.uname} id={user.uname}>
-                                            <Table.Cell className="font-mono text-muted-foreground">{i + 1}</Table.Cell>
+                                            <Table.Cell className="font-mono text-muted-foreground">{(giftPager.page - 1) * giftPager.pageSize + i + 1}</Table.Cell>
                                             <Table.Cell>
                                                 <div className="flex min-w-0 items-center gap-2">
                                                     <Avatar src={user.uface} name={user.uname} className="h-7 w-7" />
@@ -185,13 +188,20 @@ function SessionDetailContent() {
                             </Table.Content>
                         </Table>
                     </div>
+                    {data.giftUsers.length > 0 && (
+                        <ListPager
+                            total={giftPager.total}
+                            page={giftPager.page}
+                            pageCount={giftPager.pageCount}
+                            pageSize={giftPager.pageSize}
+                            onPageChange={giftPager.setPage}
+                            onPageSizeChange={giftPager.setPageSize}
+                        />
+                    )}
                 </SectionCard>
 
-                <Tabs defaultSelectedKey={defaultTab} className="flex min-h-[620px] min-w-0 flex-col xl:min-h-0">
-                    <SectionCard
-                        className="flex min-h-0 flex-1 flex-col overflow-hidden"
-                        bodyClassName="flex min-h-0 flex-1 flex-col"
-                    >
+                <Tabs defaultSelectedKey={defaultTab} className="flex min-w-0 flex-col">
+                    <SectionCard>
                         <div className="shrink-0 border-b border-border px-3 py-2">
                             <TabList aria-label="场次记录切换">
                                 <Tab id="sc">
@@ -209,10 +219,10 @@ function SessionDetailContent() {
                             </TabList>
                         </div>
 
-                        <TabPanel id="sc" className="flex min-h-0 flex-1 flex-col">
-                            <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
+                        <TabPanel id="sc" className="flex flex-col">
+                            <div className="dark-scrollbar overflow-y-auto p-3">
                                 <div className="space-y-3">
-                                    {data.superChats.map((sc, i) => (
+                                    {scPager.slice.map((sc, i) => (
                                         <div key={`${sc.uname}-${sc.ts}-${i}`} className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3">
                                             <div className="mb-1.5 flex items-center justify-between gap-3">
                                                 <div className="flex min-w-0 items-center gap-2">
@@ -227,12 +237,22 @@ function SessionDetailContent() {
                                     {data.superChats.length === 0 && <PanelEmpty>本场无 SC</PanelEmpty>}
                                 </div>
                             </div>
+                            {data.superChats.length > 0 && (
+                                <ListPager
+                                    total={scPager.total}
+                                    page={scPager.page}
+                                    pageCount={scPager.pageCount}
+                                    pageSize={scPager.pageSize}
+                                    onPageChange={scPager.setPage}
+                                    onPageSizeChange={scPager.setPageSize}
+                                />
+                            )}
                         </TabPanel>
 
-                        <TabPanel id="guards" className="flex min-h-0 flex-1 flex-col">
-                            <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
+                        <TabPanel id="guards" className="flex flex-col">
+                            <div className="dark-scrollbar overflow-y-auto p-3">
                                 <div className="space-y-2">
-                                    {data.guards.map((guard, i) => (
+                                    {guardPager.slice.map((guard, i) => (
                                         <div key={`${guard.uname}-${guard.ts}-${i}`} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-accent/30 p-3">
                                             <div className="flex min-w-0 items-center gap-2">
                                                 <Avatar src={guard.uface} name={guard.uname} className="h-7 w-7" />
@@ -247,6 +267,16 @@ function SessionDetailContent() {
                                     {data.guards.length === 0 && <PanelEmpty>本场无上舰</PanelEmpty>}
                                 </div>
                             </div>
+                            {data.guards.length > 0 && (
+                                <ListPager
+                                    total={guardPager.total}
+                                    page={guardPager.page}
+                                    pageCount={guardPager.pageCount}
+                                    pageSize={guardPager.pageSize}
+                                    onPageChange={guardPager.setPage}
+                                    onPageSizeChange={guardPager.setPageSize}
+                                />
+                            )}
                         </TabPanel>
 
                         <TabPanel id="danmaku-rank" className="flex min-h-0 flex-1 flex-col">

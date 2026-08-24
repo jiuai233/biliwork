@@ -292,7 +292,7 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
                     <button type="button" aria-label="关闭菜单" className="absolute inset-0 bg-black/60" onClick={() => setIsSidebarOpen(false)} />
                     <aside className="relative flex h-full w-64 flex-col border-r border-border bg-sidebar text-sidebar-foreground shadow-2xl">
                         <div className="flex items-center justify-between border-b border-border p-6">{brand}</div>
-                        <Button type="button" variant="ghost" size="sm" className="absolute right-4 top-5 h-8 w-8 p-0" onClick={() => setIsSidebarOpen(false)}>
+                        <Button type="button" variant="ghost" size="sm" aria-label="关闭菜单" className="absolute right-4 top-5 h-8 w-8 p-0" onClick={() => setIsSidebarOpen(false)}>
                             <X className="h-4 w-4" />
                         </Button>
                         <nav className="flex-1 space-y-2 overflow-y-auto p-4">

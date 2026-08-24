@@ -70,20 +70,24 @@ export function PasswordDialog({
             onConfirm={handleSubmit}
             onClose={handleCancel}
         >
-            <Input
-                value={password}
-                type="password"
-                onChange={(event) => {
-                    setPassword(event.target.value);
-                    if (error) setError('');
-                }}
-                onKeyDown={(event) => {
-                    if (event.key === 'Enter') handleSubmit();
-                }}
-                placeholder="输入新密码..."
-                autoComplete="new-password"
-                className="mt-4 h-10 w-full rounded-xl"
-            />
+            <label className="mt-4 block space-y-1 text-sm">
+                <span className="text-muted-foreground">新密码</span>
+                <Input
+                    value={password}
+                    type="password"
+                    onChange={(event) => {
+                        setPassword(event.target.value);
+                        if (error) setError('');
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter') handleSubmit();
+                    }}
+                    placeholder="至少 6 位"
+                    autoComplete="new-password"
+                    className="h-10 w-full rounded-xl"
+                    aria-invalid={error ? true : undefined}
+                />
+            </label>
         </AdminModal>
     );
 }

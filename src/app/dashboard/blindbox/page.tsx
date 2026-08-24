@@ -20,6 +20,7 @@ import {
 import { getBlindboxData } from "./actions";
 import { AnalyticsDateRangePicker, type DateRange } from "@/components/dashboard/AnalyticsDateRangePicker";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ListPager, useClientPager } from "@/components/shared/ListPager";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SectionCard } from "@/components/shared/SectionCard";
@@ -60,7 +61,7 @@ export default function BlindboxPage() {
             if (requestId === requestIdRef.current) setData(result);
         } catch (error) {
             console.error("Fetch Error:", error);
-            if (showError && requestId === requestIdRef.current) toast.error("获取数据失败");
+            if (showError && requestId === requestIdRef.current) toast.error("无法加载盲盒数据，请刷新后重试");
         } finally {
             if (requestId === requestIdRef.current) setLoading(false);
         }
@@ -96,13 +97,14 @@ export default function BlindboxPage() {
         return records.filter((record) => record.gift_name === giftFilter);
     }, [giftFilter, records]);
     const hasRecords = filteredRecords.length > 0;
+    const recordPager = useClientPager(filteredRecords, 20);
 
     if (loading && !data.broadcaster) {
         return <LoadingScreen tone="orange" />;
     }
 
     return (
-        <div className="space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-4 lg:overflow-hidden">
+        <div className="space-y-6">
             <PageHeader
                 icon={<Box className="h-6 w-6" />}
                 iconClass="bg-orange-500/15 text-orange-300"
@@ -160,8 +162,6 @@ export default function BlindboxPage() {
                 </SectionCard>
 
                 <SectionCard
-                    className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col"
-                    bodyClassName="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col"
                     accent="bg-orange-500"
                     title={
                         <>
@@ -176,7 +176,8 @@ export default function BlindboxPage() {
                             <div className="relative w-full sm:w-[210px]">
                                 <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
-                                    placeholder="搜索用户名..."
+                                    aria-label="搜索用户名"
+                                    placeholder="用户名"
                                     value={searchInput}
                                     onChange={(event) => setSearchInput(event.target.value)}
                                     onKeyDown={(event) => event.key === "Enter" && handleSearch()}
@@ -197,7 +198,7 @@ export default function BlindboxPage() {
                                     aria-label="筛选礼物"
                                     value={giftFilter}
                                     onChange={(event) => setGiftFilter(event.target.value)}
-                                    className="h-9 w-full appearance-none rounded-lg border border-border bg-popover pl-9 pr-8 text-sm font-medium text-foreground outline-none hover:bg-accent focus:border-orange-400/60"
+                                    className="h-9 w-full appearance-none rounded-lg border border-border bg-popover pl-9 pr-8 text-sm font-medium text-foreground outline-none hover:bg-accent focus:border-orange-400/60 focus-visible:ring-2 focus-visible:ring-primary/40"
                                 >
                                     <option value="all">全部礼物</option>
                                     {giftOptions.map((giftName) => (
@@ -211,7 +212,7 @@ export default function BlindboxPage() {
                     <div
                         data-testid="blindbox-records-viewport"
                         className={cn(
-                            "dark-scrollbar relative min-h-[520px] overflow-x-auto lg:min-h-0 lg:flex-1",
+                            "dark-scrollbar relative overflow-x-auto",
                             hasRecords ? "overflow-y-auto" : "overflow-y-hidden"
                         )}
                     >
@@ -225,7 +226,7 @@ export default function BlindboxPage() {
                                     <Table.Column id="profit" className="text-right">盈亏状态</Table.Column>
                                 </Table.Header>
                                 <Table.Body>
-                                    {filteredRecords.map((record) => {
+                                    {recordPager.slice.map((record) => {
                                         const isRecordProfit = record.profit >= 0;
                                         const statusText = record.profit > 0 ? "盈利" : record.profit < 0 ? "亏损" : "持平";
                                         return (
@@ -260,15 +261,23 @@ export default function BlindboxPage() {
                         </Table>
 
                         {!hasRecords && (
-                            <div className="absolute inset-x-0 bottom-0 top-[45px] flex items-center justify-center">
-                                <EmptyState
-                                    icon={<ClipboardList className="h-12 w-12" />}
-                                    title="暂无开盒记录"
-                                    description="调整日期、用户名或礼物筛选后再查看"
-                                />
-                            </div>
+                            <EmptyState
+                                icon={<ClipboardList className="h-12 w-12" />}
+                                title="暂无开盒记录"
+                                description="调整日期、用户名或礼物筛选后再查看"
+                            />
                         )}
                     </div>
+                    {hasRecords && (
+                        <ListPager
+                            total={recordPager.total}
+                            page={recordPager.page}
+                            pageCount={recordPager.pageCount}
+                            pageSize={recordPager.pageSize}
+                            onPageChange={recordPager.setPage}
+                            onPageSizeChange={recordPager.setPageSize}
+                        />
+                    )}
                 </SectionCard>
             </div>
         </div>
@@ -312,13 +321,13 @@ function GiftDistributionCard({ item, totalBoxes }: { item: GiftDistribution; to
                 <div className="min-w-0">
                     <div className="flex min-w-0 items-center gap-2">
                         <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", valuable ? "bg-emerald-400" : "bg-red-400")} />
-                        <span className="truncate text-sm font-bold text-foreground">{item.name}</span>
+                        <span className="truncate text-sm font-bold text-foreground" title={item.name}>{item.name}</span>
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">{item.count} 次</div>
                 </div>
-                <div className={cn("shrink-0 text-right text-sm font-black", valuable ? "text-emerald-400" : "text-red-400")}>
+                <div className={cn("shrink-0 text-right text-sm font-black tabular-nums", valuable ? "text-emerald-400" : "text-red-400")}>
                     {item.value}
-                    <div className="text-[10px] font-semibold text-muted-foreground">电池</div>
+                    <div className="text-[11px] font-semibold text-muted-foreground">{valuable ? "高于成本" : "低于成本"}</div>
                 </div>
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">

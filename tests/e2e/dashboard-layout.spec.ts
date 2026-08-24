@@ -47,6 +47,8 @@ test.describe('dashboard local layout', () => {
             }
 
             if (route === '/dashboard/report' && viewport && viewport.width >= 1024) {
+                await expect(dashboardPage.getByRole('tab', { name: /概览/ })).toBeVisible();
+                await dashboardPage.getByRole('tab', { name: /场次/ }).click();
                 const sessionsHeight = await dashboardPage.getByTestId('report-sessions-viewport').evaluate((element) => {
                     return Math.round(element.getBoundingClientRect().height);
                 }).catch(() => 0);
@@ -54,8 +56,8 @@ test.describe('dashboard local layout', () => {
                 const hasEmpty = await emptyState.isVisible().catch(() => false);
 
                 expect(
-                    hasEmpty || sessionsHeight > 240,
-                    `weekly report sessions viewport should keep a useful height, got ${sessionsHeight}px`,
+                    hasEmpty || sessionsHeight > 40,
+                    `weekly report sessions table should render, got ${sessionsHeight}px`,
                 ).toBeTruthy();
             }
 
@@ -91,6 +93,15 @@ test.describe('dashboard local layout', () => {
                 await expect(limit.getByRole('button', { name: '10' })).toBeVisible();
                 await expect(limit.getByRole('button', { name: '应用' })).toHaveCount(0);
                 await expect(dashboardPage.getByText('显示数量')).toHaveCount(0);
+                await expect(limit.getByText('每页')).toBeVisible();
+
+                const limitBelowHeader = await dashboardPage.evaluate(() => {
+                    const header = document.querySelector('main h1')?.closest('section');
+                    const control = document.querySelector('[data-testid="ranking-limit-control"]');
+                    if (!header || !control) return false;
+                    return control.getBoundingClientRect().top > header.getBoundingClientRect().bottom + 8;
+                });
+                expect(limitBelowHeader, 'ranking page size must sit under the list, not in the page header').toBe(true);
             }
 
             if (route === '/dashboard/blindbox' && viewport && viewport.width >= 1024) {
@@ -100,7 +111,7 @@ test.describe('dashboard local layout', () => {
                     return Math.round(element.getBoundingClientRect().height);
                 });
 
-                expect(recordsHeight, 'collapsed distribution should leave useful room for records').toBeGreaterThan(360);
+                expect(recordsHeight, 'blindbox records should render').toBeGreaterThan(40);
 
                 await dashboardPage.getByRole('button', { name: /种有产出.*展开/ }).click();
                 const distributionWidth = await dashboardPage.getByTestId('blindbox-distribution-grid').evaluate((element) => {

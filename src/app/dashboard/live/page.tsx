@@ -7,6 +7,7 @@ import { Broadcaster } from "@/lib/types";
 import { Radio, Clock, Coins, Gift, Shield, MessageSquare } from "lucide-react";
 import { Table } from "@heroui/react";
 import { Button } from "@/components/ui/button";
+import { ListPager, useClientPager } from "@/components/shared/ListPager";
 import { toast } from "sonner";
 import { startOfDay, endOfDay } from "date-fns";
 import { AnalyticsDateRangePicker, type DateRange } from "@/components/dashboard/AnalyticsDateRangePicker";
@@ -57,7 +58,7 @@ export default function LiveRecordsPage() {
             setData(result);
         } catch (error) {
             console.error("Fetch Error:", error);
-            if (showError) toast.error("获取数据失败");
+            if (showError) toast.error("无法加载开播记录，请刷新后重试");
         } finally {
             setLoading(false);
         }
@@ -68,6 +69,7 @@ export default function LiveRecordsPage() {
         fetchData(true);
     }, [fetchData]);
 
+    const sessionPager = useClientPager(data.sessions, 20);
     const totalSessions = data.sessions.length;
     const totalDuration = data.sessions.reduce((sum, s) => sum + s.duration, 0);
     const totalIncome = data.sessions.reduce((sum, s) => sum + s.totalIncome, 0);
@@ -80,7 +82,7 @@ export default function LiveRecordsPage() {
     }
 
     return (
-        <div className="min-w-0 space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-4 lg:overflow-hidden">
+        <div className="min-w-0 space-y-6">
             <PageHeader
                 icon={<Radio className="h-5 w-5" />}
                 iconClass="bg-emerald-500/15 text-emerald-300"
@@ -94,17 +96,17 @@ export default function LiveRecordsPage() {
                 }
             />
 
-            <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-6">
-                <StatCard label="开播次数" value={totalSessions} icon={<Radio className="h-4 w-4" />} tone="emerald" className="min-h-0 p-3" />
-                <StatCard label="总时长" value={formatDuration(totalDuration, "0m")} icon={<Clock className="h-4 w-4" />} tone="blue" className="min-h-0 p-3" />
-                <StatCard label="总收入" value={formatCurrency(totalIncome)} icon={<Coins className="h-4 w-4" />} tone="amber" className="min-h-0 p-3" />
-                <StatCard label="礼物" value={formatCurrency(totalGift)} icon={<Gift className="h-4 w-4" />} tone="pink" className="min-h-0 p-3" />
-                <StatCard label="舰长" value={formatCurrency(totalGuard)} icon={<Shield className="h-4 w-4" />} tone="blue" className="min-h-0 p-3" />
-                <StatCard label="SC" value={formatCurrency(totalSC)} icon={<MessageSquare className="h-4 w-4" />} tone="yellow" className="min-h-0 p-3" />
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                <StatCard label="开播次数" value={totalSessions} icon={<Radio className="h-4 w-4" />} tone="emerald" />
+                <StatCard label="总时长" value={formatDuration(totalDuration, "0m")} icon={<Clock className="h-4 w-4" />} tone="blue" />
+                <StatCard label="总收入" value={formatCurrency(totalIncome)} icon={<Coins className="h-4 w-4" />} tone="amber" />
+                <StatCard label="礼物" value={formatCurrency(totalGift)} icon={<Gift className="h-4 w-4" />} tone="pink" />
+                <StatCard label="舰长" value={formatCurrency(totalGuard)} icon={<Shield className="h-4 w-4" />} tone="blue" />
+                <StatCard label="SC" value={formatCurrency(totalSC)} icon={<MessageSquare className="h-4 w-4" />} tone="yellow" />
             </div>
 
-            <div className="min-h-[420px] w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-card lg:min-h-0 lg:flex-1">
-                <div data-testid="live-records-viewport" className="dark-scrollbar h-full w-full max-w-full overflow-auto">
+            <div className="w-full min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+                <div data-testid="live-records-viewport" className="dark-scrollbar w-full max-w-full overflow-auto">
                     <Table variant="secondary" className="w-full min-w-[1100px]">
                         <Table.Content aria-label="开播记录" className={tableChrome}>
                             <Table.Header>
@@ -120,7 +122,7 @@ export default function LiveRecordsPage() {
                                 <Table.Column id="actions" className="w-[80px] text-center">操作</Table.Column>
                             </Table.Header>
                             <Table.Body>
-                                {data.sessions.map((session) => (
+                                {sessionPager.slice.map((session) => (
                                     <Table.Row key={session.id} id={session.id}>
                                         <Table.Cell className="font-medium text-emerald-400">
                                             {formatDateTime(session.startTs)}
@@ -132,21 +134,21 @@ export default function LiveRecordsPage() {
                                             {formatDuration(session.duration)}
                                         </Table.Cell>
                                         <Table.Cell className="max-w-[200px] truncate text-foreground">
-                                            {session.title || '-'}
+                                            <span title={session.title || undefined}>{session.title || '-'}</span>
                                         </Table.Cell>
                                         <Table.Cell className="text-muted-foreground">
                                             {session.areaName || '-'}
                                         </Table.Cell>
-                                        <Table.Cell className="text-right text-secondary-foreground">
+                                        <Table.Cell className="text-right tabular-nums text-secondary-foreground">
                                             {formatCurrency(session.giftIncome)}
                                         </Table.Cell>
-                                        <Table.Cell className="text-right text-secondary-foreground">
+                                        <Table.Cell className="text-right tabular-nums text-secondary-foreground">
                                             {formatCurrency(session.guardIncome)}
                                         </Table.Cell>
-                                        <Table.Cell className="text-right text-secondary-foreground">
+                                        <Table.Cell className="text-right tabular-nums text-secondary-foreground">
                                             {formatCurrency(session.scIncome)}
                                         </Table.Cell>
-                                        <Table.Cell className="text-right font-bold text-money">
+                                        <Table.Cell className="text-right font-bold tabular-nums text-money">
                                             {formatCurrency(session.totalIncome)}
                                         </Table.Cell>
                                         <Table.Cell className="text-center">
@@ -170,7 +172,7 @@ export default function LiveRecordsPage() {
                                 {data.sessions.length === 0 && (
                                     <Table.Row id="empty">
                                         <Table.Cell colSpan={10} className="py-10 text-center text-muted-foreground">
-                                            暂无开播记录
+                                            这段日期没有开播记录，换个日期再看。
                                         </Table.Cell>
                                     </Table.Row>
                                 )}
@@ -178,6 +180,16 @@ export default function LiveRecordsPage() {
                         </Table.Content>
                     </Table>
                 </div>
+                {data.sessions.length > 0 && (
+                    <ListPager
+                        total={sessionPager.total}
+                        page={sessionPager.page}
+                        pageCount={sessionPager.pageCount}
+                        pageSize={sessionPager.pageSize}
+                        onPageChange={sessionPager.setPage}
+                        onPageSizeChange={sessionPager.setPageSize}
+                    />
+                )}
             </div>
         </div>
     );

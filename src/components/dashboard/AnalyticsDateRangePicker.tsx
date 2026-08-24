@@ -304,7 +304,7 @@ export function AnalyticsDateRangePicker({ date, setDate, onApply, pending = fal
                                 onClick={() => selectDay(day)}
                                 onMouseEnter={() => selectingEnd && setHoverDay(day)}
                                 className={cn(
-                                    "h-8 rounded-md text-sm transition-colors",
+                                    "h-8 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                                     outside ? "text-muted-foreground/40" : "text-secondary-foreground",
                                     future && "cursor-not-allowed opacity-25",
                                     range && !selectedStart && !selectedEnd && "bg-primary/15 text-primary",
@@ -426,7 +426,7 @@ export function AnalyticsDateRangePicker({ date, setDate, onApply, pending = fal
                 aria-haspopup="dialog"
                 aria-expanded={open}
                 disabled={pending}
-                className="inline-flex h-10 min-w-[210px] items-center justify-between gap-3 whitespace-nowrap rounded-xl border border-border bg-secondary px-3 text-sm font-medium text-foreground shadow-sm hover:bg-accent"
+                className="inline-flex h-9 min-w-[210px] items-center justify-between gap-3 whitespace-nowrap rounded-lg border border-border bg-secondary px-3 text-sm font-medium text-foreground shadow-sm hover:bg-accent"
                 onClick={open ? () => closePicker() : openPicker}
             >
                 <span>{formatTriggerLabel(date)}</span>

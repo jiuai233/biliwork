@@ -381,20 +381,22 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                         onConfirm={handleRevealAuthCode}
                         onClose={closeRevealDialog}
                     >
-                        <Input
-                            value={adminPassword}
-                            type="password"
-                            onChange={(event) => {
-                                setAdminPassword(event.target.value);
-                                if (authCodeError) setAuthCodeError('');
-                            }}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter') handleRevealAuthCode();
-                            }}
-                            placeholder="输入管理员密码..."
-                            autoComplete="current-password"
-                            className="mt-4 h-10 w-full rounded-xl"
-                        />
+                        <label className="mt-4 block space-y-1 text-sm">
+                            <span className="text-muted-foreground">管理员密码</span>
+                            <Input
+                                value={adminPassword}
+                                type="password"
+                                onChange={(event) => {
+                                    setAdminPassword(event.target.value);
+                                    if (authCodeError) setAuthCodeError('');
+                                }}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') handleRevealAuthCode();
+                                }}
+                                autoComplete="current-password"
+                                className="h-10 w-full rounded-xl"
+                            />
+                        </label>
                     </AdminModal>
                 )}
 
@@ -410,19 +412,21 @@ export default function BroadcasterManager({ initialBroadcasters }: { initialBro
                         onConfirm={handleUpdateAuthCode}
                         onClose={closeAuthCodeEdit}
                     >
-                        <Input
-                            value={newBroadcasterAuthCode}
-                            onChange={(event) => {
-                                setNewBroadcasterAuthCode(event.target.value);
-                                if (authCodeError) setAuthCodeError('');
-                            }}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter') handleUpdateAuthCode();
-                            }}
-                            placeholder="输入新的身份码..."
-                            autoComplete="off"
-                            className="mt-4 h-10 w-full rounded-xl"
-                        />
+                        <label className="mt-4 block space-y-1 text-sm">
+                            <span className="text-muted-foreground">新身份码</span>
+                            <Input
+                                value={newBroadcasterAuthCode}
+                                onChange={(event) => {
+                                    setNewBroadcasterAuthCode(event.target.value);
+                                    if (authCodeError) setAuthCodeError('');
+                                }}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') handleUpdateAuthCode();
+                                }}
+                                autoComplete="off"
+                                className="h-10 w-full rounded-xl"
+                            />
+                        </label>
                         <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-accent/30 p-3 text-sm text-secondary-foreground">
                             <input
                                 type="checkbox"

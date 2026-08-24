@@ -124,8 +124,8 @@ export function BroadcasterTable({
                                                 <div className="flex min-w-0 items-center gap-2">
                                                     <span className="truncate font-medium text-foreground">{broadcaster.uname || '获取中...'}</span>
                                                     {broadcaster.isLive && (
-                                                        <span className="shrink-0 rounded bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
-                                                            LIVE
+                                                        <span className="shrink-0 rounded bg-sky-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-sky-300">
+                                                            直播中
                                                         </span>
                                                     )}
                                                 </div>
@@ -139,6 +139,7 @@ export function BroadcasterTable({
                                                 type="button"
                                                 size="sm"
                                                 variant="secondary"
+                                                aria-label={revealedAuthCode ? '复制身份码' : '验证后查看完整身份码'}
                                                 className="inline-flex h-8 max-w-[170px] items-center justify-center gap-2 rounded-lg border border-border bg-accent/40 px-2 font-mono text-xs text-secondary-foreground hover:bg-accent"
                                                 onClick={() => {
                                                     if (revealedAuthCode) {
@@ -156,11 +157,11 @@ export function BroadcasterTable({
                                                     {revealedAuthCode || `${(broadcaster.auth_code || '').slice(0, 8)}...`}
                                                 </span>
                                             </Button>
-                                            <div className="mt-1 text-sm text-muted-foreground">Room: {broadcaster.room_id || '-'}</div>
+                                            <div className="mt-1 text-sm text-muted-foreground">房间 {broadcaster.room_id || '-'}</div>
                                         </div>
                                     </Table.Cell>
                                     <Table.Cell>
-                                        <div className="font-semibold text-yellow-400">¥{stats.totalIncome}</div>
+                                        <div className="font-semibold tabular-nums text-yellow-400">¥{stats.totalIncome}</div>
                                         <div className="text-xs text-muted-foreground">
                                             礼物 {stats.giftCount} / 舰长 {stats.guardCount}
                                         </div>
@@ -236,8 +237,8 @@ export function BroadcasterTable({
                         })}
                         {broadcasters.length === 0 && (
                             <Table.Row id="empty">
-                                <Table.Cell colSpan={6} className="py-10 text-center text-muted-foreground">
-                                    暂无监控任务
+                                <Table.Cell colSpan={7} className="py-10 text-center text-muted-foreground">
+                                    暂无监控任务，在上方用身份码添加主播。
                                 </Table.Cell>
                             </Table.Row>
                         )}

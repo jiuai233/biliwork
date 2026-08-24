@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { SectionCard } from "@/components/shared/SectionCard";
 import { Tabs, Tab, TabList, TabPanel } from "@/components/shared/tabs";
 import { RankingList } from "@/components/dashboard/RankingList";
@@ -12,9 +12,10 @@ interface StatsChartsProps {
     danmakuTop: { uname: string; count: number; uface: string }[];
     giftTop: { uname: string; total: number; uface: string }[];
     className?: string;
+    footer?: ReactNode;
 }
 
-export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps) {
+export function StatsCharts({ danmakuTop, giftTop, className, footer }: StatsChartsProps) {
     const danmakuItems = danmakuTop.map((item) => ({
         uname: item.uname,
         uface: item.uface,
@@ -43,7 +44,7 @@ export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps
         >
             <SectionCard
                 className="flex min-h-0 flex-1 flex-col"
-                bodyClassName="flex min-h-0 flex-1 flex-col"
+                bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
                 title={
                     <span className="flex items-center gap-2">
                         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15 text-primary">
@@ -74,6 +75,7 @@ export function StatsCharts({ danmakuTop, giftTop, className }: StatsChartsProps
                 <TabPanel id="gift" className="flex min-h-0 flex-1 flex-col">
                     <RankingList items={giftItems} totalLabel={`累计 ${formatCurrency(giftTotal)}`} />
                 </TabPanel>
+                {footer}
             </SectionCard>
         </Tabs>
     );

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Lock, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const initialState = {
     message: '',
@@ -14,19 +14,20 @@ const initialState = {
 
 export function AdminLoginClient() {
     const [state, formAction, isPending] = useActionState(adminLogin, initialState);
+    const reduceMotion = useReducedMotion();
 
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background text-foreground">
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
             >
                 <Card className="w-[380px] max-w-[calc(100vw-2rem)] rounded-lg border-border bg-card shadow-2xl shadow-black/40">
                     <CardContent className="p-7">
                         <div className="mb-7 text-center">
-                            <h1 className="mb-1 text-2xl font-extrabold text-foreground">Admin Console</h1>
-                            <p className="text-sm text-muted-foreground">管理后台登录</p>
+                            <h1 className="mb-1 text-2xl font-extrabold text-foreground">管理后台</h1>
+                            <p className="text-sm text-muted-foreground">请输入管理员账号</p>
                         </div>
 
                         <form action={formAction} className="space-y-4">

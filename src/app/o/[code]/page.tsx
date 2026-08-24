@@ -96,7 +96,9 @@ export default function OverlayPage() {
 
     useEffect(() => {
         const el = scrollRef.current;
-        const shouldScroll = scrollEnabled && items.length > 8;
+        const reduceMotion = typeof window !== 'undefined'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const shouldScroll = scrollEnabled && items.length > 8 && !reduceMotion;
         if (!shouldScroll || totalHeight === 0 || !el) {
             offsetRef.current = 0;
             if (el) el.style.transform = 'translateY(0)';
