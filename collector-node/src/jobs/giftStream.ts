@@ -82,7 +82,7 @@ async function insertGifts(broadcasterId: number, items: GiftStreamItem[]): Prom
             const offset = params.length;
             const ts = giftTimeToTs(item.time);
             values.push(
-                `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, $${offset + 13})`,
+                `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}::bigint, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, $${offset + 13})`,
             );
             params.push(
                 broadcasterId,
@@ -91,7 +91,7 @@ async function insertGifts(broadcasterId: number, items: GiftStreamItem[]): Prom
                 item.uname || null,
                 item.time,
                 ts,
-                item.goods_id,
+                item.goods_id == null ? null : String(item.goods_id),
                 item.gift_id,
                 item.name,
                 item.num,

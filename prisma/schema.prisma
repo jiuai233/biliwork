@@ -219,7 +219,7 @@ model ReceivedGift {
   uname         String?
   time          String
   ts            BigInt?
-  goodsId       Int?        @map("goods_id")
+  goodsId       BigInt?     @map("goods_id")
   giftId        Int         @map("gift_id")
   name          String
   num           Int         @default(1)

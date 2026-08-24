@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS "received_gift" (
     "uname" TEXT,
     "time" TEXT NOT NULL,
     "ts" BIGINT,
-    "goods_id" INTEGER,
+    "goods_id" BIGINT,
     "gift_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "num" INTEGER NOT NULL DEFAULT 1,
