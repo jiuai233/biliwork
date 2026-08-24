@@ -235,91 +235,98 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                 </div>
             </div>
 
-            <Table variant="secondary" className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-card lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
-                <Table.ScrollContainer
+            {/* HeroUI table-root is grid+overflow-clip and will not shrink; scroll this wrapper instead. */}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+                <div
                     data-testid="analytics-records-viewport"
                     className={cn(
-                        "dark-scrollbar min-h-[420px] w-full max-w-full rounded-xl lg:min-h-0 lg:flex-1",
+                        "dark-scrollbar min-h-[420px] min-w-0 w-full flex-1 lg:min-h-0",
                         hasRows ? "overflow-auto" : "overflow-x-auto overflow-y-hidden"
                     )}
                 >
-                    <Table.Content
-                        aria-label="营收记录明细"
-                        className={cn(tableChrome, "min-w-[920px]")}
-                    >
-                        <Table.Header>
-                            <Table.Column id="ts" isRowHeader className="w-[210px]">
-                                <SortButton
-                                    active={sortKey === "ts"}
-                                    direction={sortDirection}
-                                    onClick={() => toggleSort("ts")}
-                                >
-                                    时间
-                                </SortButton>
-                            </Table.Column>
-                            <Table.Column id="uname" className="w-[260px]">
-                                用户
-                            </Table.Column>
-                            <Table.Column id="type" className="w-[120px]">
-                                类型
-                            </Table.Column>
-                            <Table.Column id="content">
-                                内容
-                            </Table.Column>
-                            <Table.Column id="price" className="w-[160px]">
-                                <SortButton
-                                    active={sortKey === "price"}
-                                    direction={sortDirection}
-                                    onClick={() => toggleSort("price")}
-                                >
-                                    价值 (CNY)
-                                </SortButton>
-                            </Table.Column>
-                        </Table.Header>
-                        <Table.Body>
-                            {hasRows ? (
-                                pageData.map((item) => (
-                                    <Table.Row key={item.id} id={item.id}>
-                                        <Table.Cell className="whitespace-nowrap text-foreground">
-                                            {formatTime(item.ts)}
-                                        </Table.Cell>
-                                        <Table.Cell>
-                                            <div className="flex min-w-[180px] items-center gap-2">
-                                                <Avatar size="sm" className="h-7 w-7 border border-border">
-                                                    <Avatar.Image src={item.uface || undefined} referrerPolicy="no-referrer" />
-                                                    <Avatar.Fallback>{item.uname?.[0] ?? "?"}</Avatar.Fallback>
-                                                </Avatar>
-                                                <span className="truncate font-medium text-foreground">{item.uname}</span>
-                                            </div>
-                                        </Table.Cell>
-                                        <Table.Cell>
-                                            <Chip variant="soft" size="sm" className={getTypeChipClass(item.type)}>
-                                                {typeLabels[item.type]}
-                                            </Chip>
-                                        </Table.Cell>
-                                        <Table.Cell>
-                                            <div className="max-w-[520px] truncate font-medium text-foreground">
-                                                {item.content}
-                                            </div>
-                                        </Table.Cell>
-                                        <Table.Cell className="font-bold text-foreground">
-                                            {formatCurrency(item.price)}
-                                        </Table.Cell>
-                                    </Table.Row>
-                                ))
-                            ) : (
-                                <Table.Row id="empty">
-                                    <Table.Cell colSpan={5} className="h-[360px] text-center text-muted-foreground">
-                                        暂无数据
-                                    </Table.Cell>
-                                </Table.Row>
-                            )}
-                        </Table.Body>
-                    </Table.Content>
-                </Table.ScrollContainer>
-            </Table>
+                    <Table variant="secondary" className="w-full">
+                        <Table.ScrollContainer className="w-full max-w-full">
+                            <Table.Content
+                                aria-label="营收记录明细"
+                                className={cn(tableChrome, "min-w-[920px]")}
+                            >
+                                <Table.Header>
+                                    <Table.Column id="ts" isRowHeader className="w-[210px]">
+                                        <SortButton
+                                            active={sortKey === "ts"}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort("ts")}
+                                        >
+                                            时间
+                                        </SortButton>
+                                    </Table.Column>
+                                    <Table.Column id="uname" className="w-[260px]">
+                                        用户
+                                    </Table.Column>
+                                    <Table.Column id="type" className="w-[120px]">
+                                        类型
+                                    </Table.Column>
+                                    <Table.Column id="content">
+                                        内容
+                                    </Table.Column>
+                                    <Table.Column id="price" className="w-[160px]">
+                                        <SortButton
+                                            active={sortKey === "price"}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort("price")}
+                                        >
+                                            价值 (CNY)
+                                        </SortButton>
+                                    </Table.Column>
+                                </Table.Header>
+                                <Table.Body>
+                                    {hasRows ? (
+                                        pageData.map((item) => (
+                                            <Table.Row key={item.id} id={item.id}>
+                                                <Table.Cell className="whitespace-nowrap text-foreground">
+                                                    {formatTime(item.ts)}
+                                                </Table.Cell>
+                                                <Table.Cell>
+                                                    <div className="flex min-w-[180px] items-center gap-2">
+                                                        <Avatar size="sm" className="h-7 w-7 border border-border">
+                                                            <Avatar.Image src={item.uface || undefined} referrerPolicy="no-referrer" />
+                                                            <Avatar.Fallback>{item.uname?.[0] ?? "?"}</Avatar.Fallback>
+                                                        </Avatar>
+                                                        <span className="truncate font-medium text-foreground">{item.uname}</span>
+                                                    </div>
+                                                </Table.Cell>
+                                                <Table.Cell>
+                                                    <Chip variant="soft" size="sm" className={getTypeChipClass(item.type)}>
+                                                        {typeLabels[item.type]}
+                                                    </Chip>
+                                                </Table.Cell>
+                                                <Table.Cell>
+                                                    <div className="max-w-[520px] truncate font-medium text-foreground">
+                                                        {item.content}
+                                                    </div>
+                                                </Table.Cell>
+                                                <Table.Cell className="font-bold text-foreground">
+                                                    {formatCurrency(item.price)}
+                                                </Table.Cell>
+                                            </Table.Row>
+                                        ))
+                                    ) : (
+                                        <Table.Row id="empty">
+                                            <Table.Cell colSpan={5} className="h-[360px] text-center text-muted-foreground">
+                                                暂无数据
+                                            </Table.Cell>
+                                        </Table.Row>
+                                    )}
+                                </Table.Body>
+                            </Table.Content>
+                        </Table.ScrollContainer>
+                    </Table>
+                </div>
 
-            <div className="flex min-w-0 shrink-0 flex-col gap-2 text-sm text-secondary-foreground lg:flex-row lg:items-center lg:justify-between">
+                <div
+                    data-testid="analytics-pagination"
+                    className="relative z-10 flex min-w-0 shrink-0 flex-col gap-2 border-t border-border bg-card px-4 py-3 text-sm text-secondary-foreground lg:flex-row lg:items-center lg:justify-between"
+                >
                 <div className="flex flex-wrap items-center gap-3">
                     <span>共 {filteredData.length} 条</span>
                     <div className="flex items-center gap-1">
@@ -386,6 +393,7 @@ export function AnalyticsTable({ data }: AnalyticsTableProps) {
                         <span>页</span>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     );

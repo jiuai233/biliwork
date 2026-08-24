@@ -37,21 +37,24 @@ export default async function RankingPage({ searchParams }: RankingPageProps) {
     ]);
 
     return (
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-4 lg:overflow-hidden">
             <PageHeader
                 icon={<BarChart2 className="h-5 w-5" />}
                 iconClass="bg-violet-500/15 text-violet-300"
                 title="数据排行"
                 description="查看弹幕榜和礼物榜的用户排行。"
-                actions={<AnalyticsDateFilter from={from} to={to} />}
+                actions={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <RankingLimitControl value={limit} />
+                        <AnalyticsDateFilter from={from} to={to} />
+                    </div>
+                }
             />
-
-            <RankingLimitControl value={limit} />
 
             <StatsCharts
                 danmakuTop={topDanmaku}
                 giftTop={topGifts}
-                className="h-[calc(100vh-250px)] min-h-[520px]"
+                className="min-h-[520px] lg:min-h-0 lg:flex-1"
             />
         </div>
     );

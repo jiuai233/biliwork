@@ -270,8 +270,9 @@ export default function GiftStreamPage() {
                             />
                         ) : (
                             <>
-                                <Table variant="secondary" className="flex min-h-0 flex-1 flex-col">
-                                    <Table.ScrollContainer className="dark-scrollbar min-h-0 flex-1 overflow-auto">
+                                <div className="dark-scrollbar min-h-0 flex-1 overflow-auto">
+                                <Table variant="secondary" className="w-full">
+                                    <Table.ScrollContainer className="w-full">
                                         <Table.Content aria-label="礼物流水" className={`${tableChrome} min-w-[720px]`}>
                                             <Table.Header>
                                                 <Table.Column id="time" className="w-[160px]">时间</Table.Column>
@@ -298,7 +299,8 @@ export default function GiftStreamPage() {
                                         </Table.Content>
                                     </Table.ScrollContainer>
                                 </Table>
-                                <div className="flex shrink-0 flex-col gap-2 border-t border-border px-4 py-3 text-sm text-secondary-foreground lg:flex-row lg:items-center lg:justify-between">
+                                </div>
+                                <div className="relative z-10 flex shrink-0 flex-col gap-2 border-t border-border bg-card px-4 py-3 text-sm text-secondary-foreground lg:flex-row lg:items-center lg:justify-between">
                                     <div className="flex flex-wrap items-center gap-3">
                                         <span>共 {total.toLocaleString('zh-CN')} 条</span>
                                         <div className="flex items-center gap-1">

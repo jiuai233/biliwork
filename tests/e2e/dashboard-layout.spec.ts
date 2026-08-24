@@ -73,7 +73,24 @@ test.describe('dashboard local layout', () => {
                     });
 
                     expect(recordsHeight, 'analytics records viewport should keep a useful default height').toBeGreaterThan(400);
+
+                    const overlapPx = await dashboardPage.evaluate(() => {
+                        const viewport = document.querySelector('[data-testid="analytics-records-viewport"]');
+                        const pager = document.querySelector('[data-testid="analytics-pagination"]');
+                        if (!viewport || !pager) return Number.NaN;
+                        return Math.round(viewport.getBoundingClientRect().bottom - pager.getBoundingClientRect().top);
+                    });
+
+                    expect(overlapPx, 'analytics pagination must sit below the table, not over the last row').toBeLessThanOrEqual(1);
                 }
+            }
+
+            if (route === '/dashboard/ranking' && viewport && viewport.width >= 1024) {
+                const limit = dashboardPage.getByTestId('ranking-limit-control');
+                await expect(limit).toBeVisible();
+                await expect(limit.getByRole('button', { name: '10' })).toBeVisible();
+                await expect(limit.getByRole('button', { name: '应用' })).toHaveCount(0);
+                await expect(dashboardPage.getByText('显示数量')).toHaveCount(0);
             }
 
             if (route === '/dashboard/blindbox' && viewport && viewport.width >= 1024) {
