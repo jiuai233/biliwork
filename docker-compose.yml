@@ -50,6 +50,8 @@ services:
       BILI_ACCESS_KEY_ID: ${BILI_ACCESS_KEY_ID}
       BILI_ACCESS_KEY_SECRET: ${BILI_ACCESS_KEY_SECRET}
       BILI_APP_ID: ${BILI_APP_ID}
+      BILI_COOKIE_SECRET: ${BILI_COOKIE_SECRET:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
     volumes:
       - ./exports:/app/exports
     networks:
@@ -78,6 +80,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/biweb?schema=public
       SESSION_SECRET: ${SESSION_SECRET}
+      BILI_COOKIE_SECRET: ${BILI_COOKIE_SECRET:-}
     networks:
       - frontend
       - backend

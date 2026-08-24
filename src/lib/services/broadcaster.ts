@@ -415,3 +415,41 @@ export async function getBroadcasterByUid(uid: number): Promise<Broadcaster | un
 
     return toBroadcaster(b);
 }
+
+/** 扫码开通：没有身份码也能进礼物流水。采集器只拉 active=1，这里固定 0。 */
+export async function ensureBroadcasterFromQr(
+    uid: number,
+    profile?: { uname?: string; uface?: string; roomId?: number },
+): Promise<Broadcaster> {
+    const existing = await prisma.broadcaster.findFirst({
+        where: { uid: BigInt(uid) },
+    });
+    if (existing) {
+        const now = BigInt(Date.now());
+        const updated = await prisma.broadcaster.update({
+            where: { id: existing.id },
+            data: {
+                uname: profile?.uname || existing.uname,
+                uface: profile?.uface || existing.uface,
+                roomId: profile?.roomId || existing.roomId,
+                updatedAt: now,
+            },
+        });
+        return toBroadcaster(updated);
+    }
+
+    const now = BigInt(Date.now());
+    const created = await prisma.broadcaster.create({
+        data: {
+            authCode: `qr-${uid}`,
+            uid: BigInt(uid),
+            uname: profile?.uname ?? null,
+            uface: profile?.uface ?? null,
+            roomId: profile?.roomId ?? null,
+            active: 0,
+            createdAt: now,
+            updatedAt: now,
+        },
+    });
+    return toBroadcaster(created);
+}

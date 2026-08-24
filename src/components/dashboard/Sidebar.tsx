@@ -16,6 +16,7 @@ import {
     Radio,
     ChevronUp,
     Clapperboard,
+    Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -27,6 +28,7 @@ import { DashboardNoticeDialog } from "./DashboardNoticeDialog";
 
 const navItems = [
     { name: "监控看板", href: "/dashboard", icon: LayoutDashboard },
+    { name: "礼物流水", href: "/dashboard/gift-stream", icon: Gift },
     { name: "盲盒分析", href: "/dashboard/blindbox", icon: Box },
     { name: "开播记录", href: "/dashboard/live", icon: Radio },
     { name: "数据分析", href: "/dashboard/analytics", icon: BarChart3 },

@@ -6,6 +6,7 @@ B站直播数据监控面板 - 前端项目
 
 - **实时监控看板** - 弹幕、礼物、舰长、SC 实时展示
 - **数据统计分析** - 收入趋势、用户排行、互动数据
+- **礼物流水回填** - 扫码即可（不必先填身份码），Cookie 用对称密钥异或保存；网页只入队，采集端按顺序拉取今年 1 月 1 日到昨天的收礼记录
 - **盲盒盈亏分析** - 心动盲盒开出记录与盈亏计算
 - **切片看板** - 可拖拽的数据展示面板
 
@@ -35,6 +36,7 @@ cp .env.example .env
 
 # 3. 同步数据库
 npx prisma db push
+# 已有库也可执行 prisma/add_gift_stream.sql 补扫码登录和礼物流水表
 
 # 4. 启动开发服务器
 npm run dev
@@ -93,6 +95,8 @@ docker inspect biweb-postgres --format '{{range $name, $_ := .NetworkSettings.Ne
 | 变量名 | 说明 | 示例 |
 |--------|------|------|
 | `DATABASE_URL` | PostgreSQL 连接串 | `postgresql://user:pass@localhost:5432/db` |
+| `SESSION_SECRET` | 面板会话加密密钥 | 至少 32 字符 |
+| `BILI_COOKIE_SECRET` | 还原 Cookie 的对称密钥（可选，缺省用 SESSION_SECRET） | 任意字符串 |
 
 ## 项目结构
 

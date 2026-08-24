@@ -8,6 +8,7 @@ import {
 
 const dashboardRoutes = [
     '/dashboard',
+    '/dashboard/gift-stream',
     '/dashboard/blindbox',
     '/dashboard/live',
     '/dashboard/analytics',

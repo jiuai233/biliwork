@@ -1,4 +1,4 @@
-import { login, logout, getSession, requireAuth } from '@/lib/auth';
+import { login, loginByUid, logout, getSession, requireAuth } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getBroadcasterByUidAndCode, getBroadcasterByUidForLogin } from '@/lib/data';
@@ -86,6 +86,28 @@ describe('Auth (iron-session)', () => {
             (getBroadcasterByUidAndCode as jest.Mock).mockResolvedValue(null);
 
             const result = await login(123, 'anything');
+
+            expect(mockSession.save).not.toHaveBeenCalled();
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('loginByUid', () => {
+        it('establishes a session for a registered broadcaster', async () => {
+            (getBroadcasterByUidForLogin as jest.Mock).mockResolvedValue({ uid: 123, password_hash: 'hash' });
+
+            const result = await loginByUid(123);
+
+            expect(mockSession.uid).toBe(123);
+            expect(mockSession.isLoggedIn).toBe(true);
+            expect(mockSession.save).toHaveBeenCalled();
+            expect(result).toBe(true);
+        });
+
+        it('rejects an unknown uid', async () => {
+            (getBroadcasterByUidForLogin as jest.Mock).mockResolvedValue(null);
+
+            const result = await loginByUid(123);
 
             expect(mockSession.save).not.toHaveBeenCalled();
             expect(result).toBe(false);

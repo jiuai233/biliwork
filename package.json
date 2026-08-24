@@ -39,6 +39,7 @@
     "modern-screenshot": "^4.6.7",
     "next": "16.3.1",
     "prisma": "^6.19.2",
+    "qrcode.react": "^4.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "server-only": "^0.0.1",
