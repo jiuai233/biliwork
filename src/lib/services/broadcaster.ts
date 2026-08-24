@@ -8,9 +8,10 @@ export type BroadcasterAdminRow = Broadcaster & {
     isLive?: boolean;
 };
 
-function toBroadcaster(b: PrismaBroadcaster): Broadcaster {
+function toBroadcaster(b: PrismaBroadcaster & { user?: { passwordHash: string | null; lastLoginAt: bigint | null } | null }): Broadcaster {
     return {
         id: b.id,
+        user_id: b.userId,
         auth_code: b.authCode,
         room_id: b.roomId,
         uid: b.uid ? Number(b.uid) : null,
@@ -19,12 +20,14 @@ function toBroadcaster(b: PrismaBroadcaster): Broadcaster {
         open_id: b.openId,
         room_name: b.roomName,
         active: b.active,
-        password_hash: b.passwordHash,
+        password_hash: b.user?.passwordHash ?? b.passwordHash,
         created_at: Number(b.createdAt),
         updated_at: Number(b.updatedAt),
-        // last_login_at 列由 add-last-login.sql 添加；client 未重新生成前
-        // 运行时 findMany 已返回该列，这里仅做类型收窄。
-        last_login_at: (b as unknown as { lastLoginAt?: bigint | null }).lastLoginAt ? Number((b as unknown as { lastLoginAt: bigint }).lastLoginAt) : null,
+        last_login_at: b.user?.lastLoginAt
+            ? Number(b.user.lastLoginAt)
+            : b.lastLoginAt
+                ? Number(b.lastLoginAt)
+                : null,
     };
 }
 
@@ -162,7 +165,8 @@ async function getLiveStatusByRoomIds(roomIds: number[]): Promise<Map<number, bo
 // Broadcaster Management
 export async function getAllBroadcasters(): Promise<BroadcasterAdminRow[]> {
     const broadcasters = await prisma.broadcaster.findMany({
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: { user: true },
     });
     const mappedBroadcasters = broadcasters.map((b) => toBroadcaster(b));
     const roomIds = mappedBroadcasters
@@ -265,14 +269,24 @@ function getCreateBroadcasterErrorMessage(error: unknown): string {
 
 async function createBroadcasterRecord(authCode: string, active: number, passwordHash: string | null) {
     const now = BigInt(Date.now());
-    await prisma.broadcaster.create({
-        data: {
-            authCode,
-            active,
-            passwordHash,
-            createdAt: now,
-            updatedAt: now
-        }
+    await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+            data: {
+                passwordHash,
+                createdAt: now,
+                updatedAt: now,
+            },
+        });
+        await tx.broadcaster.create({
+            data: {
+                userId: user.id,
+                authCode,
+                active,
+                passwordHash,
+                createdAt: now,
+                updatedAt: now,
+            },
+        });
     });
 }
 
@@ -325,14 +339,20 @@ export async function updateBroadcasterStatus(id: number, active: boolean): Prom
 }
 
 export async function updateBroadcasterPassword(id: number, passwordHash: string): Promise<boolean> {
-    const result = await prisma.broadcaster.update({
-        where: { id },
-        data: {
-            passwordHash,
-            updatedAt: BigInt(Date.now())
-        }
-    });
-    return !!result;
+    const now = BigInt(Date.now());
+    const current = await prisma.broadcaster.findUnique({ where: { id } });
+    if (!current) return false;
+    await prisma.$transaction([
+        prisma.broadcaster.update({
+            where: { id },
+            data: { passwordHash, updatedAt: now },
+        }),
+        prisma.user.update({
+            where: { id: current.userId },
+            data: { passwordHash, updatedAt: now },
+        }),
+    ]);
+    return true;
 }
 
 export async function updateBroadcasterAuthCode(
@@ -378,7 +398,8 @@ export async function getBroadcasterByUidAndCode(uid: number, authCode: string):
         where: {
             uid: BigInt(uid),
             authCode
-        }
+        },
+        include: { user: true },
     });
 
     if (!b) return undefined;
@@ -387,18 +408,13 @@ export async function getBroadcasterByUidAndCode(uid: number, authCode: string):
 }
 
 export async function getBroadcasterByUidForLogin(uid: number): Promise<Broadcaster | undefined> {
-    const b = await prisma.broadcaster.findFirst({
-        where: { uid: BigInt(uid) }
-    });
-
-    if (!b) return undefined;
-
-    return toBroadcaster(b);
+    return getBroadcasterByUid(uid);
 }
 
 export async function getBroadcasterById(id: number): Promise<Broadcaster | undefined> {
     const b = await prisma.broadcaster.findUnique({
-        where: { id }
+        where: { id },
+        include: { user: true },
     });
 
     if (!b) return undefined;
@@ -407,8 +423,17 @@ export async function getBroadcasterById(id: number): Promise<Broadcaster | unde
 }
 
 export async function getBroadcasterByUid(uid: number): Promise<Broadcaster | undefined> {
+    const identity = await prisma.userIdentity.findUnique({
+        where: { provider_providerUid: { provider: 'bilibili', providerUid: String(uid) } },
+        include: { user: { include: { broadcaster: true } } },
+    });
+    if (identity?.user.broadcaster) {
+        return toBroadcaster({ ...identity.user.broadcaster, user: identity.user });
+    }
+
     const b = await prisma.broadcaster.findFirst({
-        where: { uid: BigInt(uid) }
+        where: { uid: BigInt(uid) },
+        include: { user: true },
     });
 
     if (!b) return undefined;
@@ -416,40 +441,69 @@ export async function getBroadcasterByUid(uid: number): Promise<Broadcaster | un
     return toBroadcaster(b);
 }
 
-/** 扫码开通：没有身份码也能进礼物流水。采集器只拉 active=1，这里固定 0。 */
+/** 扫码开通：只建 user + identity；身份码可空，采集端不会连。 */
 export async function ensureBroadcasterFromQr(
     uid: number,
     profile?: { uname?: string; uface?: string; roomId?: number },
 ): Promise<Broadcaster> {
-    const existing = await prisma.broadcaster.findFirst({
-        where: { uid: BigInt(uid) },
-    });
+    const now = BigInt(Date.now());
+    const existing = await getBroadcasterByUid(uid);
     if (existing) {
-        const now = BigInt(Date.now());
         const updated = await prisma.broadcaster.update({
             where: { id: existing.id },
             data: {
                 uname: profile?.uname || existing.uname,
                 uface: profile?.uface || existing.uface,
-                roomId: profile?.roomId || existing.roomId,
+                roomId: profile?.roomId || existing.room_id,
+                uid: BigInt(uid),
+                updatedAt: now,
+            },
+            include: { user: true },
+        });
+        await prisma.user.update({
+            where: { id: updated.userId },
+            data: {
+                name: profile?.uname || updated.user.name,
+                avatar: profile?.uface || updated.user.avatar,
+                lastLoginAt: now,
                 updatedAt: now,
             },
         });
         return toBroadcaster(updated);
     }
 
-    const now = BigInt(Date.now());
-    const created = await prisma.broadcaster.create({
-        data: {
-            authCode: `qr-${uid}`,
-            uid: BigInt(uid),
-            uname: profile?.uname ?? null,
-            uface: profile?.uface ?? null,
-            roomId: profile?.roomId ?? null,
-            active: 0,
-            createdAt: now,
-            updatedAt: now,
-        },
+    return prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+            data: {
+                name: profile?.uname ?? null,
+                avatar: profile?.uface ?? null,
+                lastLoginAt: now,
+                createdAt: now,
+                updatedAt: now,
+            },
+        });
+        await tx.userIdentity.create({
+            data: {
+                userId: user.id,
+                provider: 'bilibili',
+                providerUid: String(uid),
+                createdAt: now,
+            },
+        });
+        const created = await tx.broadcaster.create({
+            data: {
+                userId: user.id,
+                authCode: null,
+                uid: BigInt(uid),
+                uname: profile?.uname ?? null,
+                uface: profile?.uface ?? null,
+                roomId: profile?.roomId ?? null,
+                active: 0,
+                createdAt: now,
+                updatedAt: now,
+            },
+            include: { user: true },
+        });
+        return toBroadcaster(created);
     });
-    return toBroadcaster(created);
 }

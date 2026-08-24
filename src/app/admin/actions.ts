@@ -190,7 +190,7 @@ export async function revealBroadcasterAuthCodeAction(
         const broadcaster = await getBroadcasterById(id);
         if (!broadcaster) return { success: false, message: '主播不存在' };
 
-        return { success: true, authCode: broadcaster.auth_code };
+        return { success: true, authCode: broadcaster.auth_code ?? undefined };
     } catch {
         return { success: false, message: '系统错误' };
     }

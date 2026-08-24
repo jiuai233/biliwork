@@ -28,7 +28,7 @@ export function LoginClient() {
             const result = await loginAction(Number(uid), password);
             if (result.success) {
                 toast.success('登录成功');
-                window.location.replace('/dashboard');
+                window.location.replace(result.next);
             } else {
                 toast.error('登录失败', { description: 'UID 或 密码错误' });
             }

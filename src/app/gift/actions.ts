@@ -1,5 +1,6 @@
 'use server';
 
+import { hasLiveAuthCode } from '@/lib/access';
 import { getSession, loginByUid } from '@/lib/auth';
 import { fetchBiliProfile, generateBiliQr, pollBiliQr } from '@/lib/bili-client';
 import { dropQrSession, rememberQrSession, takeQrSession } from '@/lib/bili-qr-sessions';
@@ -72,6 +73,7 @@ export async function getGiftReportAction(startTime?: number, endTime?: number) 
         ok: true as const,
         uname: broadcaster.uname,
         uid: broadcaster.uid,
+        hasLiveAuth: hasLiveAuthCode(broadcaster.auth_code),
         ...report,
     };
 }

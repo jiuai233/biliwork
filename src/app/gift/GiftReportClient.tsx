@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { endOfDay, startOfDay } from 'date-fns';
-import { Download, Gift, Loader2, TrendingDown, TrendingUp } from 'lucide-react';
+import { Download, Gift, Loader2, LogOut, TrendingDown, TrendingUp } from 'lucide-react';
+import { logout } from '@/lib/auth';
 import { toast } from 'sonner';
 import { BiliQrPanel } from '@/components/bilibili/BiliQrPanel';
 import { AnalyticsDateRangePicker, type DateRange } from '@/components/dashboard/AnalyticsDateRangePicker';
@@ -22,7 +23,7 @@ import {
 
 type Report = Extract<Awaited<ReturnType<typeof getGiftReportAction>>, { ok: true }>;
 
-type Phase = 'qr' | 'waiting' | 'report';
+type Phase = 'boot' | 'qr' | 'waiting' | 'report';
 
 function formatYmd(value: string | null): string {
     if (!value || value.length !== 8) return '-';
@@ -63,7 +64,7 @@ function defaultDateRange(): DateRange {
 }
 
 export function GiftReportClient() {
-    const [phase, setPhase] = useState<Phase>('qr');
+    const [phase, setPhase] = useState<Phase>('boot');
     const [report, setReport] = useState<Report | null>(null);
     const [exporting, setExporting] = useState(false);
     const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange);
@@ -84,11 +85,24 @@ export function GiftReportClient() {
         return result;
     }, [rangeTimes.startTime, rangeTimes.endTime]);
 
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            const result = await loadReport();
+            if (cancelled) return;
+            if (result) setPhase('report');
+            else setPhase((current) => (current === 'report' || current === 'waiting' ? current : 'qr'));
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [loadReport]);
+
     const syncStatus = report?.status.syncStatus;
     const state = syncState(syncStatus);
 
     useEffect(() => {
-        if (phase === 'qr') return;
+        if (phase === 'qr' || phase === 'boot') return;
         let cancelled = false;
         let timer: ReturnType<typeof setInterval> | undefined;
 
@@ -117,6 +131,15 @@ export function GiftReportClient() {
             </div>
 
             <div className="relative mx-auto w-full max-w-3xl space-y-4">
+                {phase === 'boot' && (
+                    <SectionCard title="收礼报告" accent="bg-primary" bodyClassName="px-4 py-10">
+                        <EmptyState
+                            icon={<Loader2 className="h-6 w-6 animate-spin text-primary" />}
+                            title="正在恢复会话"
+                        />
+                    </SectionCard>
+                )}
+
                 {phase === 'qr' && (
                     <SectionCard title="收礼报告" accent="bg-primary" bodyClassName="px-4 py-5">
                         <p className="mb-4 text-center text-sm text-muted-foreground">
@@ -159,6 +182,17 @@ export function GiftReportClient() {
                                     date={dateRange}
                                     setDate={(next) => setDateRange(next ?? defaultDateRange())}
                                 />
+                                {report.hasLiveAuth ? (
+                                    <Button type="button" variant="outline" className="h-9 rounded-lg" onClick={() => { window.location.href = '/dashboard'; }}>
+                                        进入看板
+                                    </Button>
+                                ) : null}
+                                <form action={logout}>
+                                    <Button type="submit" variant="ghost" className="h-9 rounded-lg">
+                                        <LogOut className="h-4 w-4" />
+                                        退出
+                                    </Button>
+                                </form>
                                 <Button
                                     type="button"
                                     className="h-9 rounded-lg"

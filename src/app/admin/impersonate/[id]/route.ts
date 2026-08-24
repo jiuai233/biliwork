@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getIronSession } from 'iron-session';
 import { getAdminSession } from '@/app/admin/actions';
+import { homePathForAuthCode } from '@/lib/access';
 import { getBroadcasterById } from '@/lib/data';
 import {
     broadcasterSessionOptions,
@@ -60,13 +61,15 @@ export async function GET(
 
     const session = await getIronSession<BroadcasterSessionData>(await cookies(), broadcasterSessionOptions());
     session.uid = broadcaster.uid;
+    session.userId = broadcaster.user_id ?? undefined;
     session.isLoggedIn = true;
     session.pwdv = passwordStamp(broadcaster.password_hash);
     await session.save();
 
+    const home = homePathForAuthCode(broadcaster.auth_code);
     if (wantsJson) {
-        return NextResponse.json({ success: true, redirectTo: '/dashboard' });
+        return NextResponse.json({ success: true, redirectTo: home });
     }
 
-    return NextResponse.redirect(getRedirectUrl(request, '/dashboard'));
+    return NextResponse.redirect(getRedirectUrl(request, home));
 }

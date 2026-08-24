@@ -1,8 +1,10 @@
 
 import type { Metadata } from "next";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { hasLiveAuthCode } from "@/lib/access";
 import { requireAuth } from "@/lib/auth";
 import { getBroadcasterByUid } from "@/lib/data";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
     title: "监控看板 - Bili Monitor",
@@ -27,6 +29,9 @@ export default async function DashboardLayout({
 }) {
     const uid = await requireAuth();
     const broadcaster = await getBroadcasterByUid(uid);
+    if (!hasLiveAuthCode(broadcaster?.auth_code)) {
+        redirect('/gift');
+    }
 
     return (
         <div className="flex min-h-screen bg-background lg:h-screen lg:overflow-hidden">

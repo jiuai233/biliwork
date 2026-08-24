@@ -17,20 +17,33 @@ import bcrypt from 'bcryptjs';
 
 // ==================== 主播认证 ====================
 
-async function establishBroadcasterSession(user: { id: number; uid: number | null; password_hash?: string | null }) {
+async function establishBroadcasterSession(user: {
+    id: number;
+    user_id?: number | null;
+    uid: number | null;
+    password_hash?: string | null;
+}) {
     if (!user.uid) return false;
 
+    const now = BigInt(Date.now());
     try {
         await prisma.$executeRawUnsafe(
             'UPDATE broadcasters SET last_login_at = $1 WHERE id = $2',
-            BigInt(Date.now()), user.id,
+            now, user.id,
         );
+        if (user.user_id) {
+            await prisma.user.update({
+                where: { id: user.user_id },
+                data: { lastLoginAt: now, updatedAt: now },
+            });
+        }
     } catch (error) {
         console.error('Failed to record last login:', error);
     }
 
     const session = await getIronSession<BroadcasterSessionData>(await cookies(), broadcasterSessionOptions());
     session.uid = Number(user.uid);
+    session.userId = user.user_id ?? undefined;
     session.isLoggedIn = true;
     session.pwdv = passwordStamp(user.password_hash);
     await session.save();
@@ -69,8 +82,21 @@ export async function logout() {
 
 export async function getSession() {
     const session = await getIronSession<BroadcasterSessionData>(await cookies(), broadcasterSessionOptions());
-    if (!session.isLoggedIn || !session.uid) return null;
+    if (!session.isLoggedIn) return null;
 
+    if (session.userId) {
+        const account = await prisma.user.findUnique({ where: { id: session.userId } });
+        if (!account || passwordStamp(account.passwordHash) !== (session.pwdv ?? '')) {
+            return null;
+        }
+        if (session.uid) return session.uid;
+        const identity = await prisma.userIdentity.findFirst({
+            where: { userId: account.id, provider: 'bilibili' },
+        });
+        return identity ? Number(identity.providerUid) : null;
+    }
+
+    if (!session.uid) return null;
     const user = await getBroadcasterByUidForLogin(session.uid);
     if (!user || passwordStamp(user.password_hash) !== (session.pwdv ?? '')) {
         return null;

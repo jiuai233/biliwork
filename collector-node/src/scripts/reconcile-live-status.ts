@@ -104,7 +104,7 @@ async function loadBroadcasters(args: Args) {
     const result = await pool.query<BroadcasterRow>(`
         SELECT room_id, uname
         FROM broadcasters
-        WHERE active = 1 AND room_id IS NOT NULL
+        WHERE active = 1 AND room_id IS NOT NULL AND auth_code IS NOT NULL
         ORDER BY room_id
     `);
 

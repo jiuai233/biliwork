@@ -10,10 +10,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== 主播配置表 ====================
+// ==================== 平台用户 ====================
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String?
+  avatar       String?
+  passwordHash String?  @map("password_hash")
+  lastLoginAt  BigInt?  @map("last_login_at")
+  createdAt    BigInt   @map("created_at")
+  updatedAt    BigInt   @map("updated_at")
+
+  identities  UserIdentity[]
+  broadcaster Broadcaster?
+
+  @@map("users")
+}
+
+model UserIdentity {
+  id          Int    @id @default(autoincrement())
+  userId      Int    @map("user_id")
+  provider    String
+  providerUid String @map("provider_uid")
+  createdAt   BigInt @map("created_at")
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUid])
+  @@index([userId])
+  @@map("user_identities")
+}
+
+// ==================== 直播采集绑定（身份码可空） ====================
 model Broadcaster {
   id           Int      @id @default(autoincrement())
-  authCode     String   @unique @map("auth_code")
+  userId       Int      @unique @map("user_id")
+  authCode     String?  @unique @map("auth_code")
   roomId       Int?     @map("room_id")
   uid          BigInt?
   uname        String?
@@ -26,6 +56,7 @@ model Broadcaster {
   updatedAt    BigInt   @map("updated_at")
   lastLoginAt  BigInt?  @map("last_login_at")
 
+  user          User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
   biliSession   BroadcasterBiliSession?
   receivedGifts ReceivedGift[]
 

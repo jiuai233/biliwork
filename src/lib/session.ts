@@ -1,5 +1,6 @@
 export type BroadcasterSessionData = {
-    uid: number;
+    uid?: number;
+    userId?: number;
     isLoggedIn: boolean;
     pwdv: string;
 };

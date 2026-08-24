@@ -1,7 +1,8 @@
 
 export interface Broadcaster {
     id: number;
-    auth_code: string;
+    user_id: number | null;
+    auth_code: string | null;
     room_id: number | null;
     uid: number | null;
     uname: string | null;

@@ -158,7 +158,7 @@ export class CollectorManager {
                 ORDER BY ts DESC
                 LIMIT 1
             ) ls ON true
-            WHERE b.active = 1
+            WHERE b.active = 1 AND b.auth_code IS NOT NULL
         `);
         return result.rows;
     }
@@ -313,7 +313,7 @@ export class CollectorManager {
     private async isBroadcasterActive(authCode: string): Promise<boolean | undefined> {
         try {
             const result = await pool.query<{ auth_code: string }>(
-                'SELECT auth_code FROM broadcasters WHERE auth_code = $1 AND active = 1 LIMIT 1',
+                'SELECT auth_code FROM broadcasters WHERE auth_code = $1 AND auth_code IS NOT NULL AND active = 1 LIMIT 1',
                 [authCode],
             );
             return result.rows.length > 0;
