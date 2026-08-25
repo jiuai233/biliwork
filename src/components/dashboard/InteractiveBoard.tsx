@@ -31,8 +31,6 @@ import {
     mergeTransactionsIntoBoard,
 } from "@/lib/board-merge";
 import {
-    AlignCenter,
-    AlignRight,
     ChevronDown,
     Clock,
     Download,
@@ -58,38 +56,16 @@ type BoardSession = {
     totalIncome: number;
 };
 
-export type CanvasTheme = 'transparent' | 'dark' | 'bili' | 'clean';
-export type CanvasAlignment = 'right' | 'center';
-
-// --- Droppable Board Area ---
 function BoardArea({
     items,
     onRemove,
-    bgTheme,
-    alignment,
 }: {
     items: BoardTransaction[];
     onRemove: (id: string) => void;
-    bgTheme: CanvasTheme;
-    alignment: CanvasAlignment;
 }) {
     const { setNodeRef } = useDroppable({
         id: "board-droppable",
     });
-
-    const getBgStyle = () => {
-        switch (bgTheme) {
-            case 'dark':
-                return { background: "linear-gradient(160deg, #090d16 0%, #151b28 100%)", borderRadius: "16px" };
-            case 'bili':
-                return { background: "linear-gradient(160deg, #181126 0%, #2a133d 100%)", borderRadius: "16px" };
-            case 'clean':
-                return { background: "linear-gradient(160deg, #f8fafc 0%, #e2e8f0 100%)", borderRadius: "16px" };
-            case 'transparent':
-            default:
-                return { background: "transparent" };
-        }
-    };
 
     return (
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
@@ -97,15 +73,15 @@ function BoardArea({
                 ref={setNodeRef}
                 id="board-canvas"
                 style={{
-                    padding: bgTheme === 'transparent' ? "16px" : "24px 20px",
+                    padding: "16px",
                     width: "100%",
                     boxSizing: "border-box",
                     display: "flex",
                     flexDirection: "column",
-                    alignItems: alignment === 'center' ? "center" : "flex-end",
+                    alignItems: "flex-end",
                     gap: "14px",
                     minHeight: "100%",
-                    ...getBgStyle(),
+                    background: "transparent",
                 }}
             >
 
@@ -166,11 +142,6 @@ export function InteractiveBoard({
     const [sessionPickerOpen, setSessionPickerOpen] = useState(false);
     const [isSessionPending, startSessionTransition] = useTransition();
     const sessionRequestRef = React.useRef(0);
-
-    // Canvas Customization States
-    const [bgTheme, setBgTheme] = useState<CanvasTheme>('transparent');
-    const [alignment, setAlignment] = useState<CanvasAlignment>('right');
-
 
     // Filters
     const [searchName, setSearchName] = useState("");
@@ -457,21 +428,13 @@ export function InteractiveBoard({
             toast.info("正在生成高清图片...");
 
             const cardWidth = `${BILI_CARD_WIDTH}px`;
-
-            if (bgTheme === 'transparent') {
-                element.style.minHeight = "0";
-                element.style.width = cardWidth;
-                element.style.padding = "0";
-            } else {
-                element.style.minHeight = "0";
-                element.style.width = `${BILI_CARD_WIDTH + 48}px`;
-                element.style.padding = "24px 20px";
-                element.style.alignItems = "center";
-            }
+            element.style.minHeight = "0";
+            element.style.width = cardWidth;
+            element.style.padding = "0";
 
             const dataUrl = await domToPng(element, {
                 scale: 2,
-                backgroundColor: bgTheme === 'transparent' ? null : (bgTheme === 'clean' ? '#f8fafc' : '#090d16'),
+                backgroundColor: null,
                 filter: (el) => {
                     if (el instanceof HTMLElement && el.hasAttribute("data-html2canvas-ignore")) {
                         return false;
@@ -731,100 +694,6 @@ export function InteractiveBoard({
                                 <h2 className="text-sm font-bold text-foreground">组合看板</h2>
                                 <span className="font-mono text-xs text-muted-foreground">({boardItems.length} 项)</span>
                             </div>
-
-                            {/* Canvas Background Theme Switcher */}
-                            <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs">
-                                <button
-                                    type="button"
-                                    aria-pressed={bgTheme === 'transparent'}
-                                    onClick={() => setBgTheme('transparent')}
-                                    title="透明底（OBS 贴图推流专用）"
-                                    className={cn(
-                                        "rounded-md px-2 py-1 font-semibold transition-colors",
-                                        bgTheme === 'transparent'
-                                            ? "bg-card text-foreground shadow-xs"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    透明 (OBS)
-                                </button>
-                                <button
-                                    type="button"
-                                    aria-pressed={bgTheme === 'dark'}
-                                    onClick={() => setBgTheme('dark')}
-                                    title="暗黑深邃渐变（朋友圈/动态海报）"
-                                    className={cn(
-                                        "rounded-md px-2 py-1 font-semibold transition-colors",
-                                        bgTheme === 'dark'
-                                            ? "bg-card text-foreground shadow-xs"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    暗黑海报
-                                </button>
-                                <button
-                                    type="button"
-                                    aria-pressed={bgTheme === 'bili'}
-                                    onClick={() => setBgTheme('bili')}
-                                    title="粉紫炫彩高光"
-                                    className={cn(
-                                        "rounded-md px-2 py-1 font-semibold transition-colors",
-                                        bgTheme === 'bili'
-                                            ? "bg-card text-foreground shadow-xs"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    粉紫高光
-                                </button>
-                                <button
-                                    type="button"
-                                    aria-pressed={bgTheme === 'clean'}
-                                    onClick={() => setBgTheme('clean')}
-                                    title="极简浅灰底色"
-                                    className={cn(
-                                        "rounded-md px-2 py-1 font-semibold transition-colors",
-                                        bgTheme === 'clean'
-                                            ? "bg-card text-foreground shadow-xs"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    极简浅灰
-                                </button>
-                            </div>
-
-                            {/* Alignment Switcher */}
-                            <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
-                                <button
-                                    type="button"
-                                    aria-pressed={alignment === 'right'}
-                                    onClick={() => setAlignment('right')}
-                                    title="靠右对齐（OBS 画中画标准位置）"
-                                    className={cn(
-                                        "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-colors",
-                                        alignment === 'right'
-                                            ? "bg-card text-foreground shadow-xs"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    <AlignRight className="h-3.5 w-3.5" />
-                                    <span>靠右</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    aria-pressed={alignment === 'center'}
-                                    onClick={() => setAlignment('center')}
-                                    title="居中对齐（海报长图对称美感）"
-                                    className={cn(
-                                        "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-colors",
-                                        alignment === 'center'
-                                            ? "bg-card text-foreground shadow-xs"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    <AlignCenter className="h-3.5 w-3.5" />
-                                    <span>居中</span>
-                                </button>
-                            </div>
                         </div>
 
                         <div className="flex w-full min-w-0 flex-wrap items-center gap-2 md:w-auto md:justify-end">
@@ -911,22 +780,11 @@ export function InteractiveBoard({
                     </div>
 
                     {/* Scrollable Canvas Container */}
-                    <div className={cn(
-                        "min-h-[380px] min-w-0 flex-1 overflow-hidden rounded-xl border border-border shadow-xs transition-colors",
-                        bgTheme === 'transparent'
-                            ? "checkerboard"
-                            : bgTheme === 'dark'
-                                ? "bg-[#090d16]"
-                                : bgTheme === 'bili'
-                                    ? "bg-[#181126]"
-                                    : "bg-[#f1f5f9]"
-                    )}>
+                    <div className="checkerboard min-h-[380px] min-w-0 flex-1 overflow-hidden rounded-xl border border-border shadow-xs">
                         <div className="dark-scrollbar h-full w-full overflow-auto">
                             <BoardArea
                                 items={boardItems}
                                 onRemove={handleRemoveFromBoard}
-                                bgTheme={bgTheme}
-                                alignment={alignment}
                             />
                         </div>
                     </div>
