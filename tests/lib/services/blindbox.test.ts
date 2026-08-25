@@ -1,6 +1,7 @@
 import {
     BLINDBOX_COST,
     BLINDBOX_GIFTS,
+    BLINDBOX_PRIZES,
     buildBlindboxStatsFromGiftCounts,
     getBlindboxStats,
     getBlindboxStreamerSummaries,
@@ -47,12 +48,38 @@ test('buildBlindboxStatsFromGiftCounts fills all gift types and ignores unknown 
         { giftName: '未知礼物', count: 9 },
     ]);
 
-    expect(stats.distribution).toHaveLength(Object.keys(BLINDBOX_GIFTS).length);
+    expect(stats.distribution).toHaveLength(Object.keys(BLINDBOX_PRIZES).length);
     expect(stats.totalBoxes).toBe(6);
     expect(stats.totalCost).toBe(6 * BLINDBOX_COST);
-    expect(stats.totalOutput).toBe(4 * BLINDBOX_GIFTS['电影票'] + 2 * BLINDBOX_GIFTS['棉花糖']);
+    expect(stats.totalOutput).toBe(4 * BLINDBOX_PRIZES['电影票'] + 2 * BLINDBOX_PRIZES['棉花糖']);
     expect(stats.distribution.find((item) => item.name === '电影票')?.count).toBe(4);
     expect(stats.distribution.find((item) => item.name === '浪漫城堡')?.count).toBe(0);
+    expect(stats.distribution.find((item) => item.name === '神驹宝玺')).toMatchObject({ count: 0, value: 2000 });
+    expect(stats.distribution.find((item) => item.name === '蛇形护符')).toBeUndefined();
+});
+
+test('folds shuvi skins into the parent prize for stats', () => {
+    const stats = buildBlindboxStatsFromGiftCounts([
+        { giftName: '神驹宝玺', count: 1 },
+        { giftName: '蛇形护符', count: 2 },
+        { giftName: '梦幻气球', count: 3 },
+        { giftName: '电影票', count: 1 },
+    ]);
+
+    expect(stats.distribution.find((item) => item.name === '神驹宝玺')).toMatchObject({
+        count: 3,
+        value: 2000,
+        totalValue: 6000,
+    });
+    expect(stats.distribution.find((item) => item.name === '电影票')).toMatchObject({
+        count: 4,
+        value: 20,
+        totalValue: 80,
+    });
+    expect(stats.totalBoxes).toBe(7);
+    expect(stats.totalOutput).toBe(6080);
+    expect(BLINDBOX_GIFTS['蛇形护符']).toBe(BLINDBOX_PRIZES['神驹宝玺']);
+    expect(BLINDBOX_GIFTS['梦幻气球']).toBe(BLINDBOX_PRIZES['电影票']);
 });
 
 test('getBlindboxStats returns empty totals without querying when room list is empty', async () => {

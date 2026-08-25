@@ -3,21 +3,54 @@ import type { LiveStatus as PrismaLiveStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import type { BlindboxRecord, BlindboxStats, BlindboxStreamerSummary, GiftDistribution, LiveStatusRecord } from '@/lib/types';
 
-// 盲盒成本（电池）
+// 盲盒成本（电池）——心动盲盒 / 疯五预演
 export const BLINDBOX_COST = 150;
 
-// 盲盒可开出的礼物及其价值（电池）
-export const BLINDBOX_GIFTS: Record<string, number> = {
+/** 心动盲盒内容物，对齐 gift.shuvi.moe/api/blind-gifts id=32251 */
+export const BLINDBOX_PRIZES: Record<string, number> = {
     '浪漫城堡': 22330,
-    '蛇形护符': 2000,
+    '神驹宝玺': 2000,
     '时空之站': 1000,
     '绮彩权杖': 400,
     '爱心抱枕': 160,
     '棉花糖': 90,
-    '电影票': 20
+    '电影票': 20,
 };
 
-// 所有盲盒礼物名称列表
+/** 皮肤名 → 本体名（shuvi subGifts） */
+export const BLINDBOX_SKINS: Record<string, string> = {
+    '蛇形护符': '神驹宝玺',
+    '梦幻气球': '电影票',
+    '冰晶雪花': '电影票',
+    '盛典礼花': '电影票',
+    '星星糖': '棉花糖',
+    '水晶星星': '棉花糖',
+    '星际徽章': '棉花糖',
+    '梦境玫瑰': '爱心抱枕',
+    '冰晶之球': '爱心抱枕',
+    '荣耀皇冠': '爱心抱枕',
+    '光辉之星': '绮彩权杖',
+};
+
+export function resolveBlindboxPrizeName(name: string | null | undefined): string | null {
+    if (!name) return null;
+    if (Object.prototype.hasOwnProperty.call(BLINDBOX_PRIZES, name)) return name;
+    return BLINDBOX_SKINS[name] ?? null;
+}
+
+export function blindboxGiftValue(name: string | null | undefined): number {
+    const canonical = resolveBlindboxPrizeName(name);
+    return canonical ? BLINDBOX_PRIZES[canonical] : 0;
+}
+
+/** 流水匹配用：本体 + 皮肤 → 电池价 */
+export const BLINDBOX_GIFTS: Record<string, number> = {
+    ...BLINDBOX_PRIZES,
+    ...Object.fromEntries(
+        Object.entries(BLINDBOX_SKINS).map(([skin, parent]) => [skin, BLINDBOX_PRIZES[parent]]),
+    ),
+};
+
 export const BLINDBOX_GIFT_NAMES = Object.keys(BLINDBOX_GIFTS);
 
 type GiftCountRow = { giftName: string | null; count: number };
@@ -59,7 +92,7 @@ function roomIdFilter(roomId: number | number[]): number | { in: number[] } | nu
 
 export function mapGiftRowsToBlindboxRecords(rows: GiftRecordRow[]): BlindboxRecord[] {
     return rows.map((row) => {
-        const giftValue = BLINDBOX_GIFTS[row.giftName || ''] || 0;
+        const giftValue = blindboxGiftValue(row.giftName);
         const cost = BLINDBOX_COST * row.giftNum;
         const sourceId = row.id.toString();
 
@@ -84,18 +117,19 @@ export function buildBlindboxStatsFromGiftCounts(
     records: BlindboxRecord[] = [],
 ): BlindboxStats {
     const countByName = new Map<string, number>();
-    for (const name of Object.keys(BLINDBOX_GIFTS)) {
+    for (const name of Object.keys(BLINDBOX_PRIZES)) {
         countByName.set(name, 0);
     }
 
     for (const row of giftCounts) {
-        if (!row.giftName || !countByName.has(row.giftName)) continue;
-        countByName.set(row.giftName, (countByName.get(row.giftName) ?? 0) + row.count);
+        const canonical = resolveBlindboxPrizeName(row.giftName);
+        if (!canonical) continue;
+        countByName.set(canonical, (countByName.get(canonical) ?? 0) + row.count);
     }
 
     const distribution: GiftDistribution[] = [];
     for (const [name, count] of countByName) {
-        const value = BLINDBOX_GIFTS[name];
+        const value = BLINDBOX_PRIZES[name];
         distribution.push({
             name,
             count,
