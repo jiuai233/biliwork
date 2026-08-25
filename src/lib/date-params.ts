@@ -28,11 +28,15 @@ export function endOfLocalDay(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
 
-/** Resolves from/to search params into a normalized ordered range (defaults to today). */
-export function resolveDateRangeParams(params: Record<string, string | string[] | undefined> | undefined) {
+/** Resolves from/to search params into a normalized ordered range (defaults to today or defaultDaysBack). */
+export function resolveDateRangeParams(
+    params: Record<string, string | string[] | undefined> | undefined,
+    defaultDaysBack = 0
+) {
     const today = new Date();
-    const fromDate = parseDateParam(getFirstParam(params?.from)) ?? today;
-    const toDate = parseDateParam(getFirstParam(params?.to)) ?? fromDate;
+    const defaultFrom = defaultDaysBack > 0 ? new Date(today.getTime() - defaultDaysBack * 86400000) : today;
+    const fromDate = parseDateParam(getFirstParam(params?.from)) ?? defaultFrom;
+    const toDate = parseDateParam(getFirstParam(params?.to)) ?? today;
     const normalizedFrom = fromDate.getTime() <= toDate.getTime() ? fromDate : toDate;
     const normalizedTo = fromDate.getTime() <= toDate.getTime() ? toDate : fromDate;
 

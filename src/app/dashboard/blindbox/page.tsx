@@ -1,29 +1,37 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { endOfDay, startOfDay } from "date-fns";
+import { endOfDay, startOfDay, subDays } from "date-fns";
 import { toast } from "sonner";
-import { Avatar, Table } from "@heroui/react";
+import { Table } from "@heroui/react";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
     Box,
-    ChevronDown,
-    ClipboardList,
     Coins,
+    Download,
     Filter,
     Gift,
+    PieChart,
     Search,
     TrendingDown,
     TrendingUp,
 } from "lucide-react";
 import { getBlindboxData } from "./actions";
 import { AnalyticsDateRangePicker, type DateRange } from "@/components/dashboard/AnalyticsDateRangePicker";
-import { EmptyState } from "@/components/shared/EmptyState";
 import { ListPager, useClientPager } from "@/components/shared/ListPager";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SectionCard } from "@/components/shared/SectionCard";
+import { StatCard } from "@/components/shared/StatCard";
 import { tableChrome } from "@/components/shared/table";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { BLINDBOX_COST, BlindboxStats, Broadcaster, GiftDistribution } from "@/lib/types";
@@ -31,6 +39,7 @@ import { cn } from "@/lib/utils";
 
 export default function BlindboxPage() {
     const [loading, setLoading] = useState(true);
+    const [distributionModalOpen, setDistributionModalOpen] = useState(false);
     const [data, setData] = useState<{
         broadcaster: Broadcaster | null;
         stats: BlindboxStats | null;
@@ -39,15 +48,15 @@ export default function BlindboxPage() {
         stats: null,
     });
 
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: new Date(),
-        to: new Date(),
+    // Default to last 30 days to avoid empty state on today
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+        const today = new Date();
+        return { from: subDays(today, 30), to: today };
     });
 
     const [searchUsername, setSearchUsername] = useState("");
     const [searchInput, setSearchInput] = useState("");
     const [giftFilter, setGiftFilter] = useState("all");
-    const [distributionOpen, setDistributionOpen] = useState(false);
     const requestIdRef = useRef(0);
 
     const fetchData = useCallback(async (showError = false) => {
@@ -99,243 +108,377 @@ export default function BlindboxPage() {
     const hasRecords = filteredRecords.length > 0;
     const recordPager = useClientPager(filteredRecords, 20);
 
+    // Export CSV
+    const exportCsv = useCallback(() => {
+        if (!records || records.length === 0) {
+            toast.error('当前列表没有开盒记录可导出');
+            return;
+        }
+        const headers = ['开盒时间', '用户昵称', '产出礼物', '数量', '单价(电池)', '总价值(电池)', '净盈亏(电池)', '盈亏状态'];
+        const rows = filteredRecords.map((r) => [
+            formatDateTime(r.ts),
+            `"${(r.uname ?? '').replace(/"/g, '""')}"`,
+            `"${(r.gift_name ?? '').replace(/"/g, '""')}"`,
+            r.gift_num,
+            r.gift_value / (r.gift_num || 1),
+            r.gift_value,
+            r.profit,
+            r.profit > 0 ? '盈利' : r.profit < 0 ? '亏损' : '持平',
+        ]);
+        const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `blindbox-records-${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('已导出盲盒开盒明细 CSV');
+    }, [filteredRecords, records]);
+
+    // Return rate calculation (产出 / 投入)
+    const returnRate = stats && stats.totalCost > 0
+        ? (stats.totalOutput / stats.totalCost) * 100
+        : 0;
+
     if (loading && !data.broadcaster) {
         return <LoadingScreen tone="orange" />;
     }
 
     return (
-        <div className="space-y-6">
+        <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col space-y-4 lg:space-y-0 lg:gap-4 overflow-y-auto lg:overflow-hidden">
+            {/* Header */}
             <PageHeader
-                icon={<Box className="h-6 w-6" />}
-                iconClass="bg-orange-500/15 text-orange-300"
+                icon={<Box className="h-5 w-5" />}
+                iconClass="bg-orange-500/15 text-orange-400"
                 title="心动盲盒分析"
-                description={<span>成本 {BLINDBOX_COST} 电池/盒，按所选日期统计开盒盈亏。</span>}
-                actions={<AnalyticsDateRangePicker date={dateRange} setDate={setDateRange} />}
+                description={
+                    <span className="flex flex-wrap items-center gap-2 text-xs">
+                        <span>按成本 {BLINDBOX_COST} 电池/盒反推统计开盒盈亏与爆率分布</span>
+                        {data.broadcaster?.uname && (
+                            <>
+                                <span className="text-border">•</span>
+                                <span className="text-muted-foreground font-mono">
+                                    主播: {data.broadcaster.uname}
+                                </span>
+                            </>
+                        )}
+                    </span>
+                }
+                actions={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <AnalyticsDateRangePicker date={dateRange} setDate={setDateRange} />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 gap-1 rounded-lg text-xs"
+                            onClick={exportCsv}
+                        >
+                            <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="hidden sm:inline">导出记录</span>
+                        </Button>
+                    </div>
+                }
             />
 
+            {/* 4 Metric KPI Cards */}
             {stats && (
-                <div className="grid shrink-0 grid-cols-2 overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-4">
-                    <CompactMetric label="开盒次数" value={stats.totalBoxes.toLocaleString()} sub="盒" icon={<Box className="h-4 w-4" />} />
-                    <CompactMetric label="总投入" value={formatCurrency(stats.totalCost / 10)} sub={`${stats.totalCost.toLocaleString()} 电池`} icon={<Coins className="h-4 w-4" />} />
-                    <CompactMetric label="总产出" value={formatCurrency(stats.totalOutput / 10)} sub={`${stats.totalOutput.toLocaleString()} 电池`} icon={<Gift className="h-4 w-4" />} />
-                    <CompactMetric
-                        label="净盈亏"
+                <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
+                    <StatCard
+                        label="开盒总次数"
+                        icon={<Box className="h-4 w-4 text-orange-500" />}
+                        value={`${stats.totalBoxes.toLocaleString()} 盒`}
+                        sub="所选区间统计"
+                        tone="orange"
+                    />
+                    <StatCard
+                        label="总投入成本"
+                        icon={<Coins className="h-4 w-4 text-amber-500" />}
+                        value={formatCurrency(stats.totalCost / 10)}
+                        sub={`${stats.totalCost.toLocaleString()} 电池 (每盒${BLINDBOX_COST})`}
+                        tone="amber"
+                    />
+                    <StatCard
+                        label="礼物总产出"
+                        icon={<Gift className="h-4 w-4 text-sky-500" />}
+                        value={formatCurrency(stats.totalOutput / 10)}
+                        sub={`${stats.totalOutput.toLocaleString()} 电池`}
+                        tone="sky"
+                    />
+                    <StatCard
+                        label="净盈亏收益"
+                        icon={isProfit ? <TrendingUp className="h-4 w-4 text-profit" /> : <TrendingDown className="h-4 w-4 text-loss" />}
                         value={`${isProfit ? "+" : "-"}${formatCurrency(Math.abs(stats.netProfit / 10))}`}
-                        sub={`${isProfit ? "+" : ""}${stats.profitRate.toFixed(2)}%`}
-                        icon={isProfit ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                        valueClass={isProfit ? "text-emerald-400" : "text-red-400"}
+                        sub={`${isProfit ? "+" : ""}${stats.profitRate.toFixed(2)}% 盈利率`}
+                        tone={isProfit ? "emerald" : "orange"}
+                        delta={
+                            isProfit
+                                ? <TrendingUp className="h-3.5 w-3.5 text-profit" />
+                                : <TrendingDown className="h-3.5 w-3.5 text-loss" />
+                        }
                     />
                 </div>
             )}
 
-            <div className="space-y-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:space-y-0 lg:gap-4">
-                <SectionCard
-                    className="shrink-0"
-                    title="礼物分布"
-                    icon={<Gift className="h-5 w-5 text-orange-300" />}
-                    actions={
+            {/* Main Records Table (Full Height Viewport) */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
+                {/* Header Bar with Filters */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card/60 p-3 px-4 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs font-semibold text-foreground">开盒明细流水</span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                            (共 {filteredRecords.length} 条)
+                        </span>
+
+                        {/* Prominent High-Visibility Button */}
                         <button
                             type="button"
-                            onClick={() => setDistributionOpen((open) => !open)}
-                            aria-expanded={distributionOpen}
-                            className="flex h-8 items-center gap-2 rounded-md px-2 text-xs font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                            onClick={() => setDistributionModalOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/25 text-xs font-semibold transition-colors shadow-xs"
                         >
-                            {stats?.distribution.filter((item) => item.count > 0).length ?? 0} 种有产出
-                            <span className="text-orange-300">{distributionOpen ? "收起" : "展开"}</span>
-                            <ChevronDown className={cn("h-4 w-4 transition-transform", distributionOpen && "rotate-180")} />
+                            <PieChart className="h-3.5 w-3.5 text-orange-500" />
+                            <span>查看爆率分布分析</span>
                         </button>
-                    }
-                >
-                    {distributionOpen && (
-                        <div
-                            data-testid="blindbox-distribution-grid"
-                            className="grid grid-cols-2 gap-2 p-3 md:grid-cols-4 xl:grid-cols-7"
-                        >
-                            {stats?.distribution.map((item) => (
-                                <GiftDistributionCard key={item.name} item={item} totalBoxes={stats.totalBoxes} />
-                            ))}
-                            {(!stats || stats.distribution.length === 0) && (
-                                <div className="col-span-full py-6 text-center text-sm text-muted-foreground">暂无数据</div>
-                            )}
-                        </div>
-                    )}
-                </SectionCard>
+                    </div>
 
-                <SectionCard
-                    accent="bg-orange-500"
-                    title={
-                        <>
-                            开盒记录
-                            <span className="rounded-full border border-border bg-accent px-2 py-0.5 text-xs font-semibold text-muted-foreground">
-                                {filteredRecords.length}/{records.length}
-                            </span>
-                        </>
-                    }
-                    actions={
-                        <>
-                            <div className="relative w-full sm:w-[210px]">
-                                <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    aria-label="搜索用户名"
-                                    placeholder="用户名"
-                                    value={searchInput}
-                                    onChange={(event) => setSearchInput(event.target.value)}
-                                    onKeyDown={(event) => event.key === "Enter" && handleSearch()}
-                                    className="h-9 w-full pl-9 text-sm"
-                                />
-                            </div>
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={handleSearch}
-                                className="h-9 rounded-lg bg-primary px-4 text-sm font-bold text-white hover:bg-primary/90"
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative w-full sm:w-44">
+                            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                aria-label="搜索用户名"
+                                placeholder="按用户名筛选..."
+                                value={searchInput}
+                                onChange={(event) => setSearchInput(event.target.value)}
+                                onKeyDown={(event) => event.key === "Enter" && handleSearch()}
+                                className="h-8 w-full pl-8 text-base sm:text-sm"
+                            />
+                        </div>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleSearch}
+                            className="h-8 rounded-lg px-3 text-xs"
+                        >
+                            搜索
+                        </Button>
+                        <label className="relative inline-flex h-8 min-w-[130px] items-center">
+                            <Filter className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                            <select
+                                aria-label="筛选礼物"
+                                value={giftFilter}
+                                onChange={(event) => setGiftFilter(event.target.value)}
+                                className="h-8 w-full appearance-none rounded-lg border border-border bg-popover pl-8 pr-7 text-base font-medium text-foreground hover:bg-accent focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:text-sm"
                             >
-                                搜索
-                            </Button>
-                            <label className="relative inline-flex h-9 min-w-[150px] items-center">
-                                <Filter className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" />
-                                <select
-                                    aria-label="筛选礼物"
-                                    value={giftFilter}
-                                    onChange={(event) => setGiftFilter(event.target.value)}
-                                    className="h-9 w-full appearance-none rounded-lg border border-border bg-popover pl-9 pr-8 text-sm font-medium text-foreground outline-none hover:bg-accent focus:border-orange-400/60 focus-visible:ring-2 focus-visible:ring-primary/40"
-                                >
-                                    <option value="all">全部礼物</option>
-                                    {giftOptions.map((giftName) => (
-                                        <option key={giftName} value={giftName}>{giftName}</option>
-                                    ))}
-                                </select>
-                            </label>
-                        </>
-                    }
+                                <option value="all">全部礼物种类</option>
+                                {giftOptions.map((giftName) => (
+                                    <option key={giftName} value={giftName}>{giftName}</option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                {/* Table Viewport */}
+                <div
+                    data-testid="blindbox-records-viewport"
+                    className="dark-scrollbar min-h-0 flex-1 overflow-auto"
                 >
-                    <div
-                        data-testid="blindbox-records-viewport"
-                        className={cn(
-                            "dark-scrollbar relative overflow-x-auto",
-                            hasRecords ? "overflow-y-auto" : "overflow-y-hidden"
-                        )}
-                    >
-                        <Table variant="secondary" className="min-w-[680px]">
-                            <Table.Content aria-label="开盒记录" className={tableChrome}>
+                    <Table variant="secondary" className="w-full">
+                        <Table.ScrollContainer className="w-full">
+                            <Table.Content aria-label="开盒记录" className={`${tableChrome} min-w-[720px]`}>
                                 <Table.Header>
-                                    <Table.Column id="time" isRowHeader>时间</Table.Column>
-                                    <Table.Column id="user">用户</Table.Column>
-                                    <Table.Column id="gift">礼物 / 数量</Table.Column>
-                                    <Table.Column id="value" className="text-right">总价值</Table.Column>
-                                    <Table.Column id="profit" className="text-right">盈亏状态</Table.Column>
+                                    <Table.Column id="time" isRowHeader className="w-[160px] pl-5">开盒时间</Table.Column>
+                                    <Table.Column id="user" className="w-[28%]">送礼用户</Table.Column>
+                                    <Table.Column id="gift" className="w-[26%]">产出礼物与数量</Table.Column>
+                                    <Table.Column id="value" className="w-[130px] text-right">总价值 (电池)</Table.Column>
+                                    <Table.Column id="profit" className="w-[140px] pr-5 text-right">盈亏状态</Table.Column>
                                 </Table.Header>
                                 <Table.Body>
                                     {recordPager.slice.map((record) => {
                                         const isRecordProfit = record.profit >= 0;
                                         const statusText = record.profit > 0 ? "盈利" : record.profit < 0 ? "亏损" : "持平";
                                         return (
-                                            <Table.Row key={record.row_key} id={record.row_key}>
-                                                <Table.Cell className="py-1.5 text-sm text-muted-foreground">{formatDateTime(record.ts)}</Table.Cell>
-                                                <Table.Cell className="py-1.5">
-                                                    <div className="flex items-center gap-2">
-                                                        <Avatar className="h-7 w-7 border border-border">
-                                                            <Avatar.Image src={record.uface ?? undefined} referrerPolicy="no-referrer" />
-                                                            <Avatar.Fallback className="text-xs">{record.uname?.[0] ?? "?"}</Avatar.Fallback>
-                                                        </Avatar>
-                                                        <span className="font-semibold text-foreground">{record.uname}</span>
+                                            <Table.Row key={record.row_key} id={record.row_key} className="hover:bg-accent/40 transition-colors">
+                                                <Table.Cell className="pl-5 font-mono text-xs text-muted-foreground">
+                                                    {formatDateTime(record.ts)}
+                                                </Table.Cell>
+                                                <Table.Cell className="text-xs truncate">
+                                                    <div className="flex items-center gap-2 truncate">
+                                                        <Avatar
+                                                            src={record.uface}
+                                                            name={record.uname}
+                                                            className="h-6 w-6 shrink-0"
+                                                        />
+                                                        <span className="truncate font-semibold text-foreground" title={record.uname || undefined}>
+                                                            {record.uname || "匿名用户"}
+                                                        </span>
                                                     </div>
                                                 </Table.Cell>
-                                                <Table.Cell className="py-1.5 font-medium text-foreground">
-                                                    {record.gift_name} <span className="font-bold text-muted-foreground">×{record.gift_num}</span>
+                                                <Table.Cell className="text-xs">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-medium text-foreground">{record.gift_name}</span>
+                                                        <span className="font-bold text-muted-foreground font-mono">×{record.gift_num}</span>
+                                                    </div>
                                                 </Table.Cell>
-                                                <Table.Cell className="py-1.5 text-right text-secondary-foreground">{record.gift_value} 电池</Table.Cell>
-                                                <Table.Cell className="py-1.5 text-right">
-                                                    <span className={cn("font-bold", isRecordProfit ? "text-emerald-400" : "text-red-400")}>
-                                                        {isRecordProfit ? "+" : ""}{record.profit} 电池
-                                                    </span>
-                                                    <span className={cn("ml-2 text-xs font-semibold", isRecordProfit ? "text-emerald-400" : "text-red-400")}>
-                                                        {statusText}
-                                                    </span>
+                                                <Table.Cell className="text-right font-mono text-xs text-foreground">
+                                                    {record.gift_value.toLocaleString()} 电池
+                                                </Table.Cell>
+                                                <Table.Cell className="pr-5 text-right font-mono text-xs">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <span className={cn("font-bold", isRecordProfit ? "text-emerald-500" : "text-loss")}>
+                                                            {isRecordProfit ? "+" : ""}{record.profit} 电池
+                                                        </span>
+                                                        <span className={cn("px-1.5 py-0.2 rounded text-[10px] font-sans font-bold", isRecordProfit ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-loss/10 text-loss border border-loss/20")}>
+                                                            {statusText}
+                                                        </span>
+                                                    </div>
                                                 </Table.Cell>
                                             </Table.Row>
                                         );
                                     })}
+                                    {!hasRecords && (
+                                        <Table.Row id="empty">
+                                            <Table.Cell colSpan={5} className="py-16 text-center text-muted-foreground">
+                                                暂无开盒记录，请尝试更换日期、用户名或礼物筛选条件。
+                                            </Table.Cell>
+                                        </Table.Row>
+                                    )}
                                 </Table.Body>
                             </Table.Content>
-                        </Table>
+                        </Table.ScrollContainer>
+                    </Table>
+                </div>
 
-                        {!hasRecords && (
-                            <EmptyState
-                                icon={<ClipboardList className="h-12 w-12" />}
-                                title="暂无开盒记录"
-                                description="调整日期、用户名或礼物筛选后再查看"
-                            />
+                {/* Pagination */}
+                {hasRecords && (
+                    <ListPager
+                        total={recordPager.total}
+                        page={recordPager.page}
+                        pageCount={recordPager.pageCount}
+                        pageSize={recordPager.pageSize}
+                        onPageChange={recordPager.setPage}
+                        onPageSizeChange={recordPager.setPageSize}
+                    />
+                )}
+            </div>
+
+            {/* Distribution Modal Dialog */}
+            <Dialog open={distributionModalOpen} onOpenChange={setDistributionModalOpen}>
+                <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-6 overflow-hidden">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-base">
+                            <PieChart className="h-4 w-4 text-orange-500" />
+                            <span>心动盲盒爆率与产出分析</span>
+                        </DialogTitle>
+                        <DialogDescription className="text-xs">
+                            所选时间区间内开盒的整体回本产出率与单项礼物爆出概率明细
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Modal Content */}
+                    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
+                        {/* ROI & Balance Summary Card */}
+                        {stats && (
+                            <div className="rounded-xl border border-border bg-accent/30 p-4 space-y-3 shrink-0">
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div className="p-2 rounded-lg bg-card border border-border">
+                                        <div className="text-[11px] text-muted-foreground">总投入成本</div>
+                                        <div className="text-sm font-bold font-mono text-foreground mt-0.5">
+                                            {stats.totalCost.toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">电池</span>
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground">¥{(stats.totalCost / 10).toLocaleString()}</div>
+                                    </div>
+                                    <div className="p-2 rounded-lg bg-card border border-border">
+                                        <div className="text-[11px] text-muted-foreground">礼物总产出</div>
+                                        <div className="text-sm font-bold font-mono text-emerald-500 mt-0.5">
+                                            {stats.totalOutput.toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">电池</span>
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground">¥{(stats.totalOutput / 10).toLocaleString()}</div>
+                                    </div>
+                                    <div className="p-2 rounded-lg bg-card border border-border">
+                                        <div className="text-[11px] text-muted-foreground">回本产出率</div>
+                                        <div className={cn("text-sm font-bold font-mono mt-0.5", returnRate >= 100 ? "text-emerald-500" : "text-loss")}>
+                                            {returnRate.toFixed(2)}%
+                                        </div>
+                                        <div className={cn("text-[10px] font-mono", isProfit ? "text-emerald-500" : "text-loss")}>
+                                            {isProfit ? "+" : ""}{formatCurrency(stats.netProfit / 10)}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Single Clear Progress Meter */}
+                                <div className="space-y-1">
+                                    <div className="flex justify-between text-[11px] text-muted-foreground">
+                                        <span>产出回报进度</span>
+                                        <span className="font-mono">{returnRate.toFixed(1)}% / 100% 保本线</span>
+                                    </div>
+                                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                                        <div
+                                            className={cn("h-full transition-all rounded-full", returnRate >= 100 ? "bg-emerald-500" : "bg-orange-500")}
+                                            style={{ width: `${Math.min(100, Math.max(0, returnRate))}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         )}
+
+                        {/* Gift Distribution List */}
+                        <div className="space-y-2">
+                            <div className="text-xs font-semibold text-foreground">全部产出礼物明细 ({stats?.distribution.filter(i => i.count > 0).length ?? 0} 种)</div>
+                            <div className="rounded-xl border border-border overflow-hidden">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border">
+                                        <tr>
+                                            <th className="py-2.5 px-3">礼物名称</th>
+                                            <th className="py-2.5 px-3 text-right">单价</th>
+                                            <th className="py-2.5 px-3 text-right">爆出次数 (爆率)</th>
+                                            <th className="py-2.5 px-3 text-right">单盒盈亏</th>
+                                            <th className="py-2.5 px-3 text-right">总产出价值</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border font-mono">
+                                        {stats?.distribution.map((item) => {
+                                            const valuable = item.value >= BLINDBOX_COST;
+                                            const profitPerBox = item.value - BLINDBOX_COST;
+                                            const rate = stats.totalBoxes > 0 ? (item.count / stats.totalBoxes) * 100 : 0;
+                                            return (
+                                                <tr key={item.name} className="hover:bg-accent/30 transition-colors">
+                                                    <td className="py-2 px-3 font-sans">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className={cn("h-2 w-2 rounded-full shrink-0", valuable ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+                                                            <span className="font-semibold text-foreground">{item.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-2 px-3 text-right text-muted-foreground">
+                                                        {item.value} 电池
+                                                    </td>
+                                                    <td className="py-2 px-3 text-right">
+                                                        <span className="text-foreground font-bold">{item.count} 次</span>
+                                                        <span className="text-[10px] text-muted-foreground ml-1 font-sans">({rate.toFixed(1)}%)</span>
+                                                    </td>
+                                                    <td className="py-2 px-3 text-right font-sans">
+                                                        <span className={cn("px-1.5 py-0.2 rounded text-[10px] font-bold", valuable ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-muted text-muted-foreground")}>
+                                                            {valuable ? `+${profitPerBox} 电池` : `${profitPerBox} 电池`}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2 px-3 text-right font-bold text-foreground">
+                                                        {item.totalValue.toLocaleString()} 电池
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    {hasRecords && (
-                        <ListPager
-                            total={recordPager.total}
-                            page={recordPager.page}
-                            pageCount={recordPager.pageCount}
-                            pageSize={recordPager.pageSize}
-                            onPageChange={recordPager.setPage}
-                            onPageSizeChange={recordPager.setPageSize}
-                        />
-                    )}
-                </SectionCard>
-            </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
 
-function CompactMetric({
-    label,
-    value,
-    sub,
-    icon,
-    valueClass,
-}: {
-    label: string;
-    value: string;
-    sub: string;
-    icon: React.ReactNode;
-    valueClass?: string;
-}) {
-    return (
-        <div className="flex min-w-0 items-center gap-3 border-b border-r border-border px-3 py-2.5 last:border-r-0 lg:border-b-0">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-muted-foreground">{icon}</span>
-            <div className="min-w-0">
-                <div className="flex items-baseline gap-2">
-                    <span className="text-xs font-semibold text-muted-foreground">{label}</span>
-                    <span className={cn("truncate text-lg font-bold tabular-nums text-foreground", valueClass)}>{value}</span>
-                </div>
-                <div className="truncate text-[11px] text-muted-foreground tabular-nums">{sub}</div>
-            </div>
-        </div>
-    );
-}
 
-function GiftDistributionCard({ item, totalBoxes }: { item: GiftDistribution; totalBoxes: number }) {
-    const percentage = totalBoxes > 0 ? (item.count / totalBoxes) * 100 : 0;
-    const valuable = item.value >= BLINDBOX_COST;
-
-    return (
-        <div className="min-w-0 rounded-lg border border-border bg-accent/40 px-3 py-2.5">
-            <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
-                        <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", valuable ? "bg-emerald-400" : "bg-red-400")} />
-                        <span className="truncate text-sm font-bold text-foreground" title={item.name}>{item.name}</span>
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">{item.count} 次</div>
-                </div>
-                <div className={cn("shrink-0 text-right text-sm font-black tabular-nums", valuable ? "text-emerald-400" : "text-red-400")}>
-                    {item.value}
-                    <div className="text-[11px] font-semibold text-muted-foreground">{valuable ? "高于成本" : "低于成本"}</div>
-                </div>
-            </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                    className={cn("h-full rounded-full", valuable ? "bg-emerald-400" : "bg-red-400")}
-                    style={{ width: `${Math.max(8, Math.min(percentage, 100))}%` }}
-                />
-            </div>
-        </div>
-    );
-}

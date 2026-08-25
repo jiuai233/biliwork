@@ -216,11 +216,44 @@ export async function getUnifiedTransactions(
         prisma.superChat.findMany(superChatQuery)
     ]);
 
+    // Build known avatar mapping from guards, scs, and danmaku
+    const faceMap = new Map<string, string>();
+    for (const s of scs) {
+        if (s.uname && s.uface) faceMap.set(s.uname, s.uface);
+    }
+    for (const g of guards) {
+        if (g.uname && g.uface) faceMap.set(g.uname, g.uface);
+    }
+
+    const unamesWithoutFace = new Set<string>();
+    for (const g of gifts) {
+        if (!g.uface && g.uname && !faceMap.has(g.uname)) {
+            unamesWithoutFace.add(g.uname);
+        }
+    }
+
+    if (unamesWithoutFace.size > 0) {
+        const missingNames = Array.from(unamesWithoutFace);
+        const danmakuRows = await prisma.danmaku.findMany({
+            where: {
+                roomId,
+                uname: { in: missingNames },
+                uface: { not: null },
+            },
+            select: { uname: true, uface: true },
+            distinct: ['uname'],
+            take: 200,
+        });
+        for (const d of danmakuRows) {
+            if (d.uname && d.uface) faceMap.set(d.uname, d.uface);
+        }
+    }
+
     const giftTxns: Transaction[] = gifts.map(g => ({
         id: `gift_${g.id}`,
         type: 'gift' as const,
         uname: g.uname || '',
-        uface: g.uface || '',
+        uface: g.uface || (g.uname ? faceMap.get(g.uname) : '') || '',
         content: `${g.giftName || ''} x${g.giftNum}`,
         price: (g.rPrice * g.giftNum) / 1000,
         ts: g.ts ? Number(g.ts) : 0,
@@ -233,7 +266,7 @@ export async function getUnifiedTransactions(
             id: `guard_${g.id}`,
             type: 'guard' as const,
             uname: g.uname || '',
-            uface: g.uface || '',
+            uface: g.uface || (g.uname ? faceMap.get(g.uname) : '') || '',
             content: `${levelName} x${g.guardNum} ${g.guardUnit || ''}`,
             price: g.price / 1000,
             ts: g.ts ? Number(g.ts) : 0,

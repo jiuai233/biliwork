@@ -58,6 +58,18 @@ export async function getSessionDetail(startTs: number, endTs: number) {
         getTopGiftUsers(roomId, startTs, endTs),
     ]);
 
+    // 建立 uname -> uface 头像快速查找表
+    const avatarMap = new Map<string, string>();
+    for (const d of danmaku) {
+        if (d.uname && d.uface) avatarMap.set(d.uname, d.uface);
+    }
+    for (const g of guards) {
+        if (g.uname && g.uface) avatarMap.set(g.uname, g.uface);
+    }
+    for (const sc of superChats) {
+        if (sc.uname && sc.uface) avatarMap.set(sc.uname, sc.uface);
+    }
+
     // 礼物按用户聚合
     const giftByUser = new Map<string, {
         uname: string;
@@ -69,14 +81,18 @@ export async function getSessionDetail(startTs: number, endTs: number) {
     for (const g of gifts) {
         const key = g.uname || 'unknown';
         if (!giftByUser.has(key)) {
+            const resolvedFace = g.uface || avatarMap.get(key) || '';
             giftByUser.set(key, {
                 uname: g.uname || '匿名',
-                uface: g.uface || '',
+                uface: resolvedFace,
                 gifts: [],
                 totalValue: 0,
             });
         }
         const user = giftByUser.get(key)!;
+        if (!user.uface && avatarMap.has(key)) {
+            user.uface = avatarMap.get(key)!;
+        }
         const giftName = g.gift_name || '未知礼物';
         const existing = user.gifts.find(x => x.name === giftName);
         const giftValue = (g.r_price * g.gift_num) / 1000;

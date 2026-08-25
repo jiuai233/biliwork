@@ -1,7 +1,8 @@
-
 import { requireAuth } from "@/lib/auth";
 import { getBroadcasterByUid, getLiveSessionsWithIncome, getUnifiedTransactions } from "@/lib/data";
 import { InteractiveBoard } from "@/components/dashboard/InteractiveBoard";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Clapperboard } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -23,18 +24,23 @@ export default async function BoardPage() {
     ]);
 
     return (
-        <div className="min-w-0 space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-4">
-            <header className="shrink-0 rounded-xl border border-border bg-card px-4 py-3">
-                <h2 className="text-2xl font-bold tracking-normal text-foreground md:text-3xl">切片/晒单 制作板</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    拖拽筛选高光时刻，自由组合并生成图片用于分享。
-                </p>
-            </header>
+        <div className="min-w-0 space-y-3 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-3">
+            <PageHeader
+                icon={<Clapperboard className="h-5 w-5" />}
+                iconClass="bg-pink-500/15 text-pink-500"
+                title="切片 / 晒单制作板"
+                description="拖拽筛选高光互动，自由编排并生成透明/高清晒单切片图或 OBS 实时推流画中画。"
+            />
 
             <InteractiveBoard
                 initialTransactions={transactions}
                 initialSessions={sessions}
                 overlayCode={overlayCode}
+                broadcaster={{
+                    uname: broadcaster.uname || '主播',
+                    uface: broadcaster.uface || '',
+                    roomId: broadcaster.room_id,
+                }}
             />
         </div>
     );

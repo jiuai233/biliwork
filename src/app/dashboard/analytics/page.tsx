@@ -37,7 +37,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
         <div className="min-w-0 space-y-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-4 lg:overflow-hidden">
             <PageHeader
                 icon={<BarChart3 className="h-5 w-5" />}
-                iconClass="bg-sky-500/15 text-sky-300"
+                iconClass="bg-sky-500/15 text-sky-400"
                 title="数据分析"
                 description={
                     <span>

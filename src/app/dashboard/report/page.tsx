@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { addWeeks, format, startOfWeek } from "date-fns";
-import { CalendarRange } from "lucide-react";
+import { CalendarRange, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 
 import { requireAuth } from "@/lib/auth";
 import { getBroadcasterByUid } from "@/lib/data";
@@ -26,10 +26,15 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     const broadcaster = await getBroadcasterByUid(uid);
     const params = await searchParams;
 
+    const today = new Date();
+    const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
     const weekParam = Array.isArray(params?.week) ? params.week[0] : params?.week;
-    const weekStart = startOfWeek(parseDateParam(weekParam) ?? new Date(), { weekStartsOn: 1 });
+    const weekStart = startOfWeek(parseDateParam(weekParam) ?? today, { weekStartsOn: 1 });
     const weekStartMs = weekStart.getTime();
     const weekEndMs = weekStartMs + WEEK_MS - 1;
+
+    const isCurrentWeek = weekStartMs >= currentWeekStart.getTime();
+    const weekNumber = format(weekStart, "I");
 
     if (!broadcaster || !broadcaster.room_id) {
         return <div className="p-8">未找到主播信息</div>;
@@ -38,33 +43,73 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     const report = await getWeeklyReport(broadcaster.room_id, weekStartMs);
     const { stats, prevStats } = report;
     const prevUrl = `/dashboard/report?week=${formatWeekParam(addWeeks(weekStart, -1))}`;
+    const nextUrl = `/dashboard/report?week=${formatWeekParam(addWeeks(weekStart, 1))}`;
     const currentUrl = `/dashboard/report`;
 
     return (
-        <div className="min-w-0 space-y-6">
+        <div className="min-w-0 space-y-3 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-3">
             <PageHeader
                 icon={<CalendarRange className="h-5 w-5" />}
                 iconClass="bg-primary/15 text-primary"
-                title="周报"
+                title="周报复盘"
                 description={
-                    <span>
-                        {format(weekStart, "M月d日")} ~ {format(new Date(weekEndMs), "M月d日")} · 本周复盘
+                    <span className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="font-semibold text-foreground">
+                            {format(weekStart, "yyyy年第")}{weekNumber}周
+                        </span>
+                        <span className="text-border">•</span>
+                        <span className="font-mono text-muted-foreground">
+                            {format(weekStart, "MM.dd")} ~ {format(new Date(weekEndMs), "MM.dd")}
+                        </span>
+                        {broadcaster.uname && (
+                            <>
+                                <span className="text-border">•</span>
+                                <span className="text-muted-foreground">主播: {broadcaster.uname}</span>
+                            </>
+                        )}
                     </span>
                 }
                 actions={
-                    <div className="flex items-center gap-2">
-                        <Link
-                            href={prevUrl}
-                            className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
-                        >
-                            上一周
-                        </Link>
-                        <Link
-                            href={currentUrl}
-                            className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
-                        >
-                            本周
-                        </Link>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
+                            <Link
+                                href={prevUrl}
+                                title="上一周"
+                                className="flex h-8 items-center gap-1 rounded-md px-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-accent"
+                            >
+                                <ChevronLeft className="h-3.5 w-3.5" />
+                                <span>上一周</span>
+                            </Link>
+                            <span className="h-4 w-px bg-border my-auto" />
+                            {isCurrentWeek ? (
+                                <span
+                                    title="已是最新一周"
+                                    className="flex h-8 items-center gap-1 px-2.5 text-xs font-semibold text-muted-foreground/40 cursor-not-allowed"
+                                >
+                                    <span>下一周</span>
+                                    <ChevronRight className="h-3.5 w-3.5" />
+                                </span>
+                            ) : (
+                                <Link
+                                    href={nextUrl}
+                                    title="下一周"
+                                    className="flex h-8 items-center gap-1 rounded-md px-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-accent"
+                                >
+                                    <span>下一周</span>
+                                    <ChevronRight className="h-3.5 w-3.5" />
+                                </Link>
+                            )}
+                        </div>
+
+                        {!isCurrentWeek && (
+                            <Link
+                                href={currentUrl}
+                                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground transition-colors hover:bg-accent"
+                            >
+                                <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>回到本周</span>
+                            </Link>
+                        )}
                     </div>
                 }
             />

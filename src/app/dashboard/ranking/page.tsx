@@ -24,7 +24,7 @@ export default async function RankingPage({ searchParams }: RankingPageProps) {
     const uid = await requireAuth();
     const broadcaster = await getBroadcasterByUid(uid);
     const params = await searchParams;
-    const { from, to, startTime, endTime } = resolveDateRangeParams(params);
+    const { from, to, startTime, endTime } = resolveDateRangeParams(params, 30);
     const limit = parseLimit(getFirstParam(params?.limit));
 
     if (!broadcaster?.room_id) {

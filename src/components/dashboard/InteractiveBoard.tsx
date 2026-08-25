@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { domToPng } from "modern-screenshot";
 import { Transaction } from "@/lib/data";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DraggableTransactionCard } from "./DraggableTransactionCard";
@@ -30,7 +31,20 @@ import {
     isSourceConsumed,
     mergeTransactionsIntoBoard,
 } from "@/lib/board-merge";
-import { ChevronDown, Clock, Download, Loader2, Monitor, Radio, RefreshCw, Search } from "lucide-react";
+import {
+    AlignCenter,
+    AlignRight,
+    ChevronDown,
+    Clock,
+    Crown,
+    Download,
+    Flame,
+    Loader2,
+    Monitor,
+    Radio,
+    RefreshCw,
+    Search,
+} from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -46,11 +60,46 @@ type BoardSession = {
     totalIncome: number;
 };
 
+export type CanvasTheme = 'transparent' | 'dark' | 'bili' | 'clean';
+export type CanvasAlignment = 'right' | 'center';
+
 // --- Droppable Board Area ---
-function BoardArea({ items, onRemove }: { items: BoardTransaction[], onRemove: (id: string) => void }) {
+function BoardArea({
+    items,
+    onRemove,
+    bgTheme,
+    alignment,
+    showBanner,
+    posterTitle,
+    broadcaster,
+}: {
+    items: BoardTransaction[];
+    onRemove: (id: string) => void;
+    bgTheme: CanvasTheme;
+    alignment: CanvasAlignment;
+    showBanner: boolean;
+    posterTitle: string;
+    broadcaster?: { uname: string; uface: string };
+}) {
     const { setNodeRef } = useDroppable({
         id: "board-droppable",
     });
+
+    const totalBoardValue = items.reduce((sum, item) => sum + (item.price || 0), 0);
+
+    const getBgStyle = () => {
+        switch (bgTheme) {
+            case 'dark':
+                return { background: "linear-gradient(160deg, #090d16 0%, #151b28 100%)", borderRadius: "16px" };
+            case 'bili':
+                return { background: "linear-gradient(160deg, #181126 0%, #2a133d 100%)", borderRadius: "16px" };
+            case 'clean':
+                return { background: "linear-gradient(160deg, #f8fafc 0%, #e2e8f0 100%)", borderRadius: "16px" };
+            case 'transparent':
+            default:
+                return { background: "transparent" };
+        }
+    };
 
     return (
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
@@ -58,24 +107,53 @@ function BoardArea({ items, onRemove }: { items: BoardTransaction[], onRemove: (
                 ref={setNodeRef}
                 id="board-canvas"
                 style={{
-                    // No background color for transparent export
-                    padding: "16px",
+                    padding: bgTheme === 'transparent' ? "16px" : "24px 20px",
                     width: "100%",
                     boxSizing: "border-box",
                     display: "flex",
-                    flexDirection: "column", // Vertical stack
-                    alignItems: "flex-end",   // Right align items
-                    gap: "16px",
+                    flexDirection: "column",
+                    alignItems: alignment === 'center' ? "center" : "flex-end",
+                    gap: "14px",
                     minHeight: "100%",
+                    ...getBgStyle(),
                 }}
-                className=""
             >
+                {/* Optional Poster Watermark Header */}
+                {showBanner && items.length > 0 && (
+                    <div
+                        data-board-banner="true"
+                        style={{ width: `${BILI_CARD_WIDTH}px` }}
+                        className={cn(
+                            "rounded-xl border p-3 flex items-center justify-between shadow-lg mb-1 transition-all shrink-0",
+                            bgTheme === 'clean'
+                                ? "bg-white/90 border-slate-300 text-slate-800"
+                                : "bg-black/50 backdrop-blur-md border-white/10 text-white"
+                        )}
+                    >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <Avatar src={broadcaster?.uface} name={broadcaster?.uname || "主播"} className="h-8 w-8 shrink-0 ring-2 ring-primary/40" />
+                            <div className="min-w-0">
+                                <div className={cn("font-bold text-xs truncate", bgTheme === 'clean' ? "text-slate-900" : "text-white")}>
+                                    {posterTitle || `${broadcaster?.uname || "主播"} · 直播高光时刻`}
+                                </div>
+                                <div className={cn("text-[10px] truncate", bgTheme === 'clean' ? "text-slate-500" : "text-white/60")}>
+                                    共精选 {items.length} 份心意记录
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-right shrink-0 pl-2">
+                            <div className="font-mono font-bold text-sm text-money">{formatCurrency(totalBoardValue)}</div>
+                            <div className={cn("text-[9px]", bgTheme === 'clean' ? "text-slate-400" : "text-white/50")}>高光心意累计</div>
+                        </div>
+                    </div>
+                )}
+
                 {items.length === 0 && (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground space-y-4 min-h-[400px] w-full">
                         <div className="p-4 rounded-full bg-muted/60 border border-border">
                             <Download className="w-8 h-8 opacity-30" />
                         </div>
-                        <p className="text-sm opacity-50">从左侧把记录拖进来，或点「全部导入」</p>
+                        <p className="text-sm opacity-50">从左侧把记录拖进来，或点击「全部导入」</p>
                     </div>
                 )}
                 {items.map((item) => (
@@ -91,6 +169,11 @@ interface InteractiveBoardProps {
     initialTransactions: Transaction[];
     initialSessions?: BoardSession[];
     overlayCode?: string;
+    broadcaster?: {
+        uname: string;
+        uface: string;
+        roomId: number;
+    };
 }
 
 function formatSessionTime(ts: number) {
@@ -110,7 +193,12 @@ function formatSessionDuration(minutes: number, isLive: boolean) {
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 }
 
-export function InteractiveBoard({ initialTransactions, initialSessions = [], overlayCode }: InteractiveBoardProps) {
+export function InteractiveBoard({
+    initialTransactions,
+    initialSessions = [],
+    overlayCode,
+    broadcaster,
+}: InteractiveBoardProps) {
     const [sourceItems, setSourceItems] = useState<Transaction[]>(initialTransactions);
     const [boardItems, setBoardItems] = useState<BoardTransaction[]>([]);
     const [activeDragItem, setActiveDragItem] = useState<Transaction | null>(null);
@@ -119,10 +207,17 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
     const [isSessionPending, startSessionTransition] = useTransition();
     const sessionRequestRef = React.useRef(0);
 
+    // Canvas Customization States
+    const [bgTheme, setBgTheme] = useState<CanvasTheme>('transparent');
+    const [alignment, setAlignment] = useState<CanvasAlignment>('right');
+    const [showBanner, setShowBanner] = useState(false);
+    const [posterTitle, setPosterTitle] = useState("");
+
     // Filters
     const [searchName, setSearchName] = useState("");
     const [minPrice, setMinPrice] = useState("");
     const [filterType, setFilterType] = useState<'all' | 'super_chat' | 'gift' | 'guard'>('all');
+    const [onlyHighValue, setOnlyHighValue] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [scrollSpeed, setScrollSpeed] = useState(5);
     const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -149,58 +244,52 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                 if (typeof config.scrollSpeed !== "number" || typeof config.scrollEnabled !== "boolean") {
                     throw new Error("Config restore returned invalid data");
                 }
-                if (controller.signal.aborted) return;
                 setScrollSpeed(config.scrollSpeed);
                 setScrollEnabled(config.scrollEnabled);
-                setConfigHydrated(true);
             })
-            .catch((error) => {
-                if (!controller.signal.aborted) {
-                    console.error(error);
-                    toast.error("读取 OBS 滚动配置失败，已停止自动写入");
-                }
+            .catch(() => { })
+            .finally(() => {
+                setConfigHydrated(true);
             });
         return () => controller.abort();
     }, [overlayCode, isMounted]);
 
-    // 挂载时从 overlay store 恢复 board 状态
+    // 挂载时从 overlay items 恢复看板内容
     React.useEffect(() => {
         if (!overlayCode || !isMounted) return;
         const controller = new AbortController();
         setBoardHydrated(false);
-        fetch(`/api/overlay/${overlayCode}/poll`, { signal: controller.signal })
+        fetch(`/api/overlay/${overlayCode}/items`, { signal: controller.signal })
             .then((res) => {
-                if (!res.ok) throw new Error(`Board restore failed: ${res.status}`);
+                if (!res.ok) throw new Error(`Items restore failed: ${res.status}`);
                 return res.json();
             })
-            .then((data) => {
-                if (!Array.isArray(data)) throw new Error("Board restore returned invalid data");
-                if (controller.signal.aborted) return;
-                setBoardItems(data);
-                setBoardHydrated(true);
-            })
-            .catch((error) => {
-                if (!controller.signal.aborted) {
-                    console.error(error);
-                    toast.error("读取已保存看板失败，已停止自动同步");
+            .then((items) => {
+                if (!Array.isArray(items)) {
+                    throw new Error("Items restore returned non-array payload");
                 }
+                setBoardItems(items);
+            })
+            .catch(() => { })
+            .finally(() => {
+                setBoardHydrated(true);
             });
         return () => controller.abort();
     }, [overlayCode, isMounted]);
 
-    // 自动同步 board 状态到 OBS 叠加层
+    // 同步看板项目到 OBS overlay API
     React.useEffect(() => {
         if (!overlayCode || !isMounted || !boardHydrated) return;
 
         const controller = new AbortController();
         const timer = setTimeout(() => {
-            fetch(`/api/overlay/${overlayCode}/sync`, {
-                method: 'POST',
+            fetch(`/api/overlay/${overlayCode}/items`, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(boardItems),
                 signal: controller.signal,
             }).catch(() => { });
-        }, 500); // 500ms 防抖
+        }, 500);
 
         return () => {
             clearTimeout(timer);
@@ -240,7 +329,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
         const matchType = filterType === 'all' || item.type === filterType;
         const matchName =
             !searchName || item.uname.toLowerCase().includes(searchName.toLowerCase()) || item.content.toLowerCase().includes(searchName.toLowerCase());
-        const matchPrice = !minPrice || item.price >= Number(minPrice);
+        const matchPrice = (!minPrice || item.price >= Number(minPrice)) && (!onlyHighValue || item.price >= 50);
         // Filter out raw records that were already added or merged into a board item.
         const notOnBoard = !isSourceConsumed(boardItems, item);
         return matchType && matchName && matchPrice && notOnBoard;
@@ -401,22 +490,27 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
         const origMinHeight = element.style.minHeight;
         const origWidth = element.style.width;
         const origPadding = element.style.padding;
+        const origAlignItems = element.style.alignItems;
 
         try {
-            toast.info("正在生成图片...");
+            toast.info("正在生成高清图片...");
 
-            // Read the actual card width from the first card, fallback to the board card width.
-            const firstCard = element.querySelector<HTMLElement>("[data-board-card]");
-            const cardWidth = firstCard ? `${firstCard.offsetWidth}px` : `${BILI_CARD_WIDTH}px`;
+            const cardWidth = `${BILI_CARD_WIDTH}px`;
 
-            // Temporarily shrink container to card width for clean export.
-            element.style.minHeight = "0";
-            element.style.width = cardWidth;
-            element.style.padding = "0";
+            if (bgTheme === 'transparent') {
+                element.style.minHeight = "0";
+                element.style.width = cardWidth;
+                element.style.padding = "0";
+            } else {
+                element.style.minHeight = "0";
+                element.style.width = `${BILI_CARD_WIDTH + 48}px`;
+                element.style.padding = "24px 20px";
+                element.style.alignItems = "center";
+            }
 
             const dataUrl = await domToPng(element, {
                 scale: 2,
-                backgroundColor: null,
+                backgroundColor: bgTheme === 'transparent' ? null : (bgTheme === 'clean' ? '#f8fafc' : '#090d16'),
                 filter: (el) => {
                     if (el instanceof HTMLElement && el.hasAttribute("data-html2canvas-ignore")) {
                         return false;
@@ -432,7 +526,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
             });
 
             const link = document.createElement("a");
-            link.download = `bili-monitor-board-${Date.now()}.png`;
+            link.download = `bili-highlight-${Date.now()}.png`;
             link.href = dataUrl;
             link.click();
             toast.success("图片导出成功！");
@@ -443,6 +537,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
             element.style.minHeight = origMinHeight;
             element.style.width = origWidth;
             element.style.padding = origPadding;
+            element.style.alignItems = origAlignItems;
         }
     };
 
@@ -454,152 +549,168 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row lg:gap-4">
+            <div className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:flex-1 lg:flex-row lg:gap-3">
                 {/* Sidebar: Source List */}
-                <div className="flex w-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card lg:w-[360px] lg:shrink-0">
-                    <div className="relative z-20 shrink-0 space-y-3 border-b border-border p-3">
-                        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <Search className="w-4 h-4" /> 筛选记录
-                        </h3>
+                <div className="flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs lg:w-[360px] lg:shrink-0">
+                    <div className="relative z-20 shrink-0 space-y-2.5 border-b border-border p-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                                <Search className="w-3.5 h-3.5 text-primary" /> 筛选候选记录
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setOnlyHighValue((v) => !v)}
+                                className={cn(
+                                    "flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold border transition-all",
+                                    onlyHighValue
+                                        ? "border-amber-500/40 bg-amber-500/15 text-amber-500 shadow-xs"
+                                        : "border-border text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <Flame className="h-3 w-3" />
+                                <span>大额高光 ≥¥50</span>
+                            </button>
+                        </div>
+
                         <div className="relative">
                             <button
                                 type="button"
                                 onClick={() => setSessionPickerOpen((open) => !open)}
                                 aria-expanded={sessionPickerOpen}
-                                className="flex h-9 w-full items-center justify-between rounded-md border border-border bg-background px-3 text-left text-sm transition hover:bg-accent"
+                                className="flex h-8 w-full items-center justify-between rounded-lg border border-border bg-background px-3 text-left text-xs transition hover:bg-accent"
                             >
                                 <span className="flex min-w-0 items-center gap-2">
-                                    <Radio className="h-4 w-4 shrink-0 text-purple-300" />
-                                    <span className="truncate font-medium text-foreground">{selectedSessionLabel}</span>
+                                    <Radio className="h-3.5 w-3.5 shrink-0 text-purple-400" />
+                                    <span className="truncate font-semibold text-foreground">{selectedSessionLabel}</span>
                                 </span>
-                                <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                                <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
                                     {sourceItems.length} 条
-                                    <ChevronDown className={cn("h-4 w-4 transition-transform", sessionPickerOpen && "rotate-180")} />
+                                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", sessionPickerOpen && "rotate-180")} />
                                 </span>
                             </button>
                             {sessionPickerOpen && (
                                 <div className="dark-scrollbar absolute left-0 right-0 top-full z-50 mt-1 max-h-72 space-y-1 overflow-y-auto rounded-lg border border-border bg-popover p-1.5 shadow-2xl">
-                                {isSessionPending && (
-                                    <span className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground">
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                        加载中
-                                    </span>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={handleSelectRecent}
-                                    className={cn(
-                                        "w-full rounded-md px-3 py-2 text-left transition",
-                                        selectedSessionId === "recent"
-                                            ? "bg-primary/15 text-foreground"
-                                            : "text-muted-foreground hover:bg-accent"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className="text-sm font-semibold">最近记录</span>
-                                        <span className="text-xs text-muted-foreground">{initialTransactions.length} 条</span>
-                                    </div>
-                                    <div className="mt-1 text-xs text-muted-foreground">不限制场次，显示最近交易</div>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSelectCurrentSession}
-                                    disabled={!currentSession}
-                                    className={cn(
-                                        "w-full rounded-md px-3 py-2 text-left transition",
-                                        selectedSessionId === "current"
-                                            ? "bg-emerald-500/15 text-foreground"
-                                            : "text-muted-foreground hover:bg-accent",
-                                        !currentSession && "cursor-not-allowed opacity-55 hover:bg-muted/40"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className="text-sm font-semibold text-foreground">当前场次</span>
-                                        <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
-                                            {currentSession ? "直播中" : "未检测"}
+                                    {isSessionPending && (
+                                        <span className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground">
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                            加载中
                                         </span>
-                                    </div>
-                                    <div className="mt-1 text-xs text-muted-foreground">
-                                        {currentSession
-                                            ? `从 ${formatSessionTime(currentSession.startTs)} 到现在`
-                                            : "需要采集到开播事件后可用"}
-                                    </div>
-                                </button>
-                                {historySessions.map((session) => {
-                                    const isLive = false;
-                                    const selected = selectedSessionId === String(session.id);
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={handleSelectRecent}
+                                        className={cn(
+                                            "w-full rounded-md px-3 py-2 text-left transition",
+                                            selectedSessionId === "recent"
+                                                ? "bg-primary/15 text-foreground"
+                                                : "text-muted-foreground hover:bg-accent"
+                                        )}
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-semibold">最近记录</span>
+                                            <span className="text-[10px] text-muted-foreground">{initialTransactions.length} 条</span>
+                                        </div>
+                                        <div className="mt-0.5 text-[11px] text-muted-foreground">不限制场次，显示最近交易</div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSelectCurrentSession}
+                                        disabled={!currentSession}
+                                        className={cn(
+                                            "w-full rounded-md px-3 py-2 text-left transition",
+                                            selectedSessionId === "current"
+                                                ? "bg-emerald-500/15 text-foreground"
+                                                : "text-muted-foreground hover:bg-accent",
+                                            !currentSession && "cursor-not-allowed opacity-55 hover:bg-muted/40"
+                                        )}
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-semibold text-foreground">当前场次</span>
+                                            <span className="rounded bg-emerald-500/15 px-1.5 py-0.2 text-[9px] font-bold text-emerald-400">
+                                                {currentSession ? "直播中" : "未检测"}
+                                            </span>
+                                        </div>
+                                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                                            {currentSession
+                                                ? `从 ${formatSessionTime(currentSession.startTs)} 到现在`
+                                                : "需要采集到开播事件后可用"}
+                                        </div>
+                                    </button>
+                                    {historySessions.map((session) => {
+                                        const isLive = false;
+                                        const selected = selectedSessionId === String(session.id);
 
-                                    return (
-                                        <button
-                                            key={session.id}
-                                            type="button"
-                                            onClick={() => handleSelectSession(session)}
-                                            className={cn(
-                                                "w-full rounded-md px-3 py-2 text-left transition",
-                                                selected
-                                                    ? "bg-primary/15 text-foreground"
-                                                    : "text-muted-foreground hover:bg-accent"
-                                            )}
-                                        >
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span className="min-w-0 truncate text-sm font-semibold text-foreground">
-                                                    {session.title || "直播场次"}
-                                                </span>
-                                                <span className={cn(
-                                                    "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold",
-                                                    isLive ? "bg-emerald-500/15 text-emerald-300" : "bg-muted text-muted-foreground"
-                                                )}>
-                                                    {formatSessionDuration(session.duration, isLive)}
-                                                </span>
-                                            </div>
-                                            <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                                                <span className="inline-flex min-w-0 items-center gap-1">
-                                                    <Clock className="h-3 w-3 shrink-0" />
-                                                    <span className="truncate">{formatSessionTime(session.startTs)}</span>
-                                                </span>
-                                                <span className="shrink-0 text-money">{formatCurrency(session.totalIncome)}</span>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                                {historySessions.length === 0 && (
-                                    <div className="px-3 py-3 text-xs text-muted-foreground">
-                                        暂无历史场次
-                                    </div>
-                                )}
+                                        return (
+                                            <button
+                                                key={session.id}
+                                                type="button"
+                                                onClick={() => handleSelectSession(session)}
+                                                className={cn(
+                                                    "w-full rounded-md px-3 py-2 text-left transition",
+                                                    selected
+                                                        ? "bg-primary/15 text-foreground"
+                                                        : "text-muted-foreground hover:bg-accent"
+                                                )}
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="min-w-0 truncate text-xs font-semibold text-foreground">
+                                                        {session.title || "直播场次"}
+                                                    </span>
+                                                    <span className={cn(
+                                                        "shrink-0 rounded px-1 py-0.2 text-[9px] font-bold",
+                                                        isLive ? "bg-emerald-500/15 text-emerald-300" : "bg-muted text-muted-foreground"
+                                                    )}>
+                                                        {formatSessionDuration(session.duration, isLive)}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                                                    <span className="inline-flex min-w-0 items-center gap-1">
+                                                        <Clock className="h-3 w-3 shrink-0" />
+                                                        <span className="truncate">{formatSessionTime(session.startTs)}</span>
+                                                    </span>
+                                                    <span className="shrink-0 font-mono text-money font-bold">{formatCurrency(session.totalIncome)}</span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                    {historySessions.length === 0 && (
+                                        <div className="px-3 py-3 text-xs text-muted-foreground">
+                                            暂无历史场次
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
+
                         {/* Type Filters */}
-                        <div className="grid grid-cols-4 gap-1 bg-muted/40 p-1 rounded-md border border-border">
+                        <div className="grid grid-cols-4 gap-1 bg-muted/40 p-0.5 rounded-lg border border-border">
                             {(['all', 'super_chat', 'gift', 'guard'] as const).map((t) => (
-                                <Button
+                                <button
                                     type="button"
                                     key={t}
                                     onClick={() => setFilterType(t)}
-                                    size="sm"
-                                    variant="ghost"
                                     className={cn(
-                                        "inline-flex h-7 min-w-0 items-center justify-center rounded-md px-2 text-xs transition-colors",
+                                        "inline-flex h-6 min-w-0 items-center justify-center rounded-md px-1.5 text-xs font-semibold transition-colors",
                                         filterType === t
-                                            ? "bg-primary/20 text-primary font-medium shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                            ? "bg-card text-foreground shadow-xs"
+                                            : "text-muted-foreground hover:text-foreground"
                                     )}
                                 >
                                     {t === 'all' ? '全部' :
                                         t === 'super_chat' ? 'SC' :
                                             t === 'gift' ? '礼物' : '舰长'}
-                                </Button>
+                                </button>
                             ))}
                         </div>
-                        <div className="grid grid-cols-[minmax(0,1fr)_104px] gap-2">
+
+                        <div className="grid grid-cols-[minmax(0,1fr)_90px] gap-2">
                             <label className="sr-only" htmlFor="board-search">搜索关键词</label>
                             <Input
                                 id="board-search"
-                                placeholder="用户名 / 内容..."
+                                placeholder="搜索用户名 / 礼物..."
                                 value={searchName}
                                 onChange={(e) => setSearchName(e.target.value)}
-                                className="h-9 w-full rounded-md border border-border bg-background text-foreground"
+                                className="h-8 w-full rounded-lg border border-border bg-background text-xs text-foreground"
                             />
                             <label className="sr-only" htmlFor="board-min-price">最低金额</label>
                             <Input
@@ -608,13 +719,14 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                 placeholder="最低 ¥"
                                 value={minPrice}
                                 onChange={(e) => setMinPrice(e.target.value)}
-                                className="h-9 w-full rounded-md border border-border bg-background text-foreground [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                className="h-8 w-full rounded-lg border border-border bg-background text-xs text-foreground [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                             />
                         </div>
                     </div>
+
                     <div className="flex min-h-[320px] min-w-0 flex-1 flex-col lg:min-h-0">
-                        <div className="flex items-center justify-between gap-2 border-b border-border p-3">
-                            <span className="text-sm text-muted-foreground">可用记录 ({filteredSource.length})</span>
+                        <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 shrink-0 bg-card/60">
+                            <span className="text-xs text-muted-foreground font-semibold">候选明细 ({filteredSource.length})</span>
                             <div className="flex shrink-0 items-center gap-1.5">
                                 <Button
                                     type="button"
@@ -623,18 +735,18 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                     onClick={handleRefreshSource}
                                     disabled={isSessionPending}
                                     aria-label="刷新可用记录"
-                                    className="inline-flex h-7 w-auto items-center justify-center gap-1.5 rounded-md px-2 text-xs text-secondary-foreground hover:bg-accent"
+                                    className="h-6 gap-1 rounded-md px-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent"
                                 >
-                                    <RefreshCw className={cn("h-3.5 w-3.5", isSessionPending && "animate-spin")} />
+                                    <RefreshCw className={cn("h-3 w-3", isSessionPending && "animate-spin")} />
                                     <span>刷新</span>
                                 </Button>
                                 <Button
                                     type="button"
                                     size="sm"
-                                    variant="ghost"
+                                    variant="outline"
                                     onClick={handleImportAllVisible}
                                     disabled={filteredSource.length === 0}
-                                    className="inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2 text-xs text-foreground hover:bg-accent"
+                                    className="h-6 rounded-md px-2 text-[11px] font-semibold text-foreground hover:bg-accent"
                                 >
                                     全部导入
                                 </Button>
@@ -652,11 +764,166 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
 
                 {/* Main: Board Area */}
                 <div className="flex min-w-0 flex-1 flex-col gap-3 lg:min-h-0">
-                    <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3 md:flex-row md:items-center md:justify-between">
-                        <div className="min-w-0">
-                            <h2 className="text-lg font-semibold text-foreground">组合看板</h2>
-                            <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
-                                {overlayCode && (
+                    <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card px-4 py-2.5 shadow-xs md:flex-row md:items-center md:justify-between shrink-0">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-sm font-bold text-foreground">组合看板</h2>
+                                <span className="font-mono text-xs text-muted-foreground">({boardItems.length} 项)</span>
+                            </div>
+
+                            {/* Canvas Background Theme Switcher */}
+                            <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs">
+                                <button
+                                    type="button"
+                                    aria-pressed={bgTheme === 'transparent'}
+                                    onClick={() => setBgTheme('transparent')}
+                                    title="透明底（OBS 贴图推流专用）"
+                                    className={cn(
+                                        "rounded-md px-2 py-1 font-semibold transition-colors",
+                                        bgTheme === 'transparent'
+                                            ? "bg-card text-foreground shadow-xs"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    透明 (OBS)
+                                </button>
+                                <button
+                                    type="button"
+                                    aria-pressed={bgTheme === 'dark'}
+                                    onClick={() => setBgTheme('dark')}
+                                    title="暗黑深邃渐变（朋友圈/动态海报）"
+                                    className={cn(
+                                        "rounded-md px-2 py-1 font-semibold transition-colors",
+                                        bgTheme === 'dark'
+                                            ? "bg-card text-foreground shadow-xs"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    暗黑海报
+                                </button>
+                                <button
+                                    type="button"
+                                    aria-pressed={bgTheme === 'bili'}
+                                    onClick={() => setBgTheme('bili')}
+                                    title="粉紫炫彩高光"
+                                    className={cn(
+                                        "rounded-md px-2 py-1 font-semibold transition-colors",
+                                        bgTheme === 'bili'
+                                            ? "bg-card text-foreground shadow-xs"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    粉紫高光
+                                </button>
+                                <button
+                                    type="button"
+                                    aria-pressed={bgTheme === 'clean'}
+                                    onClick={() => setBgTheme('clean')}
+                                    title="极简浅灰底色"
+                                    className={cn(
+                                        "rounded-md px-2 py-1 font-semibold transition-colors",
+                                        bgTheme === 'clean'
+                                            ? "bg-card text-foreground shadow-xs"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    极简浅灰
+                                </button>
+                            </div>
+
+                            {/* Alignment Switcher */}
+                            <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
+                                <button
+                                    type="button"
+                                    aria-pressed={alignment === 'right'}
+                                    onClick={() => setAlignment('right')}
+                                    title="靠右对齐（OBS 画中画标准位置）"
+                                    className={cn(
+                                        "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-colors",
+                                        alignment === 'right'
+                                            ? "bg-card text-foreground shadow-xs"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <AlignRight className="h-3.5 w-3.5" />
+                                    <span>靠右</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    aria-pressed={alignment === 'center'}
+                                    onClick={() => setAlignment('center')}
+                                    title="居中对齐（海报长图对称美感）"
+                                    className={cn(
+                                        "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-colors",
+                                        alignment === 'center'
+                                            ? "bg-card text-foreground shadow-xs"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <AlignCenter className="h-3.5 w-3.5" />
+                                    <span>居中</span>
+                                </button>
+                            </div>
+
+                            {/* Banner Toggle */}
+                            <button
+                                type="button"
+                                aria-pressed={showBanner}
+                                onClick={() => setShowBanner((v) => !v)}
+                                className={cn(
+                                    "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors",
+                                    showBanner
+                                        ? "border-pink-500/40 bg-pink-500/15 text-pink-500 shadow-xs"
+                                        : "border-border text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <Crown className="h-3.5 w-3.5" />
+                                <span>{showBanner ? "已开启海报顶栏" : "专属海报顶栏"}</span>
+                            </button>
+                        </div>
+
+                        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 md:w-auto md:justify-end">
+                            {overlayCode && (
+                                <>
+                                    <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                        <div className="inline-flex items-center gap-1.5">
+                                            <span>自动滚动</span>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-label="自动滚动"
+                                                aria-checked={scrollEnabled}
+                                                onClick={() => setScrollEnabled((enabled) => !enabled)}
+                                                className={cn(
+                                                    "relative h-5 w-9 rounded-full border transition-colors",
+                                                    scrollEnabled
+                                                        ? "border-purple-400/50 bg-purple-500"
+                                                        : "border-border bg-muted"
+                                                )}
+                                            >
+                                                <span
+                                                    className={cn(
+                                                        "absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+                                                        scrollEnabled ? "translate-x-4" : "translate-x-0"
+                                                    )}
+                                                />
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <label htmlFor="board-scroll-speed">滚动速度</label>
+                                            <input
+                                                id="board-scroll-speed"
+                                                type="range"
+                                                min="1"
+                                                max="10"
+                                                value={scrollSpeed}
+                                                onChange={(e) => setScrollSpeed(Number(e.target.value))}
+                                                disabled={!scrollEnabled}
+                                                className="h-1.5 w-20 cursor-pointer accent-primary disabled:cursor-not-allowed disabled:opacity-40"
+                                            />
+                                            <span className="w-4 text-center tabular-nums text-secondary-foreground">{scrollSpeed}</span>
+                                        </div>
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -664,56 +931,14 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                             navigator.clipboard.writeText(url);
                                             toast.success('OBS 链接已复制', { description: url });
                                         }}
-                                        className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80"
+                                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-semibold text-foreground hover:bg-accent"
                                     >
-                                        <Monitor className="h-4 w-4" />
-                                        OBS 源链接
+                                        <Monitor className="h-3.5 w-3.5 text-primary" />
+                                        <span>复制 OBS 源</span>
                                     </button>
-                                )}
-                                <span className="text-muted-foreground">已选择 {boardItems.length} 个项目</span>
-                            </div>
-                        </div>
-                        <div className="flex w-full min-w-0 flex-wrap items-center gap-3 md:w-auto md:justify-end">
-                            {overlayCode && (
-                                <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                                    <div className="inline-flex items-center gap-2">
-                                        <span>自动滚动</span>
-                                        <button
-                                            type="button"
-                                            role="switch"
-                                            aria-label="自动滚动"
-                                            aria-checked={scrollEnabled}
-                                            onClick={() => setScrollEnabled((enabled) => !enabled)}
-                                            className={cn(
-                                                "relative h-5 w-9 rounded-full border transition-colors",
-                                                scrollEnabled
-                                                    ? "border-purple-400/50 bg-purple-500"
-                                                    : "border-border bg-muted"
-                                            )}
-                                        >
-                                            <span
-                                                className={cn(
-                                                    "absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
-                                                    scrollEnabled ? "translate-x-4" : "translate-x-0"
-                                                )}
-                                            />
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span>滚动速度</span>
-                                        <input
-                                            type="range"
-                                            min="1"
-                                            max="10"
-                                            value={scrollSpeed}
-                                            onChange={(e) => setScrollSpeed(Number(e.target.value))}
-                                            disabled={!scrollEnabled}
-                                            className="h-1.5 w-20 cursor-pointer accent-primary disabled:cursor-not-allowed disabled:opacity-40"
-                                        />
-                                        <span className="w-4 text-center text-secondary-foreground tabular-nums">{scrollSpeed}</span>
-                                    </div>
-                                </div>
+                                </>
                             )}
+
                             <Button
                                 type="button"
                                 size="sm"
@@ -723,7 +948,7 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                     setBoardItems([]);
                                 }}
                                 disabled={boardItems.length === 0}
-                                className="inline-flex h-9 items-center justify-center rounded-lg px-3 text-secondary-foreground hover:bg-accent"
+                                className="h-8 rounded-lg px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent"
                             >
                                 清空
                             </Button>
@@ -732,18 +957,35 @@ export function InteractiveBoard({ initialTransactions, initialSessions = [], ov
                                 size="sm"
                                 onClick={handleExport}
                                 disabled={boardItems.length === 0}
-                                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-primary-foreground hover:bg-primary/90"
+                                className="h-8 gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-xs"
                             >
-                                <Download className="h-4 w-4" />
-                                导出图片
+                                <Download className="h-3.5 w-3.5" />
+                                <span>导出高清图</span>
                             </Button>
                         </div>
                     </div>
 
                     {/* Scrollable Canvas Container */}
-                    <div className="min-h-[360px] min-w-0 flex-1 overflow-hidden rounded-xl border border-border checkerboard">
+                    <div className={cn(
+                        "min-h-[380px] min-w-0 flex-1 overflow-hidden rounded-xl border border-border shadow-xs transition-colors",
+                        bgTheme === 'transparent'
+                            ? "checkerboard"
+                            : bgTheme === 'dark'
+                                ? "bg-[#090d16]"
+                                : bgTheme === 'bili'
+                                    ? "bg-[#181126]"
+                                    : "bg-[#f1f5f9]"
+                    )}>
                         <div className="dark-scrollbar h-full w-full overflow-auto">
-                            <BoardArea items={boardItems} onRemove={handleRemoveFromBoard} />
+                            <BoardArea
+                                items={boardItems}
+                                onRemove={handleRemoveFromBoard}
+                                bgTheme={bgTheme}
+                                alignment={alignment}
+                                showBanner={showBanner}
+                                posterTitle={posterTitle}
+                                broadcaster={broadcaster}
+                            />
                         </div>
                     </div>
                 </div>

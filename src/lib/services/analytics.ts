@@ -121,9 +121,34 @@ export async function getTopGiftUsers(
         LIMIT ${take}
     `;
 
-    return rows.map(r => ({
+    const items = rows.map(r => ({
         uname: r.uname || '',
         total: Number(r.total_val || 0) / 1000,
         uface: r.uface || ''
     }));
+
+    const missingUnames = items.filter(i => !i.uface && i.uname).map(i => i.uname);
+    if (missingUnames.length > 0) {
+        const danmakuFaces = await prisma.danmaku.findMany({
+            where: {
+                roomId,
+                uname: { in: missingUnames },
+                uface: { not: null },
+            },
+            select: { uname: true, uface: true },
+            distinct: ['uname'],
+            take: 100,
+        });
+        const faceMap = new Map<string, string>();
+        for (const d of danmakuFaces) {
+            if (d.uname && d.uface) faceMap.set(d.uname, d.uface);
+        }
+        for (const item of items) {
+            if (!item.uface && item.uname && faceMap.has(item.uname)) {
+                item.uface = faceMap.get(item.uname)!;
+            }
+        }
+    }
+
+    return items;
 }
