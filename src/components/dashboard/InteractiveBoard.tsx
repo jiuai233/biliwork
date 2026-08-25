@@ -20,7 +20,6 @@ import {
 } from "@dnd-kit/sortable";
 import { domToPng } from "modern-screenshot";
 import { Transaction } from "@/lib/data";
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DraggableTransactionCard } from "./DraggableTransactionCard";
@@ -36,7 +35,6 @@ import {
     AlignRight,
     ChevronDown,
     Clock,
-    Crown,
     Download,
     Flame,
     Loader2,
@@ -69,23 +67,15 @@ function BoardArea({
     onRemove,
     bgTheme,
     alignment,
-    showBanner,
-    posterTitle,
-    broadcaster,
 }: {
     items: BoardTransaction[];
     onRemove: (id: string) => void;
     bgTheme: CanvasTheme;
     alignment: CanvasAlignment;
-    showBanner: boolean;
-    posterTitle: string;
-    broadcaster?: { uname: string; uface: string };
 }) {
     const { setNodeRef } = useDroppable({
         id: "board-droppable",
     });
-
-    const totalBoardValue = items.reduce((sum, item) => sum + (item.price || 0), 0);
 
     const getBgStyle = () => {
         switch (bgTheme) {
@@ -118,35 +108,6 @@ function BoardArea({
                     ...getBgStyle(),
                 }}
             >
-                {/* Optional Poster Watermark Header */}
-                {showBanner && items.length > 0 && (
-                    <div
-                        data-board-banner="true"
-                        style={{ width: `${BILI_CARD_WIDTH}px` }}
-                        className={cn(
-                            "rounded-xl border p-3 flex items-center justify-between shadow-lg mb-1 transition-all shrink-0",
-                            bgTheme === 'clean'
-                                ? "bg-white/90 border-slate-300 text-slate-800"
-                                : "bg-black/50 backdrop-blur-md border-white/10 text-white"
-                        )}
-                    >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                            <Avatar src={broadcaster?.uface} name={broadcaster?.uname || "主播"} className="h-8 w-8 shrink-0 ring-2 ring-primary/40" />
-                            <div className="min-w-0">
-                                <div className={cn("font-bold text-xs truncate", bgTheme === 'clean' ? "text-slate-900" : "text-white")}>
-                                    {posterTitle || `${broadcaster?.uname || "主播"} · 直播高光时刻`}
-                                </div>
-                                <div className={cn("text-[10px] truncate", bgTheme === 'clean' ? "text-slate-500" : "text-white/60")}>
-                                    共精选 {items.length} 份心意记录
-                                </div>
-                            </div>
-                        </div>
-                        <div className="text-right shrink-0 pl-2">
-                            <div className="font-mono font-bold text-sm text-money">{formatCurrency(totalBoardValue)}</div>
-                            <div className={cn("text-[9px]", bgTheme === 'clean' ? "text-slate-400" : "text-white/50")}>高光心意累计</div>
-                        </div>
-                    </div>
-                )}
 
                 {items.length === 0 && (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground space-y-4 min-h-[400px] w-full">
@@ -197,7 +158,6 @@ export function InteractiveBoard({
     initialTransactions,
     initialSessions = [],
     overlayCode,
-    broadcaster,
 }: InteractiveBoardProps) {
     const [sourceItems, setSourceItems] = useState<Transaction[]>(initialTransactions);
     const [boardItems, setBoardItems] = useState<BoardTransaction[]>([]);
@@ -210,8 +170,7 @@ export function InteractiveBoard({
     // Canvas Customization States
     const [bgTheme, setBgTheme] = useState<CanvasTheme>('transparent');
     const [alignment, setAlignment] = useState<CanvasAlignment>('right');
-    const [showBanner, setShowBanner] = useState(false);
-    const [posterTitle, setPosterTitle] = useState("");
+
 
     // Filters
     const [searchName, setSearchName] = useState("");
@@ -864,22 +823,6 @@ export function InteractiveBoard({
                                     <span>居中</span>
                                 </button>
                             </div>
-
-                            {/* Banner Toggle */}
-                            <button
-                                type="button"
-                                aria-pressed={showBanner}
-                                onClick={() => setShowBanner((v) => !v)}
-                                className={cn(
-                                    "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors",
-                                    showBanner
-                                        ? "border-pink-500/40 bg-pink-500/15 text-pink-500 shadow-xs"
-                                        : "border-border text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                <Crown className="h-3.5 w-3.5" />
-                                <span>{showBanner ? "已开启海报顶栏" : "专属海报顶栏"}</span>
-                            </button>
                         </div>
 
                         <div className="flex w-full min-w-0 flex-wrap items-center gap-2 md:w-auto md:justify-end">
@@ -982,9 +925,6 @@ export function InteractiveBoard({
                                 onRemove={handleRemoveFromBoard}
                                 bgTheme={bgTheme}
                                 alignment={alignment}
-                                showBanner={showBanner}
-                                posterTitle={posterTitle}
-                                broadcaster={broadcaster}
                             />
                         </div>
                     </div>

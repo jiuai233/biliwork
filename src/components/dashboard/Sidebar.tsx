@@ -183,7 +183,7 @@ function NavLink({ item, active, onNavigate, nested = false }: { item: NavItem; 
 function NavGroups({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
     const activeGroupId = navGroups.find((group) => group.items.some((item) => isNavActive(pathname, item.href)))?.id;
     const [openIds, setOpenIds] = useState<Set<string>>(() => {
-        const ids = new Set<string>(["gifts"]);
+        const ids = new Set(navGroups.filter((group) => group.label).map((group) => group.id));
         if (activeGroupId) ids.add(activeGroupId);
         return ids;
     });
@@ -230,7 +230,7 @@ function NavGroups({ pathname, onNavigate }: { pathname: string; onNavigate?: ()
                             aria-expanded={open}
                             onClick={() => toggle(group.id)}
                             className={cn(
-                                "flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold tracking-wide",
+                                "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold tracking-wide",
                                 groupActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                             )}
                         >
@@ -311,7 +311,7 @@ export function Sidebar({ broadcaster }: { broadcaster: Broadcaster | null }) {
                 </div>
             )}
 
-            <aside className="fixed hidden h-full w-64 flex-col border-r border-border bg-sidebar/95 backdrop-blur-xl lg:flex">
+            <aside className="fixed top-0 left-0 z-30 hidden h-full w-64 flex-col border-r border-border bg-sidebar/95 backdrop-blur-xl lg:flex">
                 <div className="flex items-start justify-between border-b border-border p-6">
                     {brand}
                     <ThemeToggle />

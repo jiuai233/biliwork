@@ -427,7 +427,7 @@ export default function GiftStreamPage() {
                                                             </Table.Cell>
                                                             <Table.Cell className="truncate text-xs">
                                                                 <div className="flex items-center gap-2 truncate">
-                                                                    <div className="h-6 w-6 shrink-0 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">
+                                                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
                                                                         {(item.uname || String(item.uid)).slice(0, 1)}
                                                                     </div>
                                                                     <div className="truncate">
