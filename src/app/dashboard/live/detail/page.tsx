@@ -154,7 +154,7 @@ function SessionDetailContent() {
                     value={formatCurrency(data.stats.totalIncome)}
                     icon={<Coins className="h-4 w-4 text-amber-500" />}
                     tone="amber"
-                    sub={`礼物 ${formatCurrency(data.stats.giftIncome)} · 舰长 ${formatCurrency(data.stats.guardIncome)} · SC ${formatCurrency(data.stats.scIncome)}`}
+                    sub={`礼物 ${data.stats.giftCount} 件 · 舰长 ${data.stats.guardCount} · SC ${data.stats.scCount}`}
                 />
                 <StatCard
                     label="弹幕互动总量"

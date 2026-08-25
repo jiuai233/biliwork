@@ -106,9 +106,9 @@ export function ReportDetails({
 
     const dayTotal = overview.daily.reduce((sum, d) => sum + d.income, 0);
     const maxDay = Math.max(...overview.daily.map((d) => d.income), 1);
-    const peakDay = overview.daily.reduce(
-        (max, d, i) => (d.income > max.income ? { ...d, dayIndex: i } : max),
-        { income: -1, ts: 0, dayIndex: 0 }
+    const peakDay = overview.daily.reduce<{ income: number; ts: number; dayIndex: number }>(
+        (max, d, i) => (d.income > max.income ? { income: d.income, ts: d.ts, dayIndex: i } : max),
+        { income: -1, ts: 0, dayIndex: 0 },
     );
     const activeDaysCount = overview.daily.filter((d) => d.income > 0).length;
 
