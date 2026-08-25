@@ -220,8 +220,8 @@ export default function OverlayPage() {
                 </div>
 
                 {items.length === 0 && (
-                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px', textAlign: 'center', width: '100%', paddingTop: '20px' }}>
-                        等待礼物数据...
+                    <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '14px', textAlign: 'center', width: '100%', paddingTop: '20px', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+                        切片板上还没有卡片。在「切片制作」里拖入记录后，这里会显示。
                     </div>
                 )}
             </div>

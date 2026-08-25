@@ -218,20 +218,22 @@ export function InteractiveBoard({
         if (!overlayCode || !isMounted) return;
         const controller = new AbortController();
         setBoardHydrated(false);
-        fetch(`/api/overlay/${overlayCode}/items`, { signal: controller.signal })
+        fetch(`/api/overlay/${overlayCode}/poll`, { signal: controller.signal })
             .then((res) => {
-                if (!res.ok) throw new Error(`Items restore failed: ${res.status}`);
+                if (!res.ok) throw new Error(`Board restore failed: ${res.status}`);
                 return res.json();
             })
             .then((items) => {
-                if (!Array.isArray(items)) {
-                    throw new Error("Items restore returned non-array payload");
-                }
+                if (!Array.isArray(items)) throw new Error("Board restore returned invalid data");
+                if (controller.signal.aborted) return;
                 setBoardItems(items);
-            })
-            .catch(() => { })
-            .finally(() => {
                 setBoardHydrated(true);
+            })
+            .catch((error) => {
+                if (!controller.signal.aborted) {
+                    console.error(error);
+                    toast.error("读取 OBS 看板失败，已停止自动写入，避免覆盖现有叠加层");
+                }
             });
         return () => controller.abort();
     }, [overlayCode, isMounted]);
@@ -242,8 +244,8 @@ export function InteractiveBoard({
 
         const controller = new AbortController();
         const timer = setTimeout(() => {
-            fetch(`/api/overlay/${overlayCode}/items`, {
-                method: 'PUT',
+            fetch(`/api/overlay/${overlayCode}/sync`, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(boardItems),
                 signal: controller.signal,
